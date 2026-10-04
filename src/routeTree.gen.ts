@@ -10,33 +10,128 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as DiscountsRouteImport } from './routes/discounts'
+import { Route as FreeFoodRouteImport } from './routes/free-food'
+import { Route as MapRouteImport } from './routes/map'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as StarvingStudentRouteImport } from './routes/starving-student'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiscountsRoute = DiscountsRouteImport.update({
+  id: '/discounts',
+  path: '/discounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FreeFoodRoute = FreeFoodRouteImport.update({
+  id: '/free-food',
+  path: '/free-food',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StarvingStudentRoute = StarvingStudentRouteImport.update({
+  id: '/starving-student',
+  path: '/starving-student',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/calendar': typeof CalendarRoute
+  '/discounts': typeof DiscountsRoute
+  '/free-food': typeof FreeFoodRoute
+  '/map': typeof MapRoute
+  '/profile': typeof ProfileRoute
+  '/starving-student': typeof StarvingStudentRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/calendar': typeof CalendarRoute
+  '/discounts': typeof DiscountsRoute
+  '/free-food': typeof FreeFoodRoute
+  '/map': typeof MapRoute
+  '/profile': typeof ProfileRoute
+  '/starving-student': typeof StarvingStudentRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/calendar': typeof CalendarRoute
+  '/discounts': typeof DiscountsRoute
+  '/free-food': typeof FreeFoodRoute
+  '/map': typeof MapRoute
+  '/profile': typeof ProfileRoute
+  '/starving-student': typeof StarvingStudentRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/account'
+    | '/calendar'
+    | '/discounts'
+    | '/free-food'
+    | '/map'
+    | '/profile'
+    | '/starving-student'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/account'
+    | '/calendar'
+    | '/discounts'
+    | '/free-food'
+    | '/map'
+    | '/profile'
+    | '/starving-student'
+  id:
+    | '__root__'
+    | '/'
+    | '/account'
+    | '/calendar'
+    | '/discounts'
+    | '/free-food'
+    | '/map'
+    | '/profile'
+    | '/starving-student'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
+  CalendarRoute: typeof CalendarRoute
+  DiscountsRoute: typeof DiscountsRoute
+  FreeFoodRoute: typeof FreeFoodRoute
+  MapRoute: typeof MapRoute
+  ProfileRoute: typeof ProfileRoute
+  StarvingStudentRoute: typeof StarvingStudentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +143,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/discounts': {
+      id: '/discounts'
+      path: '/discounts'
+      fullPath: '/discounts'
+      preLoaderRoute: typeof DiscountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/free-food': {
+      id: '/free-food'
+      path: '/free-food'
+      fullPath: '/free-food'
+      preLoaderRoute: typeof FreeFoodRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/starving-student': {
+      id: '/starving-student'
+      path: '/starving-student'
+      fullPath: '/starving-student'
+      preLoaderRoute: typeof StarvingStudentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
+  CalendarRoute: CalendarRoute,
+  DiscountsRoute: DiscountsRoute,
+  FreeFoodRoute: FreeFoodRoute,
+  MapRoute: MapRoute,
+  ProfileRoute: ProfileRoute,
+  StarvingStudentRoute: StarvingStudentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
