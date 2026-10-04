@@ -1,0 +1,51 @@
+import { useSyncExternalStore } from "react";
+
+export type User = {
+  username: string;
+  password: string;
+  name: string;
+  email: string;
+  school: string;
+  phone?: string;
+  avatar?: string;
+};
+
+type State = { savedDeals: string[]; savedEvents: string[]; usedSS: string[]; user: User | null };
+const KEY = "studeats-state";
+const empty: State = { savedDeals: [], savedEvents: [], usedSS: [], user: null };
+let state: State = empty;
+let loaded = false;
+const listeners = new Set<() => void>();
+
+function load() {
+  if (loaded || typeof window === "undefined") return;
+  loaded = true;
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) state = { ...empty, ...JSON.parse(raw) };
+    else state = { ...empty, savedDeals: ["d1", "d2", "d3"] };
+  } catch {}
+}
+
+function set(next: Partial<State>) {
+  state = { ...state, ...next };
+  localStorage.setItem(KEY, JSON.stringify(state));
+  listeners.forEach((l) => l());
+}
+
+export function useStore() {
+  return useSyncExternalStore(
+    (l) => { listeners.add(l); return () => listeners.delete(l); },
+    () => { load(); return state; },
+    () => empty,
+  );
+}
+
+const toggle = (arr: string[], id: string) => (arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]);
+
+export const actions = {
+  toggleDeal: (id: string) => set({ savedDeals: toggle(state.savedDeals, id) }),
+  toggleEvent: (id: string) => set({ savedEvents: toggle(state.savedEvents, id) }),
+  toggleUsed: (id: string) => set({ usedSS: toggle(state.usedSS, id) }),
+  setUser: (user: User | null) => set({ user }),
+};
