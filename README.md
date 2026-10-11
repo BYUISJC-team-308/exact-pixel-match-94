@@ -5,8 +5,6 @@ BYU students can have trouble finding discounts that apply to them because offer
 ## ERD
 The ERD includes the `users`, `discounts`, `saved_discounts`, `redeemed_discounts`, and `food_events` entities.
 
-
-
 ## Tech Stack
 Our team chose **Supabase as a backend-as-a-service**, with PostgreSQL as the database. We are using React and Vite for the frontend and Tailwind CSS for styling.
 Supabase fits our team because it is accessible and provides a shared database without requiring us to build and maintain a separate backend server. PostgreSQL supports the foreign-key relationships in our data model, and the Supabase dashboard lets us view tables, add sample data, and check whether changes persist. Supabase also generates APIs from the database tables, which helps connect the frontend to the database without writing server routes from scratch. We chose this approach over Lovable because we can work directly with the database and avoid depending on a limited supply of AI-builder tokens. We will keep configuration in environment variables and exclude the `.env` file from Git.
@@ -71,10 +69,9 @@ If the project uses a different dev server (rare), the terminal will print the c
 
 ## Verifying the Vertical Slice
 
-> # ** FILL THIS IN BEFORE SUBMISSION**
 > Describe the button or action that updates the database. Give someone unfamiliar with the project enough information to test it.
-- **Page or screen:** `[ENTER WHERE TO FIND THE ACTION]`
-- **Button or action:** `[ENTER WHAT TO CLICK OR SUBMIT]`
-- **Expected UI change:** `[DESCRIBE WHAT CHANGES ON SCREEN]`
-- **Database change:** `[NAME THE TABLE AND VALUE THAT SHOULD CHANGE]`
-- **Refresh check:** `[EXPLAIN HOW TO REFRESH AND CONFIRM THE CHANGE IS STILL THERE]`
+- **Page or screen:** `[ENTER WHERE TO FIND THE ACTION]` Click the “Pin an item” button on the page.
+- **Button or action:** `[ENTER WHAT TO CLICK OR SUBMIT]` Click the star next to your desired item!
+- **Expected UI change:** `[DESCRIBE WHAT CHANGES ON SCREEN]` You should see your item pop up under “pinned items” on the page.
+- **Database change:** `[NAME THE TABLE AND VALUE THAT SHOULD CHANGE]` The database adds rows for each pinned item, and deletes them as well.
+- **Refresh check:** `[EXPLAIN HOW TO REFRESH AND CONFIRM THE CHANGE IS STILL THERE]` Click the classic f5 or reload the page, your pinned item will still be under “pinned items”!
