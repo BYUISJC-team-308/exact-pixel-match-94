@@ -5,6 +5,8 @@ BYU students can have trouble finding discounts that apply to them because offer
 ## ERD
 The ERD includes the `users`, `discounts`, `saved_discounts`, `redeemed_discounts`, and `food_events` entities.
 
+![ERD Picture](is401mod5.png) 
+
 ## Tech Stack
 Our team chose **Supabase as a backend-as-a-service**, with PostgreSQL as the database. We are using React and Vite for the frontend and Tailwind CSS for styling.
 Supabase fits our team because it is accessible and provides a shared database without requiring us to build and maintain a separate backend server. PostgreSQL supports the foreign-key relationships in our data model, and the Supabase dashboard lets us view tables, add sample data, and check whether changes persist. Supabase also generates APIs from the database tables, which helps connect the frontend to the database without writing server routes from scratch. We chose this approach over Lovable because we can work directly with the database and avoid depending on a limited supply of AI-builder tokens. We will keep configuration in environment variables and exclude the `.env` file from Git.
