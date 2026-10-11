@@ -27,7 +27,3 @@ const csrfMiddleware = createCsrfMiddleware({
 export const startInstance = createStart(() => ({
   requestMiddleware: [errorMiddleware, csrfMiddleware],
 }));
-
-
-console.log("Supabase Key:", import.meta.env.VITE_SUPABASE_ANON_KEY)
-
