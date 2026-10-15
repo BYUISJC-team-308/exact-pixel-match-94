@@ -1,4 +1,5 @@
 Read Me
+//This is a test to see if i can still deploy stuff on vercel\\
 # BYU Student Discounts and Free Food
 ## App Summary
 BYU students can have trouble finding discounts that apply to them because offers are spread across different providers and sources. They may also miss free food events when event dates and locations are hard to keep track of. This app gives BYU students one place to find relevant discounts and campus food offerings. The Discount Dashboard lets students browse, search, filter, and save discounts. The Starving Student Card Hub lists card deals and helps students track which ones they have used, while the Free Food Near Me page and Calendar show upcoming food events. An interactive map shows where discounts and food offerings are located, and “Your Hub” brings saved discounts and events together.
