@@ -65,7 +65,7 @@ export type FoodEvent = {
 };
 
 export const foodEvents: FoodEvent[] = [
-  { id: "e1", title: "Free pizza night", host: "Student Union", food: "Pizza", dayOffset: 0, start: "12:00", end: "13:00", building: "Student Union", room: "Rm 204", details: "Cheese & veggie pizza while it lasts.", x: 45, y: 48 },
+ /* { id: "e1", title: "Free pizza night", host: "Student Union", food: "Pizza", dayOffset: 0, start: "12:00", end: "13:00", building: "Student Union", room: "Rm 204", details: "Cheese & veggie pizza while it lasts.", x: 45, y: 48 },
   { id: "e2", title: "Smoothie samples", host: "Wellness Center", food: "Smoothies", dayOffset: 0, start: "14:30", end: "15:30", building: "Main Quad", room: "Outdoor tent", details: "Free smoothie samples and healthy snacks.", x: 50, y: 30 },
   { id: "e3", title: "Free dumplings", host: "Asian Student Assoc.", food: "Dumplings", dayOffset: 0, start: "17:00", end: "18:30", building: "Night Market Lot", room: "Booth 3", details: "Homemade dumplings at the cultural night market.", x: 75, y: 50 },
   { id: "e4", title: "Bagel breakfast", host: "Engineering Club", food: "Bagels & coffee", dayOffset: 1, start: "08:30", end: "10:00", building: "Engineering Hall", room: "Lobby", details: "Bagels, cream cheese, and coffee.", x: 28, y: 52 },
@@ -74,7 +74,7 @@ export const foodEvents: FoodEvent[] = [
   { id: "e7", title: "Cookie study break", host: "Library", food: "Cookies & milk", dayOffset: 4, start: "20:00", end: "21:00", building: "Main Library", room: "2nd floor", details: "Fresh cookies during finals prep.", x: 20, y: 44 },
   { id: "e8", title: "BBQ on the lawn", host: "Rec Sports", food: "Burgers & hot dogs", dayOffset: 6, start: "12:00", end: "14:00", building: "Rec Lawn", room: "Outdoors", details: "Free BBQ, veggie options available.", x: 65, y: 70 },
   { id: "e9", title: "Leftover catering", host: "Business School", food: "Sandwiches", dayOffset: 9, start: "15:00", end: "16:00", building: "Business Bldg", room: "Rm 310", details: "Leftover catering from a career fair.", x: 35, y: 78 },
-];
+*/];
 
 export function eventDate(e: FoodEvent) {
   const d = new Date();
