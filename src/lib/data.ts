@@ -64,7 +64,7 @@ export type FoodEvent = {
   y: number;
 };
 
-//this should break the page
+
 export const foodEvents: FoodEvent [] = [
   
   /*
