@@ -16,10 +16,7 @@ export const Route = createFileRoute("/free-food")({
   component: FreeFood,
 });
 
-//this should error - need to delete this same comment from src/lib/data.ts
 function FreeFood() {
-  throw new Error("Simulated test error: Unable to load campus food events!");
-  
   const { savedEvents } = useStore();
   const [tab, setTab] = useState<"today" | "week">("today");
   const [auto, setAuto] = useState(true);
