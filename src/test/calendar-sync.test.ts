@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getGoogleCalendarUrl, type CalendarEventItem } from "@/lib/calendar-sync";
-import { getRecurringSpecialsForDate, RECURRING_SPECIALS } from "@/lib/calendar-deals";
+import { getRecurringSpecialsForDate } from "@/lib/calendar-deals";
 
 describe("Calendar Sync & URL Generator", () => {
   it("generates a valid Google Calendar web intent URL with prefilled parameters", () => {
@@ -10,7 +10,7 @@ describe("Calendar Sync & URL Generator", () => {
       details: "Free slices in TMCB",
       building: "TMCB",
       room: "Rm 1170",
-      startDate: new Date(2026, 9, 30), // Oct 30, 2026
+      startDate: new Date(2026, 9, 30),
       startTime: "12:00 PM",
       endTime: "1:30 PM",
     };
@@ -22,17 +22,10 @@ describe("Calendar Sync & URL Generator", () => {
     expect(url).toContain("dates=");
   });
 
-  it("filters recurring restaurant specials for specific days of the week", () => {
-    // 2026-10-27 is a Tuesday (getDay() === 2)
+  it("handles empty recurring specials cleanly when mock data is purged", () => {
     const tuesday = new Date(2026, 9, 27);
-    const tuesdaySpecials = getRecurringSpecialsForDate(tuesday);
-    expect(tuesdaySpecials.some((s) => s.category === "tacos")).toBe(true);
-    expect(tuesdaySpecials.some((s) => s.title.includes("Taco Tuesday"))).toBe(true);
-
-    // 2026-10-28 is a Wednesday (getDay() === 3)
-    const wednesday = new Date(2026, 9, 28);
-    const wednesdaySpecials = getRecurringSpecialsForDate(wednesday);
-    expect(wednesdaySpecials.some((s) => s.category === "wings")).toBe(true);
-    expect(wednesdaySpecials.some((s) => s.title.includes("Wing Wednesday"))).toBe(true);
+    const specials = getRecurringSpecialsForDate(tuesday);
+    expect(Array.isArray(specials)).toBe(true);
+    expect(specials.length).toBe(0);
   });
 });

@@ -1,7 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { siteSections, deals, foodEvents, ssDeals } from "@/lib/data";
+import { siteSections, ssDeals } from "@/lib/data";
 import { useStore } from "@/lib/store";
+import { useFoodEventsQuery } from "@/lib/food-events";
+import { useDealsQuery } from "@/lib/deals";
 
 const nav = [
   { to: "/", label: "Home" },
@@ -17,6 +19,10 @@ export function SiteHeader() {
   const [q, setQ] = useState("");
   const [menu, setMenu] = useState(false);
   const navigate = useNavigate();
+
+  const { data: foodEvents = [] } = useFoodEventsQuery();
+  const { data: deals = [] } = useDealsQuery();
+
   const t = q.trim().toLowerCase();
   const results = t
     ? [
@@ -44,7 +50,7 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-2">
           <div className="relative">
             <div className="flex h-9 w-44 items-center gap-2 rounded-full bg-secondary px-3 ring-1 ring-border sm:w-56">
-              <span className="text-muted-foreground">⌕</span>
+              <span className="text-muted-foreground">🔍</span>
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search deals, places, free food" className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" aria-label="Search the site" />
             </div>
             {t && (

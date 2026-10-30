@@ -23,8 +23,18 @@ function load() {
   loaded = true;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) state = { ...empty, ...JSON.parse(raw) };
-    else state = { ...empty, savedDeals: ["d1", "d2", "d3"] };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Clean out any legacy mock deal IDs
+      if (Array.isArray(parsed.savedDeals)) {
+        parsed.savedDeals = parsed.savedDeals.filter(
+          (id: string) => !["d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10"].includes(id)
+        );
+      }
+      state = { ...empty, ...parsed };
+    } else {
+      state = { ...empty, savedDeals: [] };
+    }
   } catch {}
 
   // Auto-log session start

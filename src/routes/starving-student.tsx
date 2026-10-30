@@ -37,7 +37,7 @@ function SSHub() {
 
   return (
     <>
-      <PageHeader eyebrow={`${usedSS.length} of ${ssDeals.length} used`} title="Starving Student Card Hub">
+      <PageHeader eyebrow={`${usedSS.length} of ${ssDeals.length} card deals used`} title="Starving Student Card Hub">
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput value={q} onChange={setQ} placeholder="Search card deals" />
           <Link to="/map" className="inline-flex h-10 items-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground">View on map →</Link>
@@ -51,6 +51,7 @@ function SSHub() {
           <option value="type">Sort: discount type</option>
         </select>
       </div>
+
       <div className="mt-6 grid gap-3">
         {list.map((d) => {
           const used = usedSS.includes(d.id);
@@ -68,6 +69,22 @@ function SSHub() {
             </div>
           );
         })}
+
+        {list.length === 0 && (
+          <div className="glass p-10 text-center">
+            <div className="text-3xl">💳</div>
+            <h4 className="mt-2 text-base font-semibold">No Starving Student Card deals loaded yet</h4>
+            <p className="mt-1 text-xs text-muted-foreground">
+              All mock card entries have been removed. Active Starving Student Card deals will appear here once digitized.
+            </p>
+            <Link
+              to="/free-food"
+              className="mt-4 inline-flex items-center rounded-full bg-secondary px-4 py-2 text-xs font-semibold ring-1 ring-border hover:bg-glass"
+            >
+              Browse Campus Free Food Instead →
+            </Link>
+          </div>
+        )}
       </div>
       <SSDetail deal={open} onClose={() => setOpen(null)} />
     </>
