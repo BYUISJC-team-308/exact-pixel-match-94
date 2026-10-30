@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { logActivityEvent } from "@/lib/analytics";
 
 export type User = {
   username: string;
@@ -25,6 +26,9 @@ function load() {
     if (raw) state = { ...empty, ...JSON.parse(raw) };
     else state = { ...empty, savedDeals: ["d1", "d2", "d3"] };
   } catch {}
+
+  // Auto-log session start
+  void logActivityEvent("session_start");
 }
 
 function set(next: Partial<State>) {
@@ -44,8 +48,31 @@ export function useStore() {
 const toggle = (arr: string[], id: string) => (arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]);
 
 export const actions = {
-  toggleDeal: (id: string) => set({ savedDeals: toggle(state.savedDeals, id) }),
-  toggleEvent: (id: string) => set({ savedEvents: toggle(state.savedEvents, id) }),
-  toggleUsed: (id: string) => set({ usedSS: toggle(state.usedSS, id) }),
-  setUser: (user: User | null) => set({ user }),
+  toggleDeal: (id: string) => {
+    const isAdding = !state.savedDeals.includes(id);
+    if (isAdding) {
+      void logActivityEvent("deal_saved", { dealId: id });
+    }
+    set({ savedDeals: toggle(state.savedDeals, id) });
+  },
+  toggleEvent: (id: string) => {
+    const isAdding = !state.savedEvents.includes(id);
+    if (isAdding) {
+      void logActivityEvent("event_saved", { eventId: id });
+    }
+    set({ savedEvents: toggle(state.savedEvents, id) });
+  },
+  toggleUsed: (id: string) => {
+    const isAdding = !state.usedSS.includes(id);
+    if (isAdding) {
+      void logActivityEvent("deal_redeemed", { dealId: id });
+    }
+    set({ usedSS: toggle(state.usedSS, id) });
+  },
+  setUser: (user: User | null) => {
+    if (user && !state.user) {
+      void logActivityEvent("signup", { username: user.username, email: user.email });
+    }
+    set({ user });
+  },
 };
