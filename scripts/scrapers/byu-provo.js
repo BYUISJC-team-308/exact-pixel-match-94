@@ -48,13 +48,8 @@ export async function scrapeByuProvoDeals() {
     },
     {
       company: 'Cinemark 16 Provo',
-      title: 'Cinemark Discount Student Day',
-      category: 'Fitness', // Or Travel/Entertainment
-      category: 'Subscription', // Let classifier categorize or pick
-      category: 'Food',
       title: 'Cinemark 16 Provo Student Ticket Pricing',
-      category: 'Print', // Wait, let's map to enum
-      // enums: ['Food', 'Tech', 'AI', 'Subscription', 'Groceries', 'Print', 'Fitness', 'Travel']
+      category: 'Fitness',
       deal_type: 'Percent off',
       value: '$6.50 Movie Tickets',
       description: 'Discounted movie admissions every Tuesday and with student identification at Cinemark 16 on Towne Centre Blvd.',
