@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const DEFAULT_SUPABASE_URL = 'https://zwygwfcaollyotvfwumx.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3eWd3ZmNhb2xseW90dmZ3dW14Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2NzcxMjcsImV4cCI6MjEwNzI1MzEyN30.h2BtQWvBJY103qKlxQwuKvhnjdzB_0b_CJD0ULvf0Cg';
 
 export function getSupabaseUrl() {
   return process.env.SUPABASE_URL || 
@@ -18,7 +19,8 @@ export function getSupabaseKey() {
          process.env.SERVICE_ROLE_KEY || 
          process.env.SUPABASE_KEY || 
          process.env.SUPABASE_ANON_KEY || 
-         process.env.VITE_SUPABASE_ANON_KEY;
+         process.env.VITE_SUPABASE_ANON_KEY ||
+         DEFAULT_SUPABASE_ANON_KEY;
 }
 
 export function getSupabaseClient() {
@@ -27,8 +29,7 @@ export function getSupabaseClient() {
 
   if (!url || !key) {
     throw new Error(
-      `Missing Supabase credentials! url: ${url ? 'FOUND' : 'MISSING'}, key: ${key ? 'FOUND' : 'MISSING'}. ` +
-      'Please ensure SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY is set in GitHub Secrets.'
+      `Missing Supabase credentials! url: ${url ? 'FOUND' : 'MISSING'}, key: ${key ? 'FOUND' : 'MISSING'}.`
     );
   }
   return createClient(url, key);
