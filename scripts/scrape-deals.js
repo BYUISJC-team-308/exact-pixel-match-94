@@ -4,7 +4,7 @@ import { scrapeIdMe } from './scrapers/idme.js';
 import { scrapeTechAndAiDeals } from './scrapers/tech-and-ai.js';
 import { scrapeByuProvoDeals } from './scrapers/byu-provo.js';
 import { classifyBatch } from './classify.js';
-import { saveDealsToDatabase } from './db.js';
+import { saveDealsToDatabase, getSupabaseUrl, getSupabaseKey } from './db.js';
 
 dotenv.config();
 
@@ -14,8 +14,15 @@ async function main() {
   console.log(`⏰ Time: ${new Date().toISOString()}`);
   console.log('====================================================\n');
 
+  console.log('[Runner] Environment configuration:');
+  console.log(`   - Supabase URL: ${getSupabaseUrl()}`);
+  console.log(`   - Supabase Key: ${getSupabaseKey() ? 'Configured (' + getSupabaseKey().length + ' chars)' : 'MISSING'}`);
+  console.log(`   - Gemini API Key: ${process.env.GEMINI_API_KEY ? 'Configured' : 'Not set (using heuristic classifier)'}`);
+  console.log('');
+
   try {
     // 1. Run all scrapers in parallel
+    console.log('[Runner] Launching scrapers in parallel...');
     const [idMeDeals, techAiDeals, localDeals] = await Promise.all([
       scrapeIdMe().catch(err => {
         console.error('[Runner] ID.me scraper error:', err.message);

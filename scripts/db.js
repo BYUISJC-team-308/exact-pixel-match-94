@@ -4,18 +4,34 @@ import dotenv from 'dotenv';
 // Load .env variables if running locally
 dotenv.config();
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-                     process.env.SUPABASE_ANON_KEY || 
-                     process.env.VITE_SUPABASE_ANON_KEY;
+const DEFAULT_SUPABASE_URL = 'https://zwygwfcaollyotvfwumx.supabase.co';
+
+export function getSupabaseUrl() {
+  return process.env.SUPABASE_URL || 
+         process.env.VITE_SUPABASE_URL || 
+         DEFAULT_SUPABASE_URL;
+}
+
+export function getSupabaseKey() {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY || 
+         process.env.SUPABASE_SERVICE_KEY || 
+         process.env.SERVICE_ROLE_KEY || 
+         process.env.SUPABASE_KEY || 
+         process.env.SUPABASE_ANON_KEY || 
+         process.env.VITE_SUPABASE_ANON_KEY;
+}
 
 export function getSupabaseClient() {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
+  const url = getSupabaseUrl();
+  const key = getSupabaseKey();
+
+  if (!url || !key) {
     throw new Error(
-      'Missing Supabase credentials! Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY).'
+      `Missing Supabase credentials! url: ${url ? 'FOUND' : 'MISSING'}, key: ${key ? 'FOUND' : 'MISSING'}. ` +
+      'Please ensure SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY is set in GitHub Secrets.'
     );
   }
-  return createClient(SUPABASE_URL, SUPABASE_KEY);
+  return createClient(url, key);
 }
 
 /**
@@ -33,7 +49,7 @@ export async function cleanupExpiredDeals(supabase) {
     .select('id, company, title');
 
   if (error) {
-    console.error('[Database] Error cleaning up expired deals:', error.message);
+    console.warn('[Database] Warning cleaning up expired deals:', error.message);
     return 0;
   }
 
