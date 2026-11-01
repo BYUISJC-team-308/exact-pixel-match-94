@@ -17,7 +17,7 @@ export const Route = createFileRoute("/discounts")({
   component: Discounts,
 });
 
-const cats = ["All", "New", "Saved", "Food", "Tech", "AI", "Subscription", "Groceries", "Print", "Fitness", "Travel", "Free", "Percent off"] as const;
+const cats = ["All", "New", "Saved", "Food", "Tech", "AI", "Subscription", "Fitness", "Travel", "Free", "Percent off"] as const;
 type Cat = (typeof cats)[number];
 
 function Discounts() {
@@ -94,10 +94,24 @@ function Discounts() {
           {list.length === 0 && (
             <div className="col-span-full glass p-10 text-center">
               <div className="text-3xl">🏷️</div>
-              <h4 className="mt-2 text-base font-semibold">No student discounts currently published</h4>
-              <p className="mt-1 text-xs text-muted-foreground">
-                All mock data has been removed. Verified student discounts added to the database or scraped will appear here automatically.
+              <h4 className="mt-3 text-lg font-semibold">
+                {q ? "No matching discounts found" : cat === "Saved" ? "No saved discounts yet" : "No discounts in this category yet"}
+              </h4>
+              <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
+                {q 
+                  ? `We couldn't find any student perks matching "${q}". Try another search term or clear the filter.`
+                  : cat === "Saved"
+                  ? "Tap the star icon on any deal card to save your favorite student discounts here for quick access."
+                  : "Check back soon! Our automated scraper scans ID.me, tech platforms, and Provo campus favorites every morning."}
               </p>
+              {(q || cat !== "All") && (
+                <button
+                  onClick={() => { setQ(""); setCat("All"); }}
+                  className="mt-4 inline-flex items-center rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20"
+                >
+                  Reset filters
+                </button>
+              )}
             </div>
           )}
         </div>
