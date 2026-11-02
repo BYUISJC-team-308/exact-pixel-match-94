@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ssDeals, type SSDeal } from "@/lib/data";
+import type { SSDeal } from "@/lib/data";
+import { useStarvingStudentOffersQuery } from "@/lib/starving-student";
 import { actions, useStore } from "@/lib/store";
 import { FilterChips, PageHeader, SSDetail, SearchInput } from "@/components/ui-bits";
 
@@ -17,18 +18,19 @@ export const Route = createFileRoute("/starving-student")({
 });
 
 const types = ["All", "Free", "Discount"] as const;
-const cats = ["All categories", "Food", "Coffee", "Entertainment", "Services"] as const;
 
 function SSHub() {
   const { usedSS } = useStore();
+  const { data: ssDeals = [], isLoading, error, refetch } = useStarvingStudentOffersQuery();
+  const cats = ["All categories", ...new Set(ssDeals.map((deal) => deal.category))];
   const [type, setType] = useState<(typeof types)[number]>("All");
-  const [cat, setCat] = useState<(typeof cats)[number]>("All categories");
+  const [cat, setCat] = useState("All categories");
   const [sort, setSort] = useState<"company" | "type">("company");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<SSDeal | null>(null);
-  const t = q.toLowerCase();
+  const t = q.trim().toLowerCase();
   const list = ssDeals
-    .filter((d) => (type === "All" || d.type === type) && (cat === "All categories" || d.category === cat) && (!t || (d.company + d.item).toLowerCase().includes(t)))
+    .filter((d) => (type === "All" || d.type === type) && (cat === "All categories" || d.category === cat) && (!t || (d.company + d.item + d.details + d.address).toLowerCase().includes(t)))
     .sort((a, b) => {
       const u = Number(usedSS.includes(a.id)) - Number(usedSS.includes(b.id));
       if (u) return u;
@@ -37,16 +39,17 @@ function SSHub() {
 
   return (
     <>
-      <PageHeader eyebrow={`${usedSS.length} of ${ssDeals.length} card deals used`} title="Starving Student Card Hub">
+      <PageHeader eyebrow={isLoading ? "Loading offers" : `${ssDeals.length} offers`} title="Starving Student Card Hub">
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput value={q} onChange={setQ} placeholder="Search card deals" />
           <Link to="/map" className="inline-flex h-10 items-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground">View on map →</Link>
         </div>
       </PageHeader>
-      <div className="flex flex-wrap items-center gap-4">
+      <p className="mb-5 text-sm text-muted-foreground">Confirm current terms in the card portal before redeeming. “Used” is your personal reminder on this device.</p>
+      <div className="flex flex-wrap items-center gap-4" aria-label="Filter card offers">
         <FilterChips options={types} value={type} onChange={setType} />
         <FilterChips options={cats} value={cat} onChange={setCat} />
-        <select value={sort} onChange={(e) => setSort(e.target.value as "company")} className="h-9 rounded-full bg-secondary px-3 text-sm ring-1 ring-border">
+        <select aria-label="Sort card offers" value={sort} onChange={(e) => setSort(e.target.value as "company" | "type")} className="h-9 rounded-full bg-secondary px-3 text-sm ring-1 ring-border">
           <option value="company">Sort: company</option>
           <option value="type">Sort: discount type</option>
         </select>
@@ -56,33 +59,25 @@ function SSHub() {
         {list.map((d) => {
           const used = usedSS.includes(d.id);
           return (
-            <div key={d.id} className={`glass flex items-center gap-4 p-4 transition-opacity ${used ? "opacity-45" : ""}`}>
+            <div key={d.id} className={`glass flex flex-wrap items-center gap-3 p-4 sm:flex-nowrap sm:gap-4 transition-opacity ${used ? "opacity-60" : ""}`}>
               <span className={`grid size-14 shrink-0 place-items-center rounded-lg font-display text-sm font-semibold ${d.type === "Free" ? "bg-gold/15 text-gold" : "bg-accent/10 text-accent"}`}>{d.value}</span>
-              <button onClick={() => setOpen(d)} className="min-w-0 flex-1 text-left">
+              <button onClick={() => setOpen(d)} className="min-w-0 flex-1 text-left rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`View details for ${d.item} at ${d.company}`}>
                 <h3 className={`text-lg font-semibold ${used ? "line-through" : ""}`}>{d.item}</h3>
-                <p className="text-sm text-muted-foreground">{d.company} · {d.category} · {d.address}</p>
+                <p className="text-sm text-muted-foreground">{d.company} · {d.category} · {d.locations.length ? `${d.locations.length} ${d.locations.length === 1 ? "location" : "locations"}` : "Location not confirmed"}</p>
               </button>
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <label className="flex w-full cursor-pointer items-center justify-end gap-2 text-sm sm:w-auto">
                 <input type="checkbox" checked={used} onChange={() => actions.toggleUsed(d.id)} className="size-4 accent-[var(--primary)]" />
                 Used
               </label>
             </div>
           );
         })}
-
-        {list.length === 0 && (
-          <div className="glass p-10 text-center">
-            <div className="text-3xl">💳</div>
-            <h4 className="mt-2 text-base font-semibold">No Starving Student Card deals loaded yet</h4>
-            <p className="mt-1 text-xs text-muted-foreground">
-              All mock card entries have been removed. Active Starving Student Card deals will appear here once digitized.
-            </p>
-            <Link
-              to="/free-food"
-              className="mt-4 inline-flex items-center rounded-full bg-secondary px-4 py-2 text-xs font-semibold ring-1 ring-border hover:bg-glass"
-            >
-              Browse Campus Free Food Instead →
-            </Link>
+        {error && <div className="glass p-8 text-center" role="alert"><p>Offers could not be loaded.</p><button type="button" onClick={() => void refetch()} className="mt-3 rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground">Try again</button></div>}
+        {!isLoading && !error && list.length === 0 && (
+          <div className="glass p-8 text-center" role="status">
+            <h2 className="text-xl font-semibold">No card offers found</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Try another search or change the filters.</p>
+            <button type="button" onClick={() => { setQ(""); setType("All"); setCat("All categories"); }} className="mt-4 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Clear search and filters</button>
           </div>
         )}
       </div>

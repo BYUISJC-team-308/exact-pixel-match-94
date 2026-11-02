@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ssDeals, type SSDeal } from "@/lib/data";
+import type { SSDeal } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { EventDetail, FilterChips, PageHeader, SSDetail } from "@/components/ui-bits";
 import { useFoodEventsQuery, type NormalizedFoodEvent } from "@/lib/food-events";
@@ -40,7 +40,7 @@ function MapPage() {
   const { data: foodEvents = [] } = useFoodEventsQuery();
 
   const showFood = f === "Everything" || f === "Free food";
-  const pins = ssDeals.filter((d) => f === "Everything" || f === "All discounts" || d.category === f);
+  const pins: SSDeal[] = [];
   const events = showFood ? foodEvents.filter((e) => e.dayOffset >= 0 && e.dayOffset < 7) : [];
 
   return (
@@ -83,7 +83,7 @@ function MapPage() {
           );
         })}
       </div>
-      <p className="mt-3 text-sm text-muted-foreground">Tap a pin on campus for event times, locations, and directions.</p>
+      <p className="mt-3 text-sm text-muted-foreground">The map is being updated for verified offer locations. <Link to="/starving-student" className="font-medium text-primary underline">Browse card offers and their addresses</Link>.</p>
       <SSDetail deal={ss} onClose={() => setSS(null)} />
       <EventDetail event={ev} onClose={() => setEv(null)} />
     </>
