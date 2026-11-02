@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/lib/supabase";
 import type { SSDeal } from "@/lib/data";
 
@@ -39,10 +39,6 @@ export async function fetchStarvingStudentOffers(): Promise<SSDeal[]> {
   }));
 }
 
-export function useStarvingStudentOffersQuery() {
-  return useQuery({
-    queryKey: ["starving_student_offers"],
-    queryFn: fetchStarvingStudentOffers,
-    staleTime: 5 * 60 * 1000,
-  });
-}
+export const getStarvingStudentOffers = createServerFn({ method: "GET" }).handler(
+  fetchStarvingStudentOffers,
+);
