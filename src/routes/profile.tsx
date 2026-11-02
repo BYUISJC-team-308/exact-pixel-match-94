@@ -3,7 +3,6 @@ import { useState } from "react";
 import { AccountForm } from "@/components/AccountForm";
 import { Btn, PageHeader } from "@/components/ui-bits";
 import { actions, useStore } from "@/lib/store";
-import { AnalyticsDrawerModal } from "@/components/AnalyticsDrawerModal";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -18,10 +17,11 @@ export const Route = createFileRoute("/profile")({
 });
 
 function Profile() {
-  const { user } = useStore();
+  const { user, ready } = useStore();
   const [saved, setSaved] = useState(false);
-  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [error, setError] = useState("");
 
+  if (!ready) return <p className="py-20 text-center">Loading your account…</p>;
   if (!user) {
     return (
       <div className="mx-auto max-w-md py-20 text-center">
@@ -34,14 +34,7 @@ function Profile() {
           >
             Create account
           </Link>
-          <button
-            onClick={() => setAnalyticsOpen(true)}
-            className="inline-flex rounded-full bg-secondary px-4 py-2.5 text-sm font-medium ring-1 ring-border hover:bg-glass"
-          >
-            📊 Team Analytics
-          </button>
         </div>
-        <AnalyticsDrawerModal open={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
       </div>
     );
   }
@@ -53,36 +46,29 @@ function Profile() {
         title={`Hi, ${user.name.split(" ")[0]}`}
       >
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setAnalyticsOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/25 transition-colors"
-          >
-            📊 Team OKRs
-          </button>
           <Link
             to="/"
             className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border hover:bg-glass transition-colors"
           >
             ← Home
           </Link>
-          <Btn variant="soft" onClick={() => actions.setUser(null)}>
+          <Btn variant="soft" onClick={() => { void actions.signOut().catch((err) => setError(String(err))); }}>
             Sign out
           </Btn>
         </div>
       </PageHeader>
 
       {saved && <p className="mb-3 text-sm font-medium text-primary">Changes saved.</p>}
+      {error && <p role="alert" className="mb-3 text-sm text-destructive">{error}</p>}
       <AccountForm
         initial={user}
         submitLabel="Save changes"
         onSubmit={(u) => {
-          actions.setUser(u);
-          setSaved(true);
+          setError("");
+          void actions.updateProfile({ ...u, email: user.email }).then(() => setSaved(true)).catch((err) => setError(String(err)));
         }}
       />
 
-      {/* Embedded Admin Drawer / Profile Modal (Question 3 Answer) */}
-      <AnalyticsDrawerModal open={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
     </div>
   );
 }
