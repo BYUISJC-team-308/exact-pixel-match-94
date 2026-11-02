@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "@/lib/supabase";
 
 export type User = {
@@ -77,9 +77,10 @@ function initialize() {
 }
 
 export function useStore() {
+  useEffect(initialize, []);
   return useSyncExternalStore(
     (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
-    () => { initialize(); return state; },
+    () => state,
     () => empty,
   );
 }
