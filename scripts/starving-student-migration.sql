@@ -1,26 +1,15 @@
--- Review in the Supabase SQL Editor before applying.
--- Catalog content is imported separately and is never committed to this repository.
-create table if not exists public.starving_student_offers (
-  id text primary key,
-  category text not null,
-  company text not null,
-  offer_text text not null,
-  terms text,
-  source_url text not null,
-  captured_at date not null,
-  locations jsonb not null default '[]'::jsonb,
-  updated_at timestamptz not null default now()
-);
+-- Extend the team's existing ss_deals table for the verified catalog.
+-- Preserve UUID IDs so used_ss_deals foreign keys continue to work.
+alter type public.ss_deal_category add value if not exists 'Freebies';
+alter type public.ss_deal_category add value if not exists 'Treats & Drinks';
+alter type public.ss_deal_category add value if not exists 'Burgers & Sandwiches';
+alter type public.ss_deal_category add value if not exists 'Pizza';
+alter type public.ss_deal_category add value if not exists 'Restaurants';
+alter type public.ss_deal_category add value if not exists 'Retail, Auto, & More';
+alter type public.ss_deal_category add value if not exists 'Health & Beauty';
 
-create index if not exists starving_student_offers_company_idx
-  on public.starving_student_offers (company);
-
-alter table public.starving_student_offers enable row level security;
-
--- Only signed-in users can view imported offers. Confirm redistribution rights
--- and your intended access model before importing catalog content.
-create policy "Signed-in users can read card offers"
-  on public.starving_student_offers for select to authenticated
-  using (true);
-
-grant select on public.starving_student_offers to authenticated;
+alter table public.ss_deals add column if not exists source_key text;
+alter table public.ss_deals add column if not exists source_url text;
+alter table public.ss_deals add column if not exists captured_at date;
+alter table public.ss_deals add column if not exists locations jsonb not null default '[]'::jsonb;
+create unique index if not exists ss_deals_source_key_idx on public.ss_deals (source_key);

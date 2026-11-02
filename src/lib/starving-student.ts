@@ -4,34 +4,37 @@ import type { SSDeal } from "@/lib/data";
 
 type OfferRow = {
   id: string;
+  source_key: string | null;
   category: string;
   company: string;
-  offer_text: string;
-  terms: string | null;
-  source_url: string;
-  captured_at: string;
+  item: string;
+  deal_type: "Free" | "Discount";
+  value: string;
+  details: string | null;
+  source_url: string | null;
+  captured_at: string | null;
   locations: { address: string; city: string; lat: number; lng: number }[] | null;
 };
 
 export async function fetchStarvingStudentOffers(): Promise<SSDeal[]> {
   const { data, error } = await supabase
-    .from("starving_student_offers")
-    .select("id,category,company,offer_text,terms,source_url,captured_at,locations")
+    .from("ss_deals")
+    .select("id,source_key,category,company,item,deal_type,value,details,source_url,captured_at,locations")
     .order("company", { ascending: true });
   if (error) throw error;
   return ((data ?? []) as OfferRow[]).map((offer) => ({
     id: offer.id,
     company: offer.company,
-    item: offer.offer_text,
-    type: offer.category === "Freebies" || offer.offer_text.toUpperCase().startsWith("FREE!") ? "Free" : "Discount",
-    value: offer.category === "Freebies" ? "Free" : "Offer",
+    item: offer.item,
+    type: offer.deal_type,
+    value: offer.value,
     category: offer.category,
     address: offer.locations?.[0]?.address ?? "Location not confirmed",
-    details: offer.terms ?? "",
+    details: offer.details ?? "",
     x: 50,
     y: 50,
-    sourceUrl: offer.source_url,
-    capturedAt: offer.captured_at,
+    sourceUrl: offer.source_url ?? "",
+    capturedAt: offer.captured_at ?? "",
     locations: offer.locations ?? [],
   }));
 }
