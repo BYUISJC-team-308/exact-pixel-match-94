@@ -30,12 +30,15 @@ function Account() {
     const { data, error } = await supabase.auth.signUp({
       email: input.email,
       password: input.password ?? "",
-      options: { data: {
-        username: input.username,
-        name: input.name,
-        school: input.school,
-        phone: input.phone ?? "",
-      } },
+      options: {
+        emailRedirectTo: `${window.location.origin}/account`,
+        data: {
+          username: input.username,
+          name: input.name,
+          school: input.school,
+          phone: input.phone ?? "",
+        },
+      },
     });
     setBusy(false);
     if (error) { setMessage(error.message); return; }
