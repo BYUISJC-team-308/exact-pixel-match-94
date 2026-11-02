@@ -21,14 +21,17 @@ export type SSDeal = {
   item: string;
   type: "Free" | "Discount";
   value: string;
-  category: "Food" | "Coffee" | "Entertainment" | "Services";
+  category: string;
   address: string;
   details: string;
   x: number; // map %
   y: number;
+  sourceUrl: string;
+  capturedAt: string;
+  locations: { address: string; city: string; lat: number; lng: number }[];
 };
 
-// Real Starving Student Card deals are loaded dynamically when digitized
+// Offer records are fetched from Supabase at runtime.
 export const ssDeals: SSDeal[] = [];
 
 export type FoodEvent = {

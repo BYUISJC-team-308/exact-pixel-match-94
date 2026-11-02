@@ -33,3 +33,6 @@ dist-ssr
 
 .env
 .env.*
+
+# Licensed catalog snapshot; keep out of public GitHub
+src/lib/starving-student-offers.json

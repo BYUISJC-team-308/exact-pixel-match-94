@@ -1,0 +1,48 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
+import type { SSDeal } from "@/lib/data";
+
+type OfferRow = {
+  id: string;
+  source_key: string | null;
+  category: string;
+  company: string;
+  item: string;
+  deal_type: "Free" | "Discount";
+  value: string;
+  details: string | null;
+  source_url: string | null;
+  captured_at: string | null;
+  locations: { address: string; city: string; lat: number; lng: number }[] | null;
+};
+
+export async function fetchStarvingStudentOffers(): Promise<SSDeal[]> {
+  const { data, error } = await supabase
+    .from("ss_deals")
+    .select("id,source_key,category,company,item,deal_type,value,details,source_url,captured_at,locations")
+    .order("company", { ascending: true });
+  if (error) throw error;
+  return ((data ?? []) as OfferRow[]).map((offer) => ({
+    id: offer.id,
+    company: offer.company,
+    item: offer.item,
+    type: offer.deal_type,
+    value: offer.value,
+    category: offer.category,
+    address: offer.locations?.[0]?.address ?? "Location not confirmed",
+    details: offer.details ?? "",
+    x: 50,
+    y: 50,
+    sourceUrl: offer.source_url ?? "",
+    capturedAt: offer.captured_at ?? "",
+    locations: offer.locations ?? [],
+  }));
+}
+
+export function useStarvingStudentOffersQuery() {
+  return useQuery({
+    queryKey: ["starving_student_offers"],
+    queryFn: fetchStarvingStudentOffers,
+    staleTime: 5 * 60 * 1000,
+  });
+}
