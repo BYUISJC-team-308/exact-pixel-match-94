@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import type { SSDeal } from "@/lib/data";
-import { useStarvingStudentOffersQuery } from "@/lib/starving-student";
+import { getStarvingStudentOffers } from "@/lib/starving-student";
 import { actions, useStore } from "@/lib/store";
 import { FilterChips, PageHeader, SSDetail, SearchInput } from "@/components/ui-bits";
 
 export const Route = createFileRoute("/starving-student")({
+  loader: () => getStarvingStudentOffers(),
   head: () => ({
     meta: [
       { title: "Starving Student Card Hub — Studeats" },
@@ -21,7 +22,7 @@ const types = ["All", "Free", "Discount"] as const;
 
 function SSHub() {
   const { usedSS } = useStore();
-  const { data: ssDeals = [], isLoading, error, refetch } = useStarvingStudentOffersQuery();
+  const ssDeals = Route.useLoaderData();
   const cats = ["All categories", ...new Set(ssDeals.map((deal) => deal.category))];
   const [type, setType] = useState<(typeof types)[number]>("All");
   const [cat, setCat] = useState("All categories");
@@ -39,7 +40,7 @@ function SSHub() {
 
   return (
     <>
-      <PageHeader eyebrow={isLoading ? "Loading offers" : `${ssDeals.length} offers`} title="Starving Student Card Hub">
+      <PageHeader eyebrow={`${ssDeals.length} offers`} title="Starving Student Card Hub">
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput value={q} onChange={setQ} placeholder="Search card deals" />
           <Link to="/map" className="inline-flex h-10 items-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground">View on map →</Link>
@@ -72,8 +73,7 @@ function SSHub() {
             </div>
           );
         })}
-        {error && <div className="glass p-8 text-center" role="alert"><p>Offers could not be loaded.</p><button type="button" onClick={() => void refetch()} className="mt-3 rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground">Try again</button></div>}
-        {!isLoading && !error && list.length === 0 && (
+        {list.length === 0 && (
           <div className="glass p-8 text-center" role="status">
             <h2 className="text-xl font-semibold">No card offers found</h2>
             <p className="mt-2 text-sm text-muted-foreground">Try another search or change the filters.</p>
