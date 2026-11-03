@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { BadgePercent, CreditCard, Utensils } from "lucide-react";
 import { MapCanvas } from "@/components/MapCanvas";
 import { EventDetail, PageHeader, SSDetail } from "@/components/ui-bits";
 import type { SSDeal } from "@/lib/data";
@@ -77,12 +78,20 @@ function MapPage() {
           className={`rounded-full px-5 py-2 text-sm font-semibold ${view === "campus" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>BYU Campus Map</button>
       </div>
       {view === "area" ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2" aria-label="Map filters">
-          {([["all", "Everything"], ["card", "Card deals"], ["event", "Free food"]] as const).map(([value, label]) => (
-            <button key={value} type="button" onClick={() => changeFilter(value)} aria-pressed={filter === value}
-              className={`rounded-full px-4 py-1.5 text-xs font-semibold ring-1 ring-border ${filter === value ? "bg-foreground text-background" : "bg-secondary text-secondary-foreground"}`}>{label}</button>
-          ))}
-          <span className="ml-auto text-xs text-muted-foreground">{cards.length} card locations · {campusEvents.length} event buildings</span>
+        <div className="mt-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-2" aria-label="Map filters">
+            {([["all", "Everything"], ["card", "Card deals"], ["event", "Free food"]] as const).map(([value, label]) => (
+              <button key={value} type="button" onClick={() => changeFilter(value)} aria-pressed={filter === value}
+                className={`rounded-full px-4 py-1.5 text-xs font-semibold ring-1 ring-border ${filter === value ? "bg-foreground text-background" : "bg-secondary text-secondary-foreground"}`}>{label}</button>
+            ))}
+            <span className="ml-auto text-xs text-muted-foreground">{cards.length} card locations · {campusEvents.length} event buildings</span>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground" aria-label="Map pin legend">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1"><span className="grid size-6 place-items-center rounded-full bg-primary text-primary-foreground"><CreditCard className="size-3.5" /></span>Starving Student</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1"><span className="grid size-6 place-items-center rounded-full bg-amber-500 text-white"><Utensils className="size-3.5" /></span>Free food</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1"><span className="grid size-6 place-items-center rounded-full bg-violet-600 text-white"><BadgePercent className="size-3.5" /></span>Discount</span>
+            <span className="inline-flex items-center px-2.5 py-1">Numbered pins group nearby places</span>
+          </div>
         </div>
       ) : (
         <p className="mt-4 text-sm text-muted-foreground">Explore {campusBuildings.length} named BYU buildings. Amber pins show upcoming free food events; select a building for details.</p>

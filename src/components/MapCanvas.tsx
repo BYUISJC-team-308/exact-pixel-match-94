@@ -18,6 +18,50 @@ const mapStyle = mapTilerKey
   ? `https://api.maptiler.com/maps/streets-v4/style.json?key=${encodeURIComponent(mapTilerKey)}`
   : "https://tiles.openfreemap.org/styles/liberty";
 
+function createMapIcon(kind: "card" | "event" | "discount") {
+  const canvas = document.createElement("canvas");
+  canvas.width = 40;
+  canvas.height = 40;
+  const context = canvas.getContext("2d");
+  if (!context) return new ImageData(40, 40);
+  context.strokeStyle = "#ffffff";
+  context.fillStyle = "#ffffff";
+  context.lineWidth = 3;
+  context.lineCap = "round";
+  context.lineJoin = "round";
+
+  if (kind === "card") {
+    context.beginPath();
+    context.roundRect(6, 9, 28, 22, 4);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(7, 16);
+    context.lineTo(33, 16);
+    context.stroke();
+    context.fillRect(10, 22, 9, 3);
+  } else if (kind === "event") {
+    context.beginPath();
+    context.moveTo(10, 7);
+    context.lineTo(10, 33);
+    context.moveTo(6, 7);
+    context.lineTo(6, 17);
+    context.quadraticCurveTo(10, 21, 14, 17);
+    context.lineTo(14, 7);
+    context.moveTo(28, 7);
+    context.quadraticCurveTo(22, 12, 24, 23);
+    context.lineTo(24, 33);
+    context.moveTo(28, 7);
+    context.lineTo(28, 33);
+    context.stroke();
+  } else {
+    context.font = "bold 27px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("%", 20, 20);
+  }
+  return context.getImageData(0, 0, 40, 40);
+}
+
 export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const onSelectRef = useRef(onSelect);
@@ -212,6 +256,9 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
           clusterMaxZoom: view === "campus" ? 16 : 13,
           clusterRadius: 42,
         });
+        map.addImage("place-card-icon", createMapIcon("card"), { pixelRatio: 2 });
+        map.addImage("place-food-icon", createMapIcon("event"), { pixelRatio: 2 });
+        map.addImage("place-discount-icon", createMapIcon("discount"), { pixelRatio: 2 });
         map.addLayer({ id: "clusters", type: "circle", source: "places", filter: ["has", "point_count"], paint: {
           "circle-color": "#245b4d", "circle-radius": ["step", ["get", "point_count"], 20, 20, 26, 100, 34],
           "circle-stroke-color": "#fff", "circle-stroke-width": 2,
@@ -220,8 +267,12 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
           "text-field": ["get", "point_count_abbreviated"], "text-size": 13,
         }, paint: { "text-color": "#fff" } });
         map.addLayer({ id: "place-points", type: "circle", source: "places", filter: ["!", ["has", "point_count"]], paint: {
-          "circle-color": ["match", ["get", "kind"], "event", "#e3a629", "#245b4d"],
-          "circle-radius": 11, "circle-stroke-color": "#fff", "circle-stroke-width": 2,
+          "circle-color": ["match", ["get", "kind"], "event", "#e3a629", "discount", "#7357a4", "#245b4d"],
+          "circle-radius": 16, "circle-stroke-color": "#fff", "circle-stroke-width": 2.5,
+        } });
+        map.addLayer({ id: "place-icons", type: "symbol", source: "places", filter: ["!", ["has", "point_count"]], layout: {
+          "icon-image": ["match", ["get", "kind"], "event", "place-food-icon", "discount", "place-discount-icon", "place-card-icon"],
+          "icon-size": 1, "icon-allow-overlap": true, "icon-ignore-placement": true,
         } });
         map.on("click", "place-points", (event) => {
           const id = event.features?.[0]?.properties?.["id"];
@@ -239,7 +290,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
           const zoom = await source.getClusterExpansionZoom(feature.properties?.["cluster_id"]);
           map?.easeTo({ center: feature.geometry.coordinates as [number, number], zoom });
         });
-        for (const layer of ["clusters", "place-points"]) {
+        for (const layer of ["clusters", "place-points", "place-icons"]) {
           map.on("mouseenter", layer, () => { if (map) map.getCanvas().style.cursor = "pointer"; });
           map.on("mouseleave", layer, () => { if (map) map.getCanvas().style.cursor = ""; });
         }
