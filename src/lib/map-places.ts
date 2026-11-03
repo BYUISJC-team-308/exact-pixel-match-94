@@ -1,9 +1,10 @@
 import type { SSDeal } from "@/lib/data";
 import type { NormalizedFoodEvent } from "@/lib/food-events";
+import buildingRecords from "@/lib/byu-buildings.json";
 
 export type MapPlace = {
   id: string;
-  kind: "card" | "event";
+  kind: "card" | "event" | "building";
   title: string;
   subtitle: string;
   lat: number;
@@ -11,25 +12,48 @@ export type MapPlace = {
   address: string;
   cardOffers: SSDeal[];
   events: NormalizedFoodEvent[];
+  code?: string;
 };
 
-// Building centers are from OpenStreetMap building records. A room is shown in
-// event details, never represented as a precise indoor pin.
-export const campusBuildings = [
-  { code: "TNRB", name: "Tanner Building", lat: 40.2504141, lng: -111.6525193, aliases: ["tanner"] },
-  { code: "TMCB", name: "Talmage Building", lat: 40.2495154, lng: -111.6507933, aliases: ["talmage"] },
-  { code: "WSC", name: "Wilkinson Student Center", lat: 40.2485708, lng: -111.6473466, aliases: ["wilkinson"] },
-  { code: "EB", name: "Engineering Building", lat: 40.2463429, lng: -111.6478803, aliases: ["engineering building"] },
-  { code: "SFH", name: "Smith Fieldhouse", lat: 40.2474534, lng: -111.6543785, aliases: ["smith fieldhouse"] },
-  { code: "HBLL", name: "Harold B. Lee Library", lat: 40.24917, lng: -111.64917, aliases: ["harold b. lee", "lee library"] },
-] as const;
+// Centroids and names come from BYU's public Campus Buildings GIS layer.
+// These identify buildings, not rooms or entrances.
+export const campusBuildings = buildingRecords
+  .filter((building) => Number.isFinite(building.lat) && Number.isFinite(building.lng))
+  .map((building, index) => ({
+    ...building,
+    id: `${building.code.trim() || "building"}-${index}`,
+    code: building.code.trim(),
+    name: building.label?.trim() || building.name.trim(),
+    aliases: [building.name.trim().toLowerCase(), building.label?.trim().toLowerCase()].filter(Boolean) as string[],
+  }));
 
 export function findCampusBuilding(input: string) {
-  const text = input.toLowerCase();
+  const text = input.trim().toLowerCase();
+  if (!text) return undefined;
   return campusBuildings.find((building) =>
-    new RegExp(`(^|[^a-z])${building.code.toLowerCase()}([^a-z]|$)`).test(text) ||
+    (building.code && new RegExp(`(^|[^a-z0-9])${building.code.toLowerCase()}([^a-z0-9]|$)`).test(text)) ||
     building.aliases.some((alias) => text.includes(alias)),
   );
+}
+
+export function buildingPlaces(events: NormalizedFoodEvent[]): MapPlace[] {
+  const byBuilding = new Map<string, NormalizedFoodEvent[]>();
+  for (const event of events) {
+    const building = findCampusBuilding(event.building);
+    if (building) byBuilding.set(building.id, [...(byBuilding.get(building.id) ?? []), event]);
+  }
+  return campusBuildings.map((building) => ({
+    id: `building-${building.id}`,
+    kind: "building" as const,
+    title: building.name,
+    subtitle: building.code,
+    code: building.code,
+    lat: building.lat,
+    lng: building.lng,
+    address: `${building.name}, BYU, Provo, UT`,
+    cardOffers: [],
+    events: byBuilding.get(building.id) ?? [],
+  })).sort((a, b) => b.events.length - a.events.length || a.title.localeCompare(b.title));
 }
 
 export function cardPlaces(offers: SSDeal[]): MapPlace[] {

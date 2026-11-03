@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardPlaces, eventPlaces, findCampusBuilding } from "@/lib/map-places";
+import { buildingPlaces, campusBuildings, cardPlaces, eventPlaces, findCampusBuilding } from "@/lib/map-places";
 import type { SSDeal } from "@/lib/data";
 import type { NormalizedFoodEvent } from "@/lib/food-events";
 
@@ -26,5 +26,17 @@ describe("map locations", () => {
     const event = { id: "one", building: "TNRB", title: "Pizza night" } as NormalizedFoodEvent;
     expect(eventPlaces([event])[0]?.title).toBe("Tanner Building");
     expect(eventPlaces([{ ...event, building: "Unknown Hall" }])).toHaveLength(0);
+  });
+
+  it("shows the BYU building directory and attaches an event to its mapped building", () => {
+    expect(campusBuildings.length).toBeGreaterThan(200);
+    expect(findCampusBuilding("ARTS (Arts Building)")?.name).toBe("Arts Building");
+    const event = { id: "sample", building: "JFSB (Joseph F. Smith Building)", title: "Sample pizza event" } as NormalizedFoodEvent;
+    const places = buildingPlaces([event]);
+    const venue = places.find((place) => place.code === "JFSB");
+    expect(venue?.events.map((item) => item.id)).toEqual(["sample"]);
+    expect(venue?.lat).toBeGreaterThan(40.24);
+    expect(venue?.lng).toBeLessThan(-111.64);
+    expect(places[0]).toBe(venue);
   });
 });

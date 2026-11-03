@@ -31,8 +31,8 @@ export function MapCanvas({ places, view, onSelect }: Props) {
       map = new MapLibreMap({
         container: container.current,
         style: mapStyle,
-        center: view === "campus" ? [-111.6502, 40.2487] : [-111.664, 40.264],
-        zoom: view === "campus" ? 15.3 : 10.2,
+        center: view === "campus" && places.length === 1 && places[0] ? [places[0].lng, places[0].lat] : view === "campus" ? [-111.6502, 40.2487] : [-111.664, 40.264],
+        zoom: view === "campus" && places.length === 1 ? 17 : view === "campus" ? 15.3 : 10.2,
         minZoom: 3,
         maxZoom: 19,
         attributionControl: {},
@@ -40,14 +40,40 @@ export function MapCanvas({ places, view, onSelect }: Props) {
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
       map.on("load", () => {
         if (!map) return;
+        if (view === "campus") {
+          map.addSource("buildings", {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: places.map((place) => ({
+              type: "Feature" as const,
+              geometry: { type: "Point" as const, coordinates: [place.lng, place.lat] },
+              properties: { id: place.id, code: place.code || place.title, name: place.title },
+            })) },
+          });
+          map.addLayer({ id: "building-points", type: "circle", source: "buildings", paint: {
+            "circle-color": "#fff", "circle-radius": 5, "circle-stroke-color": "#245b4d", "circle-stroke-width": 1.5,
+          } });
+          map.addLayer({ id: "building-labels", type: "symbol", source: "buildings", minzoom: 14.5, layout: {
+            "text-field": ["step", ["zoom"], ["get", "code"], 17, ["get", "name"]],
+            "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+            "text-size": 12, "text-offset": [0, 1], "text-anchor": "top", "text-optional": true,
+          }, paint: { "text-color": "#173e34", "text-halo-color": "#fff", "text-halo-width": 2 } });
+          for (const layer of ["building-points", "building-labels"]) {
+            map.on("click", layer, (event) => {
+              const place = byId.get(event.features?.[0]?.properties?.["id"]);
+              if (place) onSelectRef.current(place);
+            });
+            map.on("mouseenter", layer, () => { if (map) map.getCanvas().style.cursor = "pointer"; });
+            map.on("mouseleave", layer, () => { if (map) map.getCanvas().style.cursor = ""; });
+          }
+        }
         map.addSource("places", {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: places.map((place) => ({
+            features: places.filter((place) => view !== "campus" || place.events.length > 0).map((place) => ({
               type: "Feature" as const,
               geometry: { type: "Point" as const, coordinates: [place.lng, place.lat] },
-              properties: { id: place.id, kind: place.kind },
+              properties: { id: place.id, kind: place.events.length > 0 ? "event" : place.kind },
             })),
           },
           cluster: true,
