@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal, Btn } from "@/components/ui-bits";
 import { useSubmitFoodEventMutation, getLocalDateString } from "@/lib/food-events";
+import { campusBuildings } from "@/lib/map-places";
 import { toast } from "sonner";
 
 export function SubmitFoodEventModal({
@@ -160,11 +161,18 @@ export function SubmitFoodEventModal({
               <input
                 type="text"
                 required
-                placeholder="e.g. TMCB or WSC"
+                list="byu-map-buildings"
+                placeholder="e.g. TNRB (Tanner Building)"
                 value={building}
                 onChange={(e) => setBuilding(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
               />
+              <datalist id="byu-map-buildings">
+                {campusBuildings.map((campusBuilding) => (
+                  <option key={campusBuilding.code} value={`${campusBuilding.code} (${campusBuilding.name})`} />
+                ))}
+              </datalist>
+              <p className="mt-1 text-xs text-muted-foreground">Choose a suggested BYU building to show this event on the campus map.</p>
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground">
