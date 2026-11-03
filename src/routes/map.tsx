@@ -4,7 +4,7 @@ import { MapCanvas } from "@/components/MapCanvas";
 import { EventDetail, PageHeader, SSDetail } from "@/components/ui-bits";
 import type { SSDeal } from "@/lib/data";
 import { getMapFoodEvents, normalizeFoodEvent, type NormalizedFoodEvent } from "@/lib/food-events";
-import { cardPlaces, eventPlaces, type MapPlace } from "@/lib/map-places";
+import { buildingPlaces, cardPlaces, campusBuildings, eventPlaces, type MapPlace } from "@/lib/map-places";
 import { getStarvingStudentOffers } from "@/lib/starving-student";
 
 export const Route = createFileRoute("/map")({
@@ -47,14 +47,15 @@ function MapPage() {
   const events = useMemo(() => eventRows.filter(isUpcomingEvent).map(normalizeFoodEvent), [eventRows]);
   const cards = useMemo(() => cardPlaces(offers), [offers]);
   const campusEvents = useMemo(() => eventPlaces(events), [events]);
-  const places = useMemo(() => view === "campus" ? campusEvents : [
+  const buildings = useMemo(() => buildingPlaces(events), [events]);
+  const places = useMemo(() => view === "campus" ? buildings : [
     ...(filter === "event" ? [] : cards),
     ...(filter === "card" ? [] : campusEvents),
-  ], [view, filter, cards, campusEvents]);
+  ], [view, filter, cards, campusEvents, buildings]);
   const matchingPlaces = useMemo(() => {
     const text = query.trim().toLowerCase();
     if (!text) return places;
-    return places.filter((place) => [place.title, place.address,
+    return places.filter((place) => [place.title, place.code || "", place.address,
       ...place.cardOffers.flatMap((offer) => [offer.company, offer.item]),
       ...place.events.flatMap((event) => [event.title, event.food, event.room]),
     ].some((value) => value.toLowerCase().includes(text)));
@@ -84,7 +85,7 @@ function MapPage() {
           <span className="ml-auto text-xs text-muted-foreground">{cards.length} card locations · {campusEvents.length} event buildings</span>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-muted-foreground">Upcoming free food events at verified BYU buildings. Select a pin for the food, time, and room.</p>
+        <p className="mt-4 text-sm text-muted-foreground">Explore {campusBuildings.length} named BYU buildings. Amber pins show upcoming free food events; select a building for details.</p>
       )}
       <label className="mt-4 block max-w-md text-sm font-medium">
         Search map locations
@@ -101,9 +102,11 @@ function MapPage() {
             <>
               <button type="button" onClick={() => setSelected(null)} className="mb-3 text-xs font-semibold text-primary">← Back to map summary</button>
               <h2 className="text-xl font-semibold">{selected.title}</h2>
+              {selected.code && <p className="text-sm font-semibold text-primary">{selected.code}</p>}
               <p className="mt-1 text-sm text-muted-foreground">{selected.address}</p>
               <a href={`https://www.openstreetmap.org/directions?to=${selected.lat}%2C${selected.lng}`} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary underline">Get directions ↗</a>
               <div className="mt-4 space-y-2">
+                {selected.kind === "building" && selected.events.length === 0 && <p className="text-sm text-muted-foreground">No upcoming free food events at this building.</p>}
                 {selected.cardOffers.map((offer) => (
                   <button key={offer.id} type="button" onClick={() => setOpenOffer(offer)} className="w-full rounded-xl bg-secondary p-3 text-left hover:bg-muted">
                     <span className="text-xs font-semibold text-primary">Starving Student Card</span>
@@ -124,10 +127,11 @@ function MapPage() {
           ) : (
             <>
               <h2 className="text-lg font-semibold">{view === "campus" ? "Campus free food" : "Explore the area"}</h2>
-              <p className="mt-2 text-sm text-muted-foreground">Click a pin for details. Numbered pins group nearby locations; click to zoom in.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Select a building or event pin for details. Numbered area pins group nearby locations.</p>
               <div className="mt-5 space-y-3 text-sm">
                 {view === "area" && <p><span className="mr-2 inline-block size-3 rounded-full bg-primary" />{offers.length} card offers at {cards.length} locations</p>}
                 <p><span className="mr-2 inline-block size-3 rounded-full bg-amber-500" />{mappedEvents} upcoming free food event{mappedEvents === 1 ? "" : "s"} at {campusEvents.length} BYU building{campusEvents.length === 1 ? "" : "s"}</p>
+                {view === "campus" && <p><span className="mr-2 inline-block size-3 rounded-full border border-primary bg-white" />{campusBuildings.length} named BYU buildings</p>}
               </div>
               {events.length > mappedEvents && <p className="mt-5 text-xs text-muted-foreground">{events.length - mappedEvents} upcoming event{events.length - mappedEvents === 1 ? " has" : "s have"} an unverified map location. <Link to="/free-food" className="underline">Browse all events</Link>.</p>}
               {view === "area" && <p className="mt-5 text-xs text-muted-foreground">Other student discounts will appear as their locations are verified. <Link to="/discounts" className="underline">Browse all discounts</Link>.</p>}
@@ -136,7 +140,7 @@ function MapPage() {
                 {matchingPlaces.slice(0, listLimit).map((place) => (
                   <button key={place.id} type="button" onClick={() => setSelected(place)} className="w-full rounded-xl bg-secondary p-3 text-left hover:bg-muted">
                     <strong className="block text-sm">{place.title}</strong>
-                    <span className="text-xs text-muted-foreground">{place.kind === "event" ? `${place.events.length} free food event${place.events.length === 1 ? "" : "s"}` : `${place.cardOffers.length} card offer${place.cardOffers.length === 1 ? "" : "s"}`} · Details →</span>
+                    <span className="text-xs text-muted-foreground">{place.kind === "building" ? `${place.code || "BYU"}${place.events.length ? ` · ${place.events.length} free food event${place.events.length === 1 ? "" : "s"}` : ""}` : place.kind === "event" ? `${place.events.length} free food event${place.events.length === 1 ? "" : "s"}` : `${place.cardOffers.length} card offer${place.cardOffers.length === 1 ? "" : "s"}`} · Details →</span>
                   </button>
                 ))}
                 {matchingPlaces.length === 0 && <p className="text-sm text-muted-foreground">No mapped locations match this search.</p>}
@@ -146,7 +150,7 @@ function MapPage() {
           )}
         </aside>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">Map data © OpenStreetMap contributors. Building pins identify buildings, not exact rooms.</p>
+      <p className="mt-3 text-xs text-muted-foreground">Map data © OpenStreetMap contributors. Building names and centers from the <a href="https://map.byu.edu/" target="_blank" rel="noopener noreferrer" className="underline">BYU Campus Map</a>; pins identify buildings, not exact rooms.</p>
       <SSDetail deal={openOffer} onClose={() => setOpenOffer(null)} />
       <EventDetail event={openEvent} onClose={() => setOpenEvent(null)} />
     </>

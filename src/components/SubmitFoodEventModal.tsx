@@ -41,8 +41,8 @@ export function SubmitFoodEventModal({
         start_time: startTime ? `${startTime}:00` : "12:00:00",
         end_time: endTime ? `${endTime}:00` : "13:00:00",
         building: building.trim(),
-        room: room.trim() || undefined,
-        details: details.trim() || undefined,
+        ...(room.trim() ? { room: room.trim() } : {}),
+        ...(details.trim() ? { details: details.trim() } : {}),
       });
 
       toast.success("Free food event posted to Studeats!");
@@ -169,7 +169,7 @@ export function SubmitFoodEventModal({
               />
               <datalist id="byu-map-buildings">
                 {campusBuildings.map((campusBuilding) => (
-                  <option key={campusBuilding.code} value={`${campusBuilding.code} (${campusBuilding.name})`} />
+                  <option key={campusBuilding.id} value={campusBuilding.code ? `${campusBuilding.code} (${campusBuilding.name})` : campusBuilding.name} />
                 ))}
               </datalist>
               <p className="mt-1 text-xs text-muted-foreground">Choose a suggested BYU building to show this event on the campus map.</p>
