@@ -33,6 +33,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
     let map: import("maplibre-gl").Map | undefined;
     let mobileCard: HTMLDivElement | undefined;
     const byId = new Map(places.map((place) => [place.id, place]));
+    const isMobileMap = () => window.matchMedia("(max-width: 640px)").matches;
 
     void import("maplibre-gl").then(({ GeolocateControl, Map: MapLibreMap, NavigationControl, Popup, setWorkerUrl }) => {
       if (cancelled || !container.current) return;
@@ -123,7 +124,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
         }
 
         content.append(eyebrow, title, address, directions, items);
-        if (window.matchMedia("(max-width: 640px)").matches && container.current) {
+        if (isMobileMap() && container.current) {
           mobileCard = document.createElement("div");
           mobileCard.className = "absolute inset-x-3 bottom-3 z-10 max-h-[72%] overflow-hidden rounded-2xl border border-border bg-popover p-4 pr-11 shadow-float";
           mobileCard.setAttribute("role", "dialog");
@@ -174,7 +175,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
               if (map?.queryRenderedFeatures(event.point, { layers: ["place-points"] }).length) return;
               const place = byId.get(event.features?.[0]?.properties?.["id"]);
               if (place) {
-                onSelectRef.current(place);
+                if (!isMobileMap()) onSelectRef.current(place);
                 showPlacePopup(place, [place.lng, place.lat]);
               }
             });
@@ -211,7 +212,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
           const id = event.features?.[0]?.properties?.["id"];
           const place = byId.get(id);
           if (place) {
-            onSelectRef.current(place);
+            if (!isMobileMap()) onSelectRef.current(place);
             showPlacePopup(place, [place.lng, place.lat]);
           }
         });
