@@ -54,7 +54,7 @@ export function MapCanvas({ places, view, onSelect }: Props) {
           } });
           map.addLayer({ id: "building-labels", type: "symbol", source: "buildings", minzoom: 14.5, layout: {
             "text-field": ["step", ["zoom"], ["get", "code"], 17, ["get", "name"]],
-            "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+            "text-font": ["Roboto Regular", "Noto Sans Regular"],
             "text-size": 12, "text-offset": [0, 1], "text-anchor": "top", "text-optional": true,
           }, paint: { "text-color": "#173e34", "text-halo-color": "#fff", "text-halo-width": 2 } });
           for (const layer of ["building-points", "building-labels"]) {
