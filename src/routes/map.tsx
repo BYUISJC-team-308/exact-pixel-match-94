@@ -104,7 +104,11 @@ function MapPage() {
               <h2 className="text-xl font-semibold">{selected.title}</h2>
               {selected.code && <p className="text-sm font-semibold text-primary">{selected.code}</p>}
               <p className="mt-1 text-sm text-muted-foreground">{selected.address}</p>
-              <a href={`https://www.openstreetmap.org/directions?to=${selected.lat}%2C${selected.lng}`} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary underline">Get directions ↗</a>
+              <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Get directions</p>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <a href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat}%2C${selected.lng}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-3 text-center text-xs font-semibold text-primary-foreground">Google Maps ↗</a>
+                <a href={`https://maps.apple.com/?daddr=${selected.lat}%2C${selected.lng}&dirflg=d`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-full border border-border bg-background px-3 text-center text-xs font-semibold text-foreground">Apple Maps ↗</a>
+              </div>
               <div className="mt-4 space-y-2">
                 {selected.kind === "building" && selected.events.length === 0 && <p className="text-sm text-muted-foreground">No upcoming free food events at this building.</p>}
                 {selected.cardOffers.map((offer) => (

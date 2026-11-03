@@ -75,12 +75,27 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
         address.className = "mt-1 text-xs leading-relaxed text-muted-foreground";
         address.textContent = place.address;
 
-        const directions = document.createElement("a");
-        directions.className = "mt-2 inline-flex min-h-9 items-center text-xs font-semibold text-primary underline";
-        directions.href = `https://www.openstreetmap.org/directions?to=${place.lat}%2C${place.lng}`;
-        directions.target = "_blank";
-        directions.rel = "noopener noreferrer";
-        directions.textContent = "Get directions ↗";
+        const directions = document.createElement("div");
+        directions.className = "mt-3";
+        const directionsLabel = document.createElement("p");
+        directionsLabel.className = "text-[11px] font-semibold uppercase tracking-wide text-muted-foreground";
+        directionsLabel.textContent = "Get directions";
+        const directionsActions = document.createElement("div");
+        directionsActions.className = "mt-1.5 flex gap-2";
+        const googleMaps = document.createElement("a");
+        googleMaps.className = "inline-flex min-h-10 flex-1 items-center justify-center rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground";
+        googleMaps.href = `https://www.google.com/maps/dir/?api=1&destination=${place.lat}%2C${place.lng}`;
+        googleMaps.target = "_blank";
+        googleMaps.rel = "noopener noreferrer";
+        googleMaps.textContent = "Google Maps ↗";
+        const appleMaps = document.createElement("a");
+        appleMaps.className = "inline-flex min-h-10 flex-1 items-center justify-center rounded-full border border-border bg-background px-3 text-xs font-semibold text-foreground";
+        appleMaps.href = `https://maps.apple.com/?daddr=${place.lat}%2C${place.lng}&dirflg=d`;
+        appleMaps.target = "_blank";
+        appleMaps.rel = "noopener noreferrer";
+        appleMaps.textContent = "Apple Maps ↗";
+        directionsActions.append(googleMaps, appleMaps);
+        directions.append(directionsLabel, directionsActions);
 
         const items = document.createElement("div");
         items.className = "mt-3 max-h-56 space-y-2 overflow-y-auto pr-1";
