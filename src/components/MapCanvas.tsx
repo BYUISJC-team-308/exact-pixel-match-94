@@ -115,25 +115,21 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
         title.className = "mt-1 block text-sm leading-snug";
         title.textContent = place.title;
 
-        const address = document.createElement("p");
-        address.className = "mt-1 text-xs leading-relaxed text-muted-foreground";
-        address.textContent = place.address;
-
         const directions = document.createElement("div");
-        directions.className = "mt-3";
+        directions.className = "mt-2.5 border-t border-border pt-2.5";
         const directionsLabel = document.createElement("p");
-        directionsLabel.className = "text-[11px] font-semibold uppercase tracking-wide text-muted-foreground";
+        directionsLabel.className = "text-[10px] font-semibold uppercase tracking-wide text-muted-foreground";
         directionsLabel.textContent = "Get directions";
         const directionsActions = document.createElement("div");
-        directionsActions.className = "mt-1.5 flex gap-2";
+        directionsActions.className = "mt-1 flex gap-1.5";
         const googleMaps = document.createElement("a");
-        googleMaps.className = "inline-flex min-h-10 flex-1 items-center justify-center rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground";
+        googleMaps.className = "inline-flex min-h-8 flex-1 items-center justify-center rounded-full bg-primary px-2 text-[11px] font-semibold text-primary-foreground";
         googleMaps.href = `https://www.google.com/maps/dir/?api=1&destination=${place.lat}%2C${place.lng}`;
         googleMaps.target = "_blank";
         googleMaps.rel = "noopener noreferrer";
         googleMaps.textContent = "Google Maps ↗";
         const appleMaps = document.createElement("a");
-        appleMaps.className = "inline-flex min-h-10 flex-1 items-center justify-center rounded-full border border-border bg-background px-3 text-xs font-semibold text-foreground";
+        appleMaps.className = "inline-flex min-h-8 flex-1 items-center justify-center rounded-full border border-border bg-background px-2 text-[11px] font-semibold text-foreground";
         appleMaps.href = `https://maps.apple.com/?daddr=${place.lat}%2C${place.lng}&dirflg=d`;
         appleMaps.target = "_blank";
         appleMaps.rel = "noopener noreferrer";
@@ -182,7 +178,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
           items.append(empty);
         }
 
-        content.append(eyebrow, title, address, directions, items);
+        content.append(eyebrow, title, items, directions);
         if (isMobileMap() && container.current) {
           mobileCard = document.createElement("div");
           mobileCard.className = "absolute inset-x-3 bottom-3 z-10 max-h-[72%] overflow-hidden rounded-2xl border border-border bg-popover p-4 pr-11 shadow-float";
@@ -199,7 +195,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
             mobileCard = undefined;
           });
 
-          items.className = "mt-3 max-h-[250px] space-y-2 overflow-y-auto overscroll-contain pr-1";
+          items.className = "mt-2.5 max-h-40 space-y-2 overflow-y-auto overscroll-contain pr-1";
           mobileCard.append(content, close);
           container.current.append(mobileCard);
           mobileCard.scrollIntoView({ behavior: "smooth", block: "center" });
