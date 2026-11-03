@@ -95,7 +95,7 @@ function MapPage() {
       </label>
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="glass relative overflow-hidden rounded-2xl p-0">
-          <MapCanvas key={view} places={matchingPlaces} view={view} onSelect={setSelected} />
+          <MapCanvas key={view} places={matchingPlaces} view={view} onSelect={setSelected} onOpenOffer={setOpenOffer} onOpenEvent={setOpenEvent} />
         </div>
         <aside className="glass max-h-[600px] overflow-y-auto p-4" aria-live="polite">
           {selected ? (

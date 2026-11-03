@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { MapPlace } from "@/lib/map-places";
+import type { SSDeal } from "@/lib/data";
+import type { NormalizedFoodEvent } from "@/lib/food-events";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 
@@ -7,6 +9,8 @@ type Props = {
   places: MapPlace[];
   view: "area" | "campus";
   onSelect: (place: MapPlace) => void;
+  onOpenOffer: (offer: SSDeal) => void;
+  onOpenEvent: (event: NormalizedFoodEvent) => void;
 };
 
 const mapTilerKey = import.meta.env["VITE_MAPTILER_KEY"];
@@ -14,10 +18,14 @@ const mapStyle = mapTilerKey
   ? `https://api.maptiler.com/maps/streets-v4/style.json?key=${encodeURIComponent(mapTilerKey)}`
   : "https://tiles.openfreemap.org/styles/liberty";
 
-export function MapCanvas({ places, view, onSelect }: Props) {
+export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const onSelectRef = useRef(onSelect);
+  const onOpenOfferRef = useRef(onOpenOffer);
+  const onOpenEventRef = useRef(onOpenEvent);
   onSelectRef.current = onSelect;
+  onOpenOfferRef.current = onOpenOffer;
+  onOpenEventRef.current = onOpenEvent;
 
   useEffect(() => {
     if (!container.current) return;
@@ -49,7 +57,7 @@ export function MapCanvas({ places, view, onSelect }: Props) {
       const showPlacePopup = (place: MapPlace, coordinates: [number, number]) => {
         if (!map) return;
         const content = document.createElement("div");
-        content.className = "min-w-48 max-w-64 pr-2 text-foreground";
+        content.className = "min-w-56 max-w-72 pr-2 text-foreground";
 
         const eyebrow = document.createElement("p");
         eyebrow.className = "text-[11px] font-semibold uppercase tracking-wide text-primary";
@@ -59,22 +67,60 @@ export function MapCanvas({ places, view, onSelect }: Props) {
         title.className = "mt-1 block text-sm leading-snug";
         title.textContent = place.title;
 
-        const summary = document.createElement("p");
-        summary.className = "mt-1 text-xs leading-relaxed text-muted-foreground";
-        summary.textContent = place.events.length
-          ? `${place.events.length} upcoming event${place.events.length === 1 ? "" : "s"}${place.events[0]?.food ? ` · ${place.events[0].food}` : ""}`
-          : place.cardOffers.length
-            ? `${place.cardOffers.length} card offer${place.cardOffers.length === 1 ? "" : "s"}`
-            : "No upcoming free food events at this building.";
+        const address = document.createElement("p");
+        address.className = "mt-1 text-xs leading-relaxed text-muted-foreground";
+        address.textContent = place.address;
 
-        const details = document.createElement("button");
-        details.type = "button";
-        details.className = "mt-3 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground";
-        details.textContent = "View full details";
-        details.addEventListener("click", () => onSelectRef.current(place));
+        const directions = document.createElement("a");
+        directions.className = "mt-2 inline-block text-xs font-semibold text-primary underline";
+        directions.href = `https://www.openstreetmap.org/directions?to=${place.lat}%2C${place.lng}`;
+        directions.target = "_blank";
+        directions.rel = "noopener noreferrer";
+        directions.textContent = "Get directions ↗";
 
-        content.append(eyebrow, title, summary, details);
-        new Popup({ closeButton: true, closeOnClick: true, offset: 14, maxWidth: "280px" })
+        const items = document.createElement("div");
+        items.className = "mt-3 max-h-56 space-y-2 overflow-y-auto pr-1";
+
+        for (const offer of place.cardOffers) {
+          const offerButton = document.createElement("button");
+          offerButton.type = "button";
+          offerButton.className = "block w-full rounded-lg bg-secondary p-2 text-left hover:bg-muted";
+          offerButton.innerHTML = `<span class="block text-[10px] font-semibold uppercase text-primary">Starving Student offer</span><strong class="mt-0.5 block text-xs leading-snug"></strong><span class="mt-1 block text-[11px] text-muted-foreground"></span>`;
+          const strong = offerButton.querySelector("strong");
+          const meta = offerButton.querySelector("span:last-child");
+          if (strong) strong.textContent = offer.item;
+          if (meta) meta.textContent = `${offer.value} · Open offer details →`;
+          offerButton.addEventListener("click", () => onOpenOfferRef.current(offer));
+          items.append(offerButton);
+        }
+
+        for (const event of place.events) {
+          const eventButton = document.createElement("button");
+          eventButton.type = "button";
+          eventButton.className = "block w-full rounded-lg bg-secondary p-2 text-left hover:bg-muted";
+          const eventLabel = document.createElement("span");
+          eventLabel.className = "block text-[10px] font-semibold uppercase text-amber-700";
+          eventLabel.textContent = "Free food event";
+          const eventTitle = document.createElement("strong");
+          eventTitle.className = "mt-0.5 block text-xs leading-snug";
+          eventTitle.textContent = event.title;
+          const eventMeta = document.createElement("span");
+          eventMeta.className = "mt-1 block text-[11px] leading-snug text-muted-foreground";
+          eventMeta.textContent = `${event.food} · ${event.formattedDate}, ${event.formattedTime}${event.room ? ` · Room ${event.room}` : ""} · Open event details →`;
+          eventButton.append(eventLabel, eventTitle, eventMeta);
+          eventButton.addEventListener("click", () => onOpenEventRef.current(event));
+          items.append(eventButton);
+        }
+
+        if (!place.cardOffers.length && !place.events.length) {
+          const empty = document.createElement("p");
+          empty.className = "mt-3 rounded-lg bg-secondary p-2 text-xs text-muted-foreground";
+          empty.textContent = "No upcoming free food events at this building.";
+          items.append(empty);
+        }
+
+        content.append(eyebrow, title, address, directions, items);
+        new Popup({ closeButton: true, closeOnClick: true, offset: 14, maxWidth: "320px" })
           .setLngLat(coordinates)
           .setDOMContent(content)
           .addTo(map);
