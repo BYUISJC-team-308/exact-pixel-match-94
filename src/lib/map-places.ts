@@ -4,7 +4,7 @@ import buildingRecords from "@/lib/byu-buildings.json";
 
 export type MapPlace = {
   id: string;
-  kind: "card" | "event" | "building";
+  kind: "card" | "event" | "discount" | "building";
   title: string;
   subtitle: string;
   lat: number;
