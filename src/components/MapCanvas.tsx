@@ -25,7 +25,7 @@ export function MapCanvas({ places, view, onSelect }: Props) {
     let map: import("maplibre-gl").Map | undefined;
     const byId = new Map(places.map((place) => [place.id, place]));
 
-    void import("maplibre-gl").then(({ GeolocateControl, Map: MapLibreMap, NavigationControl, setWorkerUrl }) => {
+    void import("maplibre-gl").then(({ GeolocateControl, Map: MapLibreMap, NavigationControl, Popup, setWorkerUrl }) => {
       if (cancelled || !container.current) return;
       setWorkerUrl(workerUrl);
       map = new MapLibreMap({
@@ -46,6 +46,39 @@ export function MapCanvas({ places, view, onSelect }: Props) {
           fitBoundsOptions: { maxZoom: 14 },
         }), "top-right");
       }
+      const showPlacePopup = (place: MapPlace, coordinates: [number, number]) => {
+        if (!map) return;
+        const content = document.createElement("div");
+        content.className = "min-w-48 max-w-64 pr-2 text-foreground";
+
+        const eyebrow = document.createElement("p");
+        eyebrow.className = "text-[11px] font-semibold uppercase tracking-wide text-primary";
+        eyebrow.textContent = place.kind === "building" ? (place.code || "BYU building") : place.events.length ? "Free food event" : "Starving Student Card";
+
+        const title = document.createElement("strong");
+        title.className = "mt-1 block text-sm leading-snug";
+        title.textContent = place.title;
+
+        const summary = document.createElement("p");
+        summary.className = "mt-1 text-xs leading-relaxed text-muted-foreground";
+        summary.textContent = place.events.length
+          ? `${place.events.length} upcoming event${place.events.length === 1 ? "" : "s"}${place.events[0]?.food ? ` · ${place.events[0].food}` : ""}`
+          : place.cardOffers.length
+            ? `${place.cardOffers.length} card offer${place.cardOffers.length === 1 ? "" : "s"}`
+            : "No upcoming free food events at this building.";
+
+        const details = document.createElement("button");
+        details.type = "button";
+        details.className = "mt-3 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground";
+        details.textContent = "View full details";
+        details.addEventListener("click", () => onSelectRef.current(place));
+
+        content.append(eyebrow, title, summary, details);
+        new Popup({ closeButton: true, closeOnClick: true, offset: 14, maxWidth: "280px" })
+          .setLngLat(coordinates)
+          .setDOMContent(content)
+          .addTo(map);
+      };
       map.on("load", () => {
         if (!map) return;
         if (view === "campus") {
@@ -67,8 +100,12 @@ export function MapCanvas({ places, view, onSelect }: Props) {
           }, paint: { "text-color": "#173e34", "text-halo-color": "#fff", "text-halo-width": 2 } });
           for (const layer of ["building-points", "building-labels"]) {
             map.on("click", layer, (event) => {
+              if (map?.queryRenderedFeatures(event.point, { layers: ["place-points"] }).length) return;
               const place = byId.get(event.features?.[0]?.properties?.["id"]);
-              if (place) onSelectRef.current(place);
+              if (place) {
+                onSelectRef.current(place);
+                showPlacePopup(place, [place.lng, place.lat]);
+              }
             });
             map.on("mouseenter", layer, () => { if (map) map.getCanvas().style.cursor = "pointer"; });
             map.on("mouseleave", layer, () => { if (map) map.getCanvas().style.cursor = ""; });
@@ -102,7 +139,10 @@ export function MapCanvas({ places, view, onSelect }: Props) {
         map.on("click", "place-points", (event) => {
           const id = event.features?.[0]?.properties?.["id"];
           const place = byId.get(id);
-          if (place) onSelectRef.current(place);
+          if (place) {
+            onSelectRef.current(place);
+            showPlacePopup(place, [place.lng, place.lat]);
+          }
         });
         map.on("click", "clusters", async (event) => {
           const feature = event.features?.[0];
