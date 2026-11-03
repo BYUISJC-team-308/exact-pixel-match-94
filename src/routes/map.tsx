@@ -112,12 +112,6 @@ function MapPage() {
               <button type="button" onClick={() => setSelected(null)} className="mb-3 text-xs font-semibold text-primary">← Back to map summary</button>
               <h2 className="text-xl font-semibold">{selected.title}</h2>
               {selected.code && <p className="text-sm font-semibold text-primary">{selected.code}</p>}
-              <p className="mt-1 text-sm text-muted-foreground">{selected.address}</p>
-              <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Get directions</p>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                <a href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat}%2C${selected.lng}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-3 text-center text-xs font-semibold text-primary-foreground">Google Maps ↗</a>
-                <a href={`https://maps.apple.com/?daddr=${selected.lat}%2C${selected.lng}&dirflg=d`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-full border border-border bg-background px-3 text-center text-xs font-semibold text-foreground">Apple Maps ↗</a>
-              </div>
               <div className="mt-4 space-y-2">
                 {selected.kind === "building" && selected.events.length === 0 && <p className="text-sm text-muted-foreground">No upcoming free food events at this building.</p>}
                 {selected.cardOffers.map((offer) => (
@@ -135,6 +129,13 @@ function MapPage() {
                     <span className="text-xs text-muted-foreground">{event.building}{event.room ? ` · ${event.room}` : ""}</span>
                   </button>
                 ))}
+              </div>
+              <div className="mt-3 border-t border-border pt-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Get directions</p>
+                <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat}%2C${selected.lng}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 items-center justify-center rounded-full bg-primary px-2 text-center text-[11px] font-semibold text-primary-foreground">Google Maps ↗</a>
+                  <a href={`https://maps.apple.com/?daddr=${selected.lat}%2C${selected.lng}&dirflg=d`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 items-center justify-center rounded-full border border-border bg-background px-2 text-center text-[11px] font-semibold text-foreground">Apple Maps ↗</a>
+                </div>
               </div>
             </>
           ) : (
