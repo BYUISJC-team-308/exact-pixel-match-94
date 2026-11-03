@@ -12,6 +12,8 @@ describe("Food Events Logic & Categorization", () => {
     expect(detectLocationCategory("Wilkinson Student Center")).toBe("on_campus");
     expect(detectLocationCategory("HBLL Library Quad")).toBe("on_campus");
     expect(detectLocationCategory("Crabtree Building")).toBe("on_campus");
+    expect(detectLocationCategory("ARTS (Arts Building)")).toBe("on_campus");
+    expect(detectLocationCategory("JFSB (Joseph F. Smith Building)")).toBe("on_campus");
   });
 
   it("correctly identifies off-campus Utah County locations", () => {

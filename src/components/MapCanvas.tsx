@@ -25,7 +25,7 @@ export function MapCanvas({ places, view, onSelect }: Props) {
     let map: import("maplibre-gl").Map | undefined;
     const byId = new Map(places.map((place) => [place.id, place]));
 
-    void import("maplibre-gl").then(({ Map: MapLibreMap, NavigationControl, setWorkerUrl }) => {
+    void import("maplibre-gl").then(({ GeolocateControl, Map: MapLibreMap, NavigationControl, setWorkerUrl }) => {
       if (cancelled || !container.current) return;
       setWorkerUrl(workerUrl);
       map = new MapLibreMap({
@@ -38,6 +38,14 @@ export function MapCanvas({ places, view, onSelect }: Props) {
         attributionControl: {},
       });
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
+      if (view === "area") {
+        map.addControl(new GeolocateControl({
+          positionOptions: { enableHighAccuracy: true },
+          trackUserLocation: true,
+          showUserHeading: true,
+          fitBoundsOptions: { maxZoom: 14 },
+        }), "top-right");
+      }
       map.on("load", () => {
         if (!map) return;
         if (view === "campus") {
