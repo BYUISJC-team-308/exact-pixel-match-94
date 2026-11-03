@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/lib/supabase";
 import type { FoodEvent } from "@/lib/data";
 
@@ -117,6 +118,15 @@ export async function fetchFoodEvents(): Promise<NormalizedFoodEvent[]> {
 
   return (data || []).map(normalizeFoodEvent);
 }
+
+export const getMapFoodEvents = createServerFn({ method: "GET" }).handler(async (): Promise<DbFoodEvent[]> => {
+  const { data, error } = await supabase
+    .from("food_events")
+    .select("id,title,host,food,event_date,start_time,end_time,building,room,details")
+    .order("event_date", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as DbFoodEvent[];
+});
 
 export function useFoodEventsQuery() {
   return useQuery({
