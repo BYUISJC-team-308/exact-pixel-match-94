@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/lib/supabase";
 import type { FoodEvent } from "@/lib/data";
+import buildingRecords from "@/lib/byu-buildings.json";
 
 export type DbFoodEvent = {
   id: string;
@@ -37,14 +38,26 @@ export function getLocalDateString(d = new Date()): string {
 
 // Detect BYU campus buildings vs off-campus Utah County venues
 export function detectLocationCategory(building: string): "on_campus" | "off_campus" {
+  const normalized = (building || "").trim().toLowerCase();
+  const matchesOfficialBuilding = buildingRecords.some((record) => {
+    const code = record.code.trim().toLowerCase();
+    const name = record.name.trim().toLowerCase();
+    const label = record.label?.trim().toLowerCase();
+    return Boolean(
+      (code && new RegExp(`(^|[^a-z0-9])${code}([^a-z0-9]|$)`).test(normalized)) ||
+      (name && normalized.includes(name)) ||
+      (label && normalized.includes(label)),
+    );
+  });
+  if (matchesOfficialBuilding) return "on_campus";
+
   const campusKeywords = [
     "byu", "wsc", "wilkinson", "jkb", "marb", "jsb", "esc", "hbll", "library",
     "talmage", "tmb", "crabtree", "cb", "benson", "eyring", "hfac", "moa",
     "richards", "rb", "smith fieldhouse", "sfh", "student union", "quad",
     "brick oven", "creamery", "heritage", "helaman", "campus"
   ];
-  const bLower = (building || "").toLowerCase();
-  const isCampus = campusKeywords.some((k) => bLower.includes(k));
+  const isCampus = campusKeywords.some((k) => normalized.includes(k));
   return isCampus ? "on_campus" : "off_campus";
 }
 

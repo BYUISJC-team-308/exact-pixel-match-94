@@ -127,7 +127,7 @@ function MapPage() {
           ) : (
             <>
               <h2 className="text-lg font-semibold">{view === "campus" ? "Campus free food" : "Explore the area"}</h2>
-              <p className="mt-2 text-sm text-muted-foreground">Select a building or event pin for details. Numbered area pins group nearby locations.</p>
+              <p className="mt-2 text-sm text-muted-foreground">{view === "area" ? "Use the location button on the map to find nearby offers, or select a pin for details." : "Select a building or event pin for details."} Numbered area pins group nearby locations.</p>
               <div className="mt-5 space-y-3 text-sm">
                 {view === "area" && <p><span className="mr-2 inline-block size-3 rounded-full bg-primary" />{offers.length} card offers at {cards.length} locations</p>}
                 <p><span className="mr-2 inline-block size-3 rounded-full bg-amber-500" />{mappedEvents} upcoming free food event{mappedEvents === 1 ? "" : "s"} at {campusEvents.length} BYU building{campusEvents.length === 1 ? "" : "s"}</p>
