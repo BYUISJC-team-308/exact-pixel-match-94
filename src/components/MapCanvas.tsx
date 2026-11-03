@@ -31,6 +31,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
     if (!container.current) return;
     let cancelled = false;
     let map: import("maplibre-gl").Map | undefined;
+    let mobileCard: HTMLDivElement | undefined;
     const byId = new Map(places.map((place) => [place.id, place]));
 
     void import("maplibre-gl").then(({ GeolocateControl, Map: MapLibreMap, NavigationControl, Popup, setWorkerUrl }) => {
@@ -56,8 +57,10 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
       }
       const showPlacePopup = (place: MapPlace, coordinates: [number, number]) => {
         if (!map) return;
+        mobileCard?.remove();
+        mobileCard = undefined;
         const content = document.createElement("div");
-        content.className = "min-w-56 max-w-72 pr-2 text-foreground";
+        content.className = "map-place-card text-foreground";
 
         const eyebrow = document.createElement("p");
         eyebrow.className = "text-[11px] font-semibold uppercase tracking-wide text-primary";
@@ -72,7 +75,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
         address.textContent = place.address;
 
         const directions = document.createElement("a");
-        directions.className = "mt-2 inline-block text-xs font-semibold text-primary underline";
+        directions.className = "mt-2 inline-flex min-h-9 items-center text-xs font-semibold text-primary underline";
         directions.href = `https://www.openstreetmap.org/directions?to=${place.lat}%2C${place.lng}`;
         directions.target = "_blank";
         directions.rel = "noopener noreferrer";
@@ -84,7 +87,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
         for (const offer of place.cardOffers) {
           const offerButton = document.createElement("button");
           offerButton.type = "button";
-          offerButton.className = "block w-full rounded-lg bg-secondary p-2 text-left hover:bg-muted";
+          offerButton.className = "block min-h-12 w-full rounded-xl border border-border bg-secondary p-3 text-left transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary";
           offerButton.innerHTML = `<span class="block text-[10px] font-semibold uppercase text-primary">Starving Student offer</span><strong class="mt-0.5 block text-xs leading-snug"></strong><span class="mt-1 block text-[11px] text-muted-foreground"></span>`;
           const strong = offerButton.querySelector("strong");
           const meta = offerButton.querySelector("span:last-child");
@@ -97,7 +100,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
         for (const event of place.events) {
           const eventButton = document.createElement("button");
           eventButton.type = "button";
-          eventButton.className = "block w-full rounded-lg bg-secondary p-2 text-left hover:bg-muted";
+          eventButton.className = "block min-h-12 w-full rounded-xl border border-border bg-secondary p-3 text-left transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary";
           const eventLabel = document.createElement("span");
           eventLabel.className = "block text-[10px] font-semibold uppercase text-amber-700";
           eventLabel.textContent = "Free food event";
@@ -120,6 +123,28 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
         }
 
         content.append(eyebrow, title, address, directions, items);
+        if (window.matchMedia("(max-width: 640px)").matches && container.current) {
+          mobileCard = document.createElement("div");
+          mobileCard.className = "absolute inset-x-3 bottom-3 z-10 max-h-[72%] overflow-hidden rounded-2xl border border-border bg-popover p-4 pr-11 shadow-float";
+          mobileCard.setAttribute("role", "dialog");
+          mobileCard.setAttribute("aria-label", `${place.title} map details`);
+
+          const close = document.createElement("button");
+          close.type = "button";
+          close.className = "absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-muted text-base font-semibold text-foreground";
+          close.setAttribute("aria-label", "Close map details");
+          close.textContent = "×";
+          close.addEventListener("click", () => {
+            mobileCard?.remove();
+            mobileCard = undefined;
+          });
+
+          items.className = "mt-3 max-h-[250px] space-y-2 overflow-y-auto overscroll-contain pr-1";
+          mobileCard.append(content, close);
+          container.current.append(mobileCard);
+          mobileCard.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
         new Popup({ closeButton: true, closeOnClick: true, offset: 14, maxWidth: "320px" })
           .setLngLat(coordinates)
           .setDOMContent(content)
@@ -204,8 +229,8 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
         }
       });
     });
-    return () => { cancelled = true; map?.remove(); };
+    return () => { cancelled = true; mobileCard?.remove(); map?.remove(); };
   }, [places, view]);
 
-  return <div ref={container} className="h-[440px] w-full rounded-2xl sm:h-[600px]" aria-label={view === "campus" ? "BYU campus events map" : "Area discounts and free food map"} />;
+  return <div ref={container} className="relative h-[440px] w-full overflow-hidden rounded-2xl sm:h-[600px]" aria-label={view === "campus" ? "BYU campus events map" : "Area discounts and free food map"} />;
 }
