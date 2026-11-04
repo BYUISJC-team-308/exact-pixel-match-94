@@ -203,13 +203,7 @@ export async function saveDealsToDatabase(deals, supabase = getSupabaseClient())
   }
 
   console.log(`[Database] Sync Complete: ${insertedTotal} inserted, ${updatedTotal} updated, ${skippedCount} unchanged.`);
-  return {
-    inserted: insertedTotal,
-    updated: updatedTotal,
-    skipped: skippedCount,
-    newDeals,
-    updatedDeals: dealsToUpdate,
-  };
+  return { inserted: insertedTotal, updated: updatedTotal, skipped: skippedCount };
 }
 
 function normalize(str) {

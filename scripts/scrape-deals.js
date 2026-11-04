@@ -7,7 +7,6 @@ import { scrapeGitHubEducationDeals } from './scrapers/github-education.js';
 import { scrapeStudentBeansDeals } from './scrapers/student-beans.js';
 import { classifyBatch } from './classify.js';
 import { saveDealsToDatabase, getSupabaseUrl, getSupabaseKey } from './db.js';
-import { sendScraperAlert } from './notifier.js';
 
 dotenv.config();
 
@@ -77,18 +76,6 @@ async function main() {
     console.log(`   - Existing deals updated: ${result.updated}`);
     console.log(`   - Unchanged deals skipped: ${result.skipped}`);
     console.log('====================================================');
-
-    // 4. Send Webhook Alert (Discord/Slack) for Freebies and High-Value Deals
-    console.log('\n📢 Checking webhook alert notification status...');
-    await sendScraperAlert({
-      stats: {
-        inserted: result.inserted,
-        updated: result.updated,
-        skipped: result.skipped,
-      },
-      newDeals: result.newDeals || [],
-      updatedDeals: result.updatedDeals || [],
-    });
   } catch (err) {
     console.error('❌ Fatal error in scraper pipeline:', err);
     process.exit(1);

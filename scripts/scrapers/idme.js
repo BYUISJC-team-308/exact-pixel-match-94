@@ -57,24 +57,17 @@ export async function scrapeIdMe() {
     }
   }
 
-  // Deduplicate by company name (preferring specific deals over generic banners)
-  const companyDeals = new Map();
+  // Deduplicate by company + title
+  const seen = new Set();
+  const uniqueDeals = [];
   for (const d of deals) {
-    const compKey = d.company.toLowerCase().replace(/[®™]/g, '').trim();
-    const existing = companyDeals.get(compKey);
-    if (!existing) {
-      companyDeals.set(compKey, d);
-    } else {
-      const isNewBetter =
-        (d.title.length > existing.title.length && !/student perks|cash back/i.test(d.title)) ||
-        (/save|off|\$|\%/i.test(d.value) && !/save|off|\$|\%/i.test(existing.value));
-      if (isNewBetter) {
-        companyDeals.set(compKey, d);
-      }
+    const key = `${d.company.toLowerCase()}|${d.title.toLowerCase()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueDeals.push(d);
     }
   }
 
-  const uniqueDeals = Array.from(companyDeals.values());
-  console.log(`[ID.me] Successfully scraped ${uniqueDeals.length} unique brand deals.`);
+  console.log(`[ID.me] Successfully scraped ${uniqueDeals.length} unique deals.`);
   return uniqueDeals;
 }

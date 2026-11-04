@@ -240,18 +240,13 @@ export const COMPANY_CATALOG = {
     category: 'Tech',
   },
   'sony': {
-    tagline: 'Noise-Canceling Headphones & Audio',
-    whatTheyDo: 'Sony manufactures industry-leading WH-1000XM5 noise-canceling headphones, wireless earbuds, and personal audio.',
+    tagline: 'Noise-Canceling Headphones & Cameras',
+    whatTheyDo: 'Sony produces industry-leading noise-canceling headphones, PlayStation consoles, and digital mirrorless cameras.',
     category: 'Tech',
   },
-  'therabody': {
-    tagline: 'Theragun & Muscle Recovery Tools',
-    whatTheyDo: 'Therabody is the creator of the Theragun percussive massage gun, muscle therapy rollers, and recovery tools to soothe sore muscles.',
-    category: 'Fitness',
-  },
   'the ge appliances store': {
-    tagline: 'Dorm & Apartment Kitchen Appliances',
-    whatTheyDo: 'GE Appliances manufactures compact dorm mini-fridges, microwave ovens, and kitchen appliances.',
+    tagline: 'Major Home & Kitchen Appliances',
+    whatTheyDo: 'GE Appliances provides refrigerators, microwave ovens, dishwashers, and laundry washers and dryers.',
     category: 'Tech',
   },
   'lenovo us': {
@@ -265,8 +260,8 @@ export const COMPANY_CATALOG = {
     category: 'Tech',
   },
   't-mobile': {
-    tagline: 'Unlimited 5G Mobile Phone Plans',
-    whatTheyDo: 'T-Mobile offers unlimited 5G talk, text, and smartphone data packages tailored for college students.',
+    tagline: 'Wireless Phone Plans & 5G Data',
+    whatTheyDo: 'T-Mobile offers 5G mobile cell phone plans, unlimited data, and discounted student connectivity packages.',
     category: 'Tech',
   },
   'verizon': {
