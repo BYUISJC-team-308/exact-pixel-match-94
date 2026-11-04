@@ -10,6 +10,10 @@ export type Deal = {
   duration: string;
   url: string;
   isNew?: boolean;
+  address?: string;
+  city?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 // Real deals are fetched dynamically from Supabase database (deals table)
@@ -21,14 +25,17 @@ export type SSDeal = {
   item: string;
   type: "Free" | "Discount";
   value: string;
-  category: "Food" | "Coffee" | "Entertainment" | "Services";
+  category: string;
   address: string;
   details: string;
   x: number; // map %
   y: number;
+  sourceUrl: string;
+  capturedAt: string;
+  locations: { address: string; city: string; lat: number; lng: number }[];
 };
 
-// Real Starving Student Card deals are loaded dynamically when digitized
+// Offer records are fetched from Supabase at runtime.
 export const ssDeals: SSDeal[] = [];
 
 export type FoodEvent = {
@@ -44,6 +51,10 @@ export type FoodEvent = {
   details: string;
   x: number;
   y: number;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  locationNote?: string;
 };
 
 // Real food events are loaded live from Supabase (food_events table)

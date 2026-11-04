@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/lib/supabase";
 import type { FoodEvent } from "@/lib/data";
+import buildingRecords from "@/lib/byu-buildings.json";
 
 export type DbFoodEvent = {
   id: string;
@@ -13,6 +15,10 @@ export type DbFoodEvent = {
   building: string;
   room?: string | null;
   details?: string | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  location_note?: string | null;
   created_at?: string;
 };
 
@@ -36,14 +42,26 @@ export function getLocalDateString(d = new Date()): string {
 
 // Detect BYU campus buildings vs off-campus Utah County venues
 export function detectLocationCategory(building: string): "on_campus" | "off_campus" {
+  const normalized = (building || "").trim().toLowerCase();
+  const matchesOfficialBuilding = buildingRecords.some((record) => {
+    const code = record.code.trim().toLowerCase();
+    const name = record.name.trim().toLowerCase();
+    const label = record.label?.trim().toLowerCase();
+    return Boolean(
+      (code && new RegExp(`(^|[^a-z0-9])${code}([^a-z0-9]|$)`).test(normalized)) ||
+      (name && normalized.includes(name)) ||
+      (label && normalized.includes(label)),
+    );
+  });
+  if (matchesOfficialBuilding) return "on_campus";
+
   const campusKeywords = [
     "byu", "wsc", "wilkinson", "jkb", "marb", "jsb", "esc", "hbll", "library",
     "talmage", "tmb", "crabtree", "cb", "benson", "eyring", "hfac", "moa",
     "richards", "rb", "smith fieldhouse", "sfh", "student union", "quad",
     "brick oven", "creamery", "heritage", "helaman", "campus"
   ];
-  const bLower = (building || "").toLowerCase();
-  const isCampus = campusKeywords.some((k) => bLower.includes(k));
+  const isCampus = campusKeywords.some((k) => normalized.includes(k));
   return isCampus ? "on_campus" : "off_campus";
 }
 
@@ -89,6 +107,10 @@ export function normalizeFoodEvent(row: DbFoodEvent): NormalizedFoodEvent {
     building: row.building || "Campus",
     room: row.room || "",
     details: row.details || "No extra details provided.",
+    address: row.address || undefined,
+    latitude: Number.isFinite(Number(row.latitude)) ? Number(row.latitude) : undefined,
+    longitude: Number.isFinite(Number(row.longitude)) ? Number(row.longitude) : undefined,
+    locationNote: row.location_note || undefined,
     x: 50,
     y: 50,
     eventDateObj,
@@ -118,6 +140,15 @@ export async function fetchFoodEvents(): Promise<NormalizedFoodEvent[]> {
   return (data || []).map(normalizeFoodEvent);
 }
 
+export const getMapFoodEvents = createServerFn({ method: "GET" }).handler(async (): Promise<DbFoodEvent[]> => {
+  const { data, error } = await supabase
+    .from("food_events")
+    .select("*")
+    .order("event_date", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as DbFoodEvent[];
+});
+
 export function useFoodEventsQuery() {
   return useQuery({
     queryKey: ["food_events"],
@@ -137,7 +168,22 @@ export type NewFoodEventInput = {
   building: string;
   room?: string;
   details?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  location_note?: string;
 };
+
+export async function geocodeEventAddress(address: string) {
+  const key = import.meta.env["VITE_MAPTILER_KEY"];
+  if (!key) throw new Error("Map geocoding is not configured.");
+  const response = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(address)}.json?key=${encodeURIComponent(key)}&country=us&limit=1`);
+  if (!response.ok) throw new Error("Could not verify that address.");
+  const result = await response.json() as { features?: Array<{ center?: [number, number] }> };
+  const center = result.features?.[0]?.center;
+  if (!center) throw new Error("No map location was found for that address.");
+  return { latitude: center[1], longitude: center[0] };
+}
 
 export async function insertFoodEvent(input: NewFoodEventInput) {
   const { data, error } = await supabase
