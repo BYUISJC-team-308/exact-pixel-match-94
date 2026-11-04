@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildingPlaces, campusBuildings, cardPlaces, eventPlaces, findCampusBuilding } from "@/lib/map-places";
-import type { SSDeal } from "@/lib/data";
+import { buildingPlaces, campusBuildings, cardPlaces, discountPlaces, eventPlaces, findCampusBuilding } from "@/lib/map-places";
+import type { Deal, SSDeal } from "@/lib/data";
 import type { NormalizedFoodEvent } from "@/lib/food-events";
 
 describe("map locations", () => {
@@ -38,5 +38,32 @@ describe("map locations", () => {
     expect(venue?.lat).toBeGreaterThan(40.24);
     expect(venue?.lng).toBeLessThan(-111.64);
     expect(places[0]).toBe(venue);
+  });
+
+  it("maps regular discounts only when they have usable coordinates", () => {
+    const base = {
+      title: "Student special", company: "Example Pizza", category: "Food",
+      type: "Percent off", value: "20% off", description: "A discount",
+      howTo: "Show student ID", duration: "Ongoing", url: "https://example.com",
+    } satisfies Omit<Deal, "id">;
+    const places = discountPlaces([
+      { ...base, id: "mapped", address: "100 Center St", city: "Provo", latitude: 40.23, longitude: -111.66 },
+      { ...base, id: "unmapped" },
+    ]);
+    expect(places).toHaveLength(1);
+    expect(places[0]).toMatchObject({ kind: "discount", title: "Example Pizza", address: "100 Center St" });
+    expect(places[0]?.deals[0]?.id).toBe("mapped");
+  });
+
+  it("maps an off-campus event from its saved address and coordinates", () => {
+    const event = {
+      id: "off-campus", building: "Downtown Provo", title: "Community dinner",
+      address: "100 Center St, Provo, UT", latitude: 40.2338, longitude: -111.6585,
+      formattedDate: "Tue, Nov 3", formattedTime: "7:00 PM – 8:00 PM",
+    } as NormalizedFoodEvent;
+    expect(eventPlaces([event])[0]).toMatchObject({
+      kind: "event", title: "Downtown Provo", address: "100 Center St, Provo, UT",
+      lat: 40.2338, lng: -111.6585,
+    });
   });
 });

@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import type { MapPlace } from "@/lib/map-places";
-import type { SSDeal } from "@/lib/data";
+import type { Deal, SSDeal } from "@/lib/data";
 import type { NormalizedFoodEvent } from "@/lib/food-events";
+import { logActivityEvent } from "@/lib/analytics";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 
@@ -11,6 +12,8 @@ type Props = {
   onSelect: (place: MapPlace) => void;
   onOpenOffer: (offer: SSDeal) => void;
   onOpenEvent: (event: NormalizedFoodEvent) => void;
+  onOpenDeal: (deal: Deal) => void;
+  onUserLocation: (location: { lat: number; lng: number }) => void;
 };
 
 const mapTilerKey = import.meta.env["VITE_MAPTILER_KEY"];
@@ -62,14 +65,18 @@ function createMapIcon(kind: "card" | "event" | "discount") {
   return context.getImageData(0, 0, 40, 40);
 }
 
-export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: Props) {
+export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, onOpenDeal, onUserLocation }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const onSelectRef = useRef(onSelect);
   const onOpenOfferRef = useRef(onOpenOffer);
   const onOpenEventRef = useRef(onOpenEvent);
+  const onOpenDealRef = useRef(onOpenDeal);
+  const onUserLocationRef = useRef(onUserLocation);
   onSelectRef.current = onSelect;
   onOpenOfferRef.current = onOpenOffer;
   onOpenEventRef.current = onOpenEvent;
+  onOpenDealRef.current = onOpenDeal;
+  onUserLocationRef.current = onUserLocation;
 
   useEffect(() => {
     if (!container.current) return;
@@ -93,12 +100,17 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
       });
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
       if (view === "area") {
-        map.addControl(new GeolocateControl({
+        const geolocate = new GeolocateControl({
           positionOptions: { enableHighAccuracy: true },
           trackUserLocation: true,
           showUserHeading: true,
           fitBoundsOptions: { maxZoom: 14 },
-        }), "top-right");
+        });
+        geolocate.on("geolocate", (event) => {
+          onUserLocationRef.current({ lat: event.coords.latitude, lng: event.coords.longitude });
+          void logActivityEvent("map_location_enabled", { view });
+        });
+        map.addControl(geolocate, "top-right");
       }
       const showPlacePopup = (place: MapPlace, coordinates: [number, number]) => {
         if (!map) return;
@@ -109,7 +121,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
 
         const eyebrow = document.createElement("p");
         eyebrow.className = "text-[11px] font-semibold uppercase tracking-wide text-primary";
-        eyebrow.textContent = place.kind === "building" ? (place.code || "BYU building") : place.events.length ? "Free food event" : "Starving Student Card";
+        eyebrow.textContent = place.kind === "building" ? (place.code || "BYU building") : place.events.length ? "Free food event" : place.deals.length ? "Student discount" : "Starving Student Card";
 
         const title = document.createElement("strong");
         title.className = "mt-1 block text-sm leading-snug";
@@ -128,17 +140,27 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
         googleMaps.target = "_blank";
         googleMaps.rel = "noopener noreferrer";
         googleMaps.textContent = "Google Maps ↗";
+        googleMaps.addEventListener("click", () => void logActivityEvent("map_directions_opened", { provider: "google", placeId: place.id }));
         const appleMaps = document.createElement("a");
         appleMaps.className = "inline-flex min-h-8 flex-1 items-center justify-center rounded-full border border-border bg-background px-2 text-[11px] font-semibold text-foreground";
         appleMaps.href = `https://maps.apple.com/?daddr=${place.lat}%2C${place.lng}&dirflg=d`;
         appleMaps.target = "_blank";
         appleMaps.rel = "noopener noreferrer";
         appleMaps.textContent = "Apple Maps ↗";
+        appleMaps.addEventListener("click", () => void logActivityEvent("map_directions_opened", { provider: "apple", placeId: place.id }));
         directionsActions.append(googleMaps, appleMaps);
         directions.append(directionsLabel, directionsActions);
 
         const items = document.createElement("div");
-        items.className = "mt-3 max-h-56 space-y-2 overflow-y-auto pr-1";
+        items.className = "mt-3 space-y-2";
+        const totalItems = place.cardOffers.length + place.deals.length + place.events.length;
+        const previewLimit = isMobileMap() ? 3 : 2;
+        let previewCount = 0;
+        const appendPreview = (item: HTMLElement) => {
+          if (previewCount >= previewLimit) return;
+          items.append(item);
+          previewCount += 1;
+        };
 
         for (const offer of place.cardOffers) {
           const offerButton = document.createElement("button");
@@ -149,8 +171,21 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
           const meta = offerButton.querySelector("span:last-child");
           if (strong) strong.textContent = offer.item;
           if (meta) meta.textContent = `${offer.value} · Open offer details →`;
-          offerButton.addEventListener("click", () => onOpenOfferRef.current(offer));
-          items.append(offerButton);
+          offerButton.addEventListener("click", () => { void logActivityEvent("map_offer_viewed", { offerId: offer.id, source: "starving_student" }); onOpenOfferRef.current(offer); });
+          appendPreview(offerButton);
+        }
+
+        for (const deal of place.deals) {
+          const dealButton = document.createElement("button");
+          dealButton.type = "button";
+          dealButton.className = "block min-h-12 w-full rounded-xl border border-border bg-secondary p-3 text-left transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary";
+          dealButton.innerHTML = `<span class="block text-[10px] font-semibold uppercase text-violet-700">Student discount</span><strong class="mt-0.5 block text-xs leading-snug"></strong><span class="mt-1 block text-[11px] text-muted-foreground"></span>`;
+          const strong = dealButton.querySelector("strong");
+          const meta = dealButton.querySelector("span:last-child");
+          if (strong) strong.textContent = deal.title;
+          if (meta) meta.textContent = `${deal.value} · Open discount details →`;
+          dealButton.addEventListener("click", () => { void logActivityEvent("map_offer_viewed", { dealId: deal.id, source: "discount" }); onOpenDealRef.current(deal); });
+          appendPreview(dealButton);
         }
 
         for (const event of place.events) {
@@ -168,10 +203,22 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
           eventMeta.textContent = `${event.food} · ${event.formattedDate}, ${event.formattedTime}${event.room ? ` · Room ${event.room}` : ""} · Open event details →`;
           eventButton.append(eventLabel, eventTitle, eventMeta);
           eventButton.addEventListener("click", () => onOpenEventRef.current(event));
-          items.append(eventButton);
+          appendPreview(eventButton);
         }
 
-        if (!place.cardOffers.length && !place.events.length) {
+        if (totalItems > previewCount) {
+          const more = document.createElement("button");
+          more.type = "button";
+          more.className = "block w-full rounded-lg bg-muted px-3 py-2 text-left text-[11px] font-semibold text-primary hover:bg-secondary";
+          more.textContent = `View all ${totalItems} items in the full list below ↓`;
+          more.addEventListener("click", () => {
+            onSelectRef.current(place);
+            document.getElementById("map-place-details")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+          items.append(more);
+        }
+
+        if (!place.cardOffers.length && !place.deals.length && !place.events.length) {
           const empty = document.createElement("p");
           empty.className = "mt-3 rounded-lg bg-secondary p-2 text-xs text-muted-foreground";
           empty.textContent = "No upcoming free food events at this building.";
@@ -195,13 +242,13 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
             mobileCard = undefined;
           });
 
-          items.className = "mt-2.5 max-h-40 space-y-2 overflow-y-auto overscroll-contain pr-1";
+          items.className = "mt-2.5 max-h-48 space-y-2 overflow-y-auto overscroll-contain pr-1";
           mobileCard.append(content, close);
           container.current.append(mobileCard);
           mobileCard.scrollIntoView({ behavior: "smooth", block: "center" });
           return;
         }
-        new Popup({ closeButton: true, closeOnClick: true, offset: 14, maxWidth: "320px" })
+        new Popup({ closeButton: true, closeOnClick: true, offset: 14, maxWidth: "290px" })
           .setLngLat(coordinates)
           .setDOMContent(content)
           .addTo(map);
@@ -230,6 +277,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
               if (map?.queryRenderedFeatures(event.point, { layers: ["place-points"] }).length) return;
               const place = byId.get(event.features?.[0]?.properties?.["id"]);
               if (place) {
+                void logActivityEvent("map_pin_selected", { placeId: place.id, kind: place.kind, view });
                 if (!isMobileMap()) onSelectRef.current(place);
                 showPlacePopup(place, [place.lng, place.lat]);
               }
@@ -274,6 +322,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent }: 
           const id = event.features?.[0]?.properties?.["id"];
           const place = byId.get(id);
           if (place) {
+            void logActivityEvent("map_pin_selected", { placeId: place.id, kind: place.kind, view });
             if (!isMobileMap()) onSelectRef.current(place);
             showPlacePopup(place, [place.lng, place.lat]);
           }
