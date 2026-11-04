@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { BadgePercent, CreditCard, Utensils } from "lucide-react";
+import { BadgePercent, CalendarDays, ChevronLeft, ChevronRight, CreditCard, Utensils } from "lucide-react";
 import { MapCanvas } from "@/components/MapCanvas";
 import { DealDetail, EventDetail, PageHeader, SSDetail } from "@/components/ui-bits";
 import type { Deal, SSDeal } from "@/lib/data";
@@ -26,6 +26,25 @@ export const Route = createFileRoute("/map")({
 
 type View = "area" | "campus";
 type Filter = "all" | "card" | "event" | "discount";
+
+function denverDateString(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(date);
+  const value = (type: string) => parts.find((part) => part.type === type)?.value ?? "00";
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
+function shiftDate(date: string, amount: number) {
+  const [year, month, day] = date.split("-").map(Number);
+  const shifted = new Date(year, month - 1, day + amount, 12);
+  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, "0")}-${String(shifted.getDate()).padStart(2, "0")}`;
+}
+
+function friendlyMapDate(date: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(year, month - 1, day, 12).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+}
 
 function distanceMiles(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const toRad = (value: number) => value * Math.PI / 180;
@@ -57,11 +76,14 @@ function MapPage() {
   const [openEvent, setOpenEvent] = useState<NormalizedFoodEvent | null>(null);
   const [openDeal, setOpenDeal] = useState<Deal | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [campusDate, setCampusDate] = useState(denverDateString);
   useEffect(() => { void logActivityEvent("map_opened"); }, []);
+  useEffect(() => { setSelected(null); }, [campusDate]);
   const events = useMemo(() => eventRows.filter(isUpcomingEvent).map(normalizeFoodEvent), [eventRows]);
   const cards = useMemo(() => cardPlaces(offers), [offers]);
   const campusEvents = useMemo(() => eventPlaces(events), [events]);
-  const buildings = useMemo(() => buildingPlaces(events), [events]);
+  const selectedCampusEvents = useMemo(() => eventRows.filter((row) => row.event_date === campusDate).map(normalizeFoodEvent), [eventRows, campusDate]);
+  const buildings = useMemo(() => buildingPlaces(selectedCampusEvents), [selectedCampusEvents]);
   const discounts = useMemo(() => discountPlaces(dealRows.map(normalizeDeal)), [dealRows]);
   const places = useMemo(() => view === "campus" ? buildings : [
     ...(filter === "event" || filter === "discount" ? [] : cards),
@@ -110,7 +132,28 @@ function MapPage() {
           </div>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-muted-foreground">Explore {campusBuildings.length} named BYU buildings. Amber pins show upcoming free food events; select a building for details.</p>
+        <section className="mt-4 overflow-hidden rounded-2xl border border-[#224f75]/20 bg-gradient-to-br from-[#f8f4e8] via-white to-[#e4edf3] p-4 shadow-sm" aria-label="Campus day controls">
+          <div className="flex flex-wrap items-center gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#224f75]">Explore a day</p>
+              <h2 className="mt-0.5 font-serif text-xl font-semibold text-[#082e4f]">{friendlyMapDate(campusDate)}</h2>
+            </div>
+            <div className="ml-auto flex items-center gap-1.5">
+              <button type="button" onClick={() => setCampusDate(denverDateString())} className="rounded-full border border-[#224f75]/20 bg-white px-3 py-2 text-xs font-semibold text-[#082e4f] shadow-sm">Today</button>
+              <button type="button" onClick={() => setCampusDate(shiftDate(campusDate, -1))} aria-label="Previous day" className="grid size-9 place-items-center rounded-full border border-[#224f75]/20 bg-white text-[#082e4f] shadow-sm"><ChevronLeft className="size-4" /></button>
+              <label className="relative grid size-9 cursor-pointer place-items-center rounded-full border border-[#224f75]/20 bg-white text-[#082e4f] shadow-sm" aria-label="Choose map date">
+                <CalendarDays className="size-4" />
+                <input type="date" value={campusDate} onChange={(event) => { setCampusDate(event.target.value); setSelected(null); }} className="absolute inset-0 cursor-pointer opacity-0" />
+              </label>
+              <button type="button" onClick={() => setCampusDate(shiftDate(campusDate, 1))} aria-label="Next day" className="grid size-9 place-items-center rounded-full border border-[#224f75]/20 bg-white text-[#082e4f] shadow-sm"><ChevronRight className="size-4" /></button>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[#36566f]">
+            <strong className="rounded-full bg-[#082e4f] px-3 py-1.5 text-white">{selectedCampusEvents.length} free-food event{selectedCampusEvents.length === 1 ? "" : "s"}</strong>
+            <span>across {buildings.filter((building) => building.events.length).length} campus location{buildings.filter((building) => building.events.length).length === 1 ? "" : "s"}</span>
+            <span className="ml-auto">Numbered pins show events · highlighted buildings are active</span>
+          </div>
+        </section>
       )}
       <label className="mt-4 block max-w-md text-sm font-medium">
         Search map locations
@@ -119,7 +162,7 @@ function MapPage() {
           className="mt-1 block w-full rounded-xl border border-border bg-background px-4 py-2 outline-none focus:ring-2 focus:ring-primary" />
       </label>
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="glass relative overflow-hidden rounded-2xl p-0">
+        <div className={`glass relative overflow-hidden rounded-2xl p-0 ${view === "campus" ? "ring-1 ring-[#224f75]/20 shadow-xl" : ""}`}>
           <MapCanvas key={view} places={matchingPlaces} view={view} onSelect={setSelected} onOpenOffer={setOpenOffer} onOpenEvent={setOpenEvent} onOpenDeal={setOpenDeal} onUserLocation={setUserLocation} />
         </div>
         <aside id="map-place-details" className="glass max-h-[600px] scroll-mt-24 overflow-y-auto p-4" aria-live="polite">
@@ -164,10 +207,10 @@ function MapPage() {
           ) : (
             <>
               <h2 className="text-lg font-semibold">{view === "campus" ? "Campus free food" : "Explore the area"}</h2>
-              <p className="mt-2 text-sm text-muted-foreground">{view === "area" ? "Use the location button on the map to find nearby offers, or select a pin for details." : "Select a building or event pin for details."} Numbered area pins group nearby locations.</p>
+              <p className="mt-2 text-sm text-muted-foreground">{view === "area" ? "Use the location button on the map to find nearby offers, or select a pin for details. Numbered area pins group nearby locations." : `Select a highlighted building to see free food on ${friendlyMapDate(campusDate)}.`}</p>
               <div className="mt-5 space-y-3 text-sm">
                 {view === "area" && <p><span className="mr-2 inline-block size-3 rounded-full bg-primary" />{offers.length} card offers at {cards.length} locations</p>}
-                <p><span className="mr-2 inline-block size-3 rounded-full bg-amber-500" />{mappedEvents} upcoming free food event{mappedEvents === 1 ? "" : "s"} at {campusEvents.length} BYU building{campusEvents.length === 1 ? "" : "s"}</p>
+                <p><span className="mr-2 inline-block size-3 rounded-full bg-amber-500" />{view === "campus" ? selectedCampusEvents.length : mappedEvents} free food event{(view === "campus" ? selectedCampusEvents.length : mappedEvents) === 1 ? "" : "s"} at {view === "campus" ? buildings.filter((building) => building.events.length).length : campusEvents.length} BYU building{(view === "campus" ? buildings.filter((building) => building.events.length).length : campusEvents.length) === 1 ? "" : "s"}</p>
                 {view === "campus" && <p><span className="mr-2 inline-block size-3 rounded-full border border-primary bg-white" />{campusBuildings.length} named BYU buildings</p>}
               </div>
               {events.length > mappedEvents && <p className="mt-5 text-xs text-muted-foreground">{events.length - mappedEvents} upcoming event{events.length - mappedEvents === 1 ? " has" : "s have"} an unverified map location. <Link to="/free-food" className="underline">Browse all events</Link>.</p>}
