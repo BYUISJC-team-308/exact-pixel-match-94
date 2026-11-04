@@ -10,6 +10,10 @@ export type Deal = {
   duration: string;
   url: string;
   isNew?: boolean;
+  address?: string;
+  city?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 // Real deals are fetched dynamically from Supabase database (deals table)
@@ -47,6 +51,10 @@ export type FoodEvent = {
   details: string;
   x: number;
   y: number;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  locationNote?: string;
 };
 
 // Real food events are loaded live from Supabase (food_events table)

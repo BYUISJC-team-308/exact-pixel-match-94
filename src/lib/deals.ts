@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/lib/supabase";
 import type { Deal } from "@/lib/data";
 
@@ -14,6 +15,10 @@ export type DbDeal = {
   duration?: string | null;
   url?: string | null;
   is_new?: boolean | null;
+  address?: string | null;
+  city?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export function normalizeDeal(row: DbDeal): Deal {
@@ -29,8 +34,18 @@ export function normalizeDeal(row: DbDeal): Deal {
     duration: row.duration || "Ongoing",
     url: row.url || "",
     isNew: Boolean(row.is_new),
+    address: row.address || undefined,
+    city: row.city || undefined,
+    latitude: Number.isFinite(Number(row.latitude)) ? Number(row.latitude) : undefined,
+    longitude: Number.isFinite(Number(row.longitude)) ? Number(row.longitude) : undefined,
   };
 }
+
+export const getMapDeals = createServerFn({ method: "GET" }).handler(async (): Promise<DbDeal[]> => {
+  const { data, error } = await supabase.from("deals").select("*").order("title", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as DbDeal[];
+});
 
 export async function fetchDeals(): Promise<Deal[]> {
   const { data, error } = await supabase

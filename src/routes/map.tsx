@@ -1,17 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BadgePercent, CreditCard, Utensils } from "lucide-react";
 import { MapCanvas } from "@/components/MapCanvas";
-import { EventDetail, PageHeader, SSDetail } from "@/components/ui-bits";
-import type { SSDeal } from "@/lib/data";
+import { DealDetail, EventDetail, PageHeader, SSDetail } from "@/components/ui-bits";
+import type { Deal, SSDeal } from "@/lib/data";
+import { getMapDeals, normalizeDeal } from "@/lib/deals";
+import { logActivityEvent } from "@/lib/analytics";
 import { getMapFoodEvents, normalizeFoodEvent, type NormalizedFoodEvent } from "@/lib/food-events";
-import { buildingPlaces, cardPlaces, campusBuildings, eventPlaces, type MapPlace } from "@/lib/map-places";
+import { buildingPlaces, cardPlaces, campusBuildings, discountPlaces, eventPlaces, type MapPlace } from "@/lib/map-places";
 import { getStarvingStudentOffers } from "@/lib/starving-student";
 
 export const Route = createFileRoute("/map")({
   loader: async () => {
-    const [offers, eventRows] = await Promise.all([getStarvingStudentOffers(), getMapFoodEvents()]);
-    return { offers, eventRows };
+    const [offers, eventRows, dealRows] = await Promise.all([getStarvingStudentOffers(), getMapFoodEvents(), getMapDeals()]);
+    return { offers, eventRows, dealRows };
   },
   head: () => ({
     meta: [
@@ -23,7 +25,15 @@ export const Route = createFileRoute("/map")({
 });
 
 type View = "area" | "campus";
-type Filter = "all" | "card" | "event";
+type Filter = "all" | "card" | "event" | "discount";
+
+function distanceMiles(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const toRad = (value: number) => value * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 3958.8 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
 
 function isUpcomingEvent(row: { event_date: string; end_time: string }) {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -37,7 +47,7 @@ function isUpcomingEvent(row: { event_date: string; end_time: string }) {
 }
 
 function MapPage() {
-  const { offers, eventRows } = Route.useLoaderData();
+  const { offers, eventRows, dealRows } = Route.useLoaderData();
   const [view, setView] = useState<View>("area");
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -45,22 +55,28 @@ function MapPage() {
   const [selected, setSelected] = useState<MapPlace | null>(null);
   const [openOffer, setOpenOffer] = useState<SSDeal | null>(null);
   const [openEvent, setOpenEvent] = useState<NormalizedFoodEvent | null>(null);
+  const [openDeal, setOpenDeal] = useState<Deal | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => { void logActivityEvent("map_opened"); }, []);
   const events = useMemo(() => eventRows.filter(isUpcomingEvent).map(normalizeFoodEvent), [eventRows]);
   const cards = useMemo(() => cardPlaces(offers), [offers]);
   const campusEvents = useMemo(() => eventPlaces(events), [events]);
   const buildings = useMemo(() => buildingPlaces(events), [events]);
+  const discounts = useMemo(() => discountPlaces(dealRows.map(normalizeDeal)), [dealRows]);
   const places = useMemo(() => view === "campus" ? buildings : [
-    ...(filter === "event" ? [] : cards),
-    ...(filter === "card" ? [] : campusEvents),
-  ], [view, filter, cards, campusEvents, buildings]);
+    ...(filter === "event" || filter === "discount" ? [] : cards),
+    ...(filter === "card" || filter === "discount" ? [] : campusEvents),
+    ...(filter === "card" || filter === "event" ? [] : discounts),
+  ], [view, filter, cards, campusEvents, discounts, buildings]);
   const matchingPlaces = useMemo(() => {
     const text = query.trim().toLowerCase();
-    if (!text) return places;
-    return places.filter((place) => [place.title, place.code || "", place.address,
+    const filtered = !text ? places : places.filter((place) => [place.title, place.code || "", place.address,
       ...place.cardOffers.flatMap((offer) => [offer.company, offer.item]),
+      ...place.deals.flatMap((deal) => [deal.company, deal.title, deal.value]),
       ...place.events.flatMap((event) => [event.title, event.food, event.room]),
     ].some((value) => value.toLowerCase().includes(text)));
-  }, [places, query]);
+    return userLocation ? [...filtered].sort((a, b) => distanceMiles(userLocation, a) - distanceMiles(userLocation, b)) : filtered;
+  }, [places, query, userLocation]);
   const mappedEvents = campusEvents.reduce((sum, place) => sum + place.events.length, 0);
 
   const changeView = (next: View) => { setView(next); setSelected(null); setQuery(""); setListLimit(20); };
@@ -80,11 +96,11 @@ function MapPage() {
       {view === "area" ? (
         <div className="mt-4 space-y-3">
           <div className="flex flex-wrap items-center gap-2" aria-label="Map filters">
-            {([["all", "Everything"], ["card", "Card deals"], ["event", "Free food"]] as const).map(([value, label]) => (
+            {([["all", "Everything"], ["card", "Card deals"], ["event", "Free food"], ["discount", "Discounts"]] as const).map(([value, label]) => (
               <button key={value} type="button" onClick={() => changeFilter(value)} aria-pressed={filter === value}
                 className={`rounded-full px-4 py-1.5 text-xs font-semibold ring-1 ring-border ${filter === value ? "bg-foreground text-background" : "bg-secondary text-secondary-foreground"}`}>{label}</button>
             ))}
-            <span className="ml-auto text-xs text-muted-foreground">{cards.length} card locations · {campusEvents.length} event buildings</span>
+            <span className="ml-auto text-xs text-muted-foreground">{cards.length} card locations · {campusEvents.length} event locations · {discounts.length} discounts</span>
           </div>
           <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground" aria-label="Map pin legend">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1"><span className="grid size-6 place-items-center rounded-full bg-primary text-primary-foreground"><CreditCard className="size-3.5" /></span>Starving Student</span>
@@ -104,9 +120,9 @@ function MapPage() {
       </label>
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="glass relative overflow-hidden rounded-2xl p-0">
-          <MapCanvas key={view} places={matchingPlaces} view={view} onSelect={setSelected} onOpenOffer={setOpenOffer} onOpenEvent={setOpenEvent} />
+          <MapCanvas key={view} places={matchingPlaces} view={view} onSelect={setSelected} onOpenOffer={setOpenOffer} onOpenEvent={setOpenEvent} onOpenDeal={setOpenDeal} onUserLocation={setUserLocation} />
         </div>
-        <aside className="glass max-h-[600px] overflow-y-auto p-4" aria-live="polite">
+        <aside id="map-place-details" className="glass max-h-[600px] scroll-mt-24 overflow-y-auto p-4" aria-live="polite">
           {selected ? (
             <>
               <button type="button" onClick={() => setSelected(null)} className="mb-3 text-xs font-semibold text-primary">← Back to map summary</button>
@@ -119,6 +135,13 @@ function MapPage() {
                     <span className="text-xs font-semibold text-primary">Starving Student Card</span>
                     <strong className="mt-1 block text-sm">{offer.item}</strong>
                     <span className="text-xs text-muted-foreground">{offer.value} · View details →</span>
+                  </button>
+                ))}
+                {selected.deals.map((deal) => (
+                  <button key={deal.id} type="button" onClick={() => setOpenDeal(deal)} className="w-full rounded-xl bg-secondary p-3 text-left hover:bg-muted">
+                    <span className="text-xs font-semibold text-violet-700">Student discount</span>
+                    <strong className="mt-1 block text-sm">{deal.title}</strong>
+                    <span className="text-xs text-muted-foreground">{deal.value} · View details →</span>
                   </button>
                 ))}
                 {selected.events.map((event) => (
@@ -154,7 +177,7 @@ function MapPage() {
                 {matchingPlaces.slice(0, listLimit).map((place) => (
                   <button key={place.id} type="button" onClick={() => setSelected(place)} className="w-full rounded-xl bg-secondary p-3 text-left hover:bg-muted">
                     <strong className="block text-sm">{place.title}</strong>
-                    <span className="text-xs text-muted-foreground">{place.kind === "building" ? `${place.code || "BYU"}${place.events.length ? ` · ${place.events.length} free food event${place.events.length === 1 ? "" : "s"}` : ""}` : place.kind === "event" ? `${place.events.length} free food event${place.events.length === 1 ? "" : "s"}` : `${place.cardOffers.length} card offer${place.cardOffers.length === 1 ? "" : "s"}`} · Details →</span>
+                    <span className="text-xs text-muted-foreground">{place.kind === "building" ? `${place.code || "BYU"}${place.events.length ? ` · ${place.events.length} free food event${place.events.length === 1 ? "" : "s"}` : ""}` : place.kind === "event" ? `${place.events.length} free food event${place.events.length === 1 ? "" : "s"}` : place.kind === "discount" ? `${place.deals.length} discount${place.deals.length === 1 ? "" : "s"}` : `${place.cardOffers.length} card offer${place.cardOffers.length === 1 ? "" : "s"}`}{userLocation ? ` · ${distanceMiles(userLocation, place).toFixed(1)} mi away` : ""} · Details →</span>
                   </button>
                 ))}
                 {matchingPlaces.length === 0 && <p className="text-sm text-muted-foreground">No mapped locations match this search.</p>}
@@ -166,6 +189,7 @@ function MapPage() {
       </div>
       <p className="mt-3 text-xs text-muted-foreground">Map data © OpenStreetMap contributors. Building names and centers from the <a href="https://map.byu.edu/" target="_blank" rel="noopener noreferrer" className="underline">BYU Campus Map</a>; pins identify buildings, not exact rooms.</p>
       <SSDetail deal={openOffer} onClose={() => setOpenOffer(null)} />
+      <DealDetail deal={openDeal} onClose={() => setOpenDeal(null)} />
       <EventDetail event={openEvent} onClose={() => setOpenEvent(null)} />
     </>
   );

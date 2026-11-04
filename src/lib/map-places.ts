@@ -1,4 +1,4 @@
-import type { SSDeal } from "@/lib/data";
+import type { Deal, SSDeal } from "@/lib/data";
 import type { NormalizedFoodEvent } from "@/lib/food-events";
 import buildingRecords from "@/lib/byu-buildings.json";
 
@@ -11,6 +11,7 @@ export type MapPlace = {
   lng: number;
   address: string;
   cardOffers: SSDeal[];
+  deals: Deal[];
   events: NormalizedFoodEvent[];
   code?: string;
 };
@@ -52,6 +53,7 @@ export function buildingPlaces(events: NormalizedFoodEvent[]): MapPlace[] {
     lng: building.lng,
     address: `${building.name}, BYU, Provo, UT`,
     cardOffers: [],
+    deals: [],
     events: byBuilding.get(building.id) ?? [],
   })).sort((a, b) => b.events.length - a.events.length || a.title.localeCompare(b.title));
 }
@@ -78,6 +80,7 @@ export function cardPlaces(offers: SSDeal[]): MapPlace[] {
           lng: location.lng,
           address: location.address,
           cardOffers: [offer],
+          deals: [],
           events: [],
         });
       }
@@ -86,22 +89,41 @@ export function cardPlaces(offers: SSDeal[]): MapPlace[] {
   return [...places.values()];
 }
 
+export function discountPlaces(discounts: Deal[]): MapPlace[] {
+  return discounts.filter((deal) => Number.isFinite(deal.latitude) && Number.isFinite(deal.longitude)).map((deal) => ({
+    id: `discount-${deal.id}`,
+    kind: "discount" as const,
+    title: deal.company,
+    subtitle: deal.value,
+    lat: deal.latitude as number,
+    lng: deal.longitude as number,
+    address: deal.address || [deal.city, "Utah"].filter(Boolean).join(", "),
+    cardOffers: [],
+    deals: [deal],
+    events: [],
+  }));
+}
+
 export function eventPlaces(events: NormalizedFoodEvent[]): MapPlace[] {
   const places = new Map<string, MapPlace>();
   for (const event of events) {
     const building = findCampusBuilding(event.building);
-    if (!building) continue;
-    const existing = places.get(building.code);
+    const lat = building?.lat ?? event.latitude;
+    const lng = building?.lng ?? event.longitude;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const key = building?.code || `${Number(lat).toFixed(5)},${Number(lng).toFixed(5)}`;
+    const existing = places.get(key);
     if (existing) existing.events.push(event);
-    else places.set(building.code, {
-      id: `event-${building.code}`,
+    else places.set(key, {
+      id: `event-${key}`,
       kind: "event",
-      title: building.name,
+      title: building?.name || event.building,
       subtitle: `${event.formattedDate} · ${event.formattedTime}`,
-      lat: building.lat,
-      lng: building.lng,
-      address: `${building.name}, BYU, Provo, UT`,
+      lat: Number(lat),
+      lng: Number(lng),
+      address: event.address || (building ? `${building.name}, BYU, Provo, UT` : event.building),
       cardOffers: [],
+      deals: [],
       events: [event],
     });
   }

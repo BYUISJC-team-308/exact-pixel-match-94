@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Modal, Btn } from "@/components/ui-bits";
-import { useSubmitFoodEventMutation, getLocalDateString } from "@/lib/food-events";
+import { useSubmitFoodEventMutation, getLocalDateString, geocodeEventAddress } from "@/lib/food-events";
 import { campusBuildings } from "@/lib/map-places";
 import { toast } from "sonner";
 
@@ -22,17 +22,20 @@ export function SubmitFoodEventModal({
   const [startTime, setStartTime] = useState("12:00");
   const [endTime, setEndTime] = useState("13:00");
   const [building, setBuilding] = useState("");
+  const [locationType, setLocationType] = useState<"campus" | "off_campus">("campus");
+  const [address, setAddress] = useState("");
   const [room, setRoom] = useState("");
   const [details, setDetails] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !food.trim() || !building.trim() || !eventDate) {
+    if (!title.trim() || !food.trim() || !building.trim() || !eventDate || (locationType === "off_campus" && !address.trim())) {
       toast.error("Please fill in event title, food type, date, and location.");
       return;
     }
 
     try {
+      const coordinates = locationType === "off_campus" ? await geocodeEventAddress(address.trim()) : {};
       await submitMutation.mutateAsync({
         title: title.trim(),
         host: host.trim() || "Student Host",
@@ -41,6 +44,8 @@ export function SubmitFoodEventModal({
         start_time: startTime ? `${startTime}:00` : "12:00:00",
         end_time: endTime ? `${endTime}:00` : "13:00:00",
         building: building.trim(),
+        ...(address.trim() ? { address: address.trim() } : {}),
+        ...coordinates,
         ...(room.trim() ? { room: room.trim() } : {}),
         ...(details.trim() ? { details: details.trim() } : {}),
       });
@@ -51,6 +56,7 @@ export function SubmitFoodEventModal({
       setHost("");
       setFood("");
       setBuilding("");
+      setAddress("");
       setRoom("");
       setDetails("");
       onClose();
@@ -86,6 +92,14 @@ export function SubmitFoodEventModal({
               onChange={(e) => setTitle(e.target.value)}
               className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground">Location type</label>
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setLocationType("campus")} className={`rounded-lg px-3 py-2 text-xs font-semibold ring-1 ring-border ${locationType === "campus" ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>BYU campus</button>
+              <button type="button" onClick={() => setLocationType("off_campus")} className={`rounded-lg px-3 py-2 text-xs font-semibold ring-1 ring-border ${locationType === "off_campus" ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>Off campus</button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -161,8 +175,8 @@ export function SubmitFoodEventModal({
               <input
                 type="text"
                 required
-                list="byu-map-buildings"
-                placeholder="e.g. TNRB (Tanner Building)"
+                list={locationType === "campus" ? "byu-map-buildings" : undefined}
+                placeholder={locationType === "campus" ? "e.g. TNRB (Tanner Building)" : "e.g. Downtown Provo Library"}
                 value={building}
                 onChange={(e) => setBuilding(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
@@ -172,7 +186,7 @@ export function SubmitFoodEventModal({
                   <option key={campusBuilding.id} value={campusBuilding.code ? `${campusBuilding.code} (${campusBuilding.name})` : campusBuilding.name} />
                 ))}
               </datalist>
-              <p className="mt-1 text-xs text-muted-foreground">Choose a suggested BYU building to show this event on the campus map.</p>
+              <p className="mt-1 text-xs text-muted-foreground">{locationType === "campus" ? "Choose a suggested BYU building to show this event on the campus map." : "Name the venue; its address will place it on the area map."}</p>
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground">
@@ -187,6 +201,12 @@ export function SubmitFoodEventModal({
               />
             </div>
           </div>
+
+          {locationType === "off_campus" && <div>
+            <label className="block text-xs font-medium text-muted-foreground">Street address *</label>
+            <input type="text" required placeholder="e.g. 550 N University Ave, Provo, UT" value={address} onChange={(e) => setAddress(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary" />
+            <p className="mt-1 text-xs text-muted-foreground">We verify this address and place the event pin automatically.</p>
+          </div>}
 
           <div>
             <label className="block text-xs font-medium text-muted-foreground">
