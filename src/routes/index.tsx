@@ -3,7 +3,7 @@ import { useState } from "react";
 import hero from "@/assets/hero.jpg";
 import { type Deal } from "@/lib/data";
 import { useStore } from "@/lib/store";
-import { DealDetail, EventDetail, chipTone } from "@/components/ui-bits";
+import { DealDetail, EventDetail, chipTone, CompanyLogo } from "@/components/ui-bits";
 import { useFoodEventsQuery, type NormalizedFoodEvent, getLocalDateString } from "@/lib/food-events";
 import { useDealsQuery } from "@/lib/deals";
 
@@ -319,20 +319,50 @@ export function Index() {
         ) : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {hubDeals.map((d, i) => (
-              <div key={d.id} className="glass group relative p-5 transition-transform hover:-translate-y-1">
-                <div className="flex items-center justify-between">
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${chipTone(i)}`}>
-                    {d.category}
-                  </span>
-                  <span className="text-xs font-semibold text-accent">{d.value}</span>
+              <div
+                key={d.id}
+                className="glass group relative flex flex-col justify-between overflow-hidden p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-float border border-border/70 hover:border-border"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(i)}`}>
+                      {d.category}
+                    </span>
+                    <span className="text-xs font-bold text-accent">
+                      {d.value}
+                    </span>
+                  </div>
+
+                  <button onClick={() => setDeal(d)} className="mt-3.5 block w-full text-left focus:outline-none">
+                    <div className="flex items-center gap-3">
+                      <CompanyLogo company={d.company} url={d.url} size={42} />
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-lg font-bold tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
+                          {d.company}
+                        </h4>
+                        <p className="text-xs text-muted-foreground truncate">{d.duration || "Active discount"}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-1 text-xs font-bold text-accent ring-1 ring-accent/30">
+                        🏷️ {d.value}
+                      </span>
+                      <span className="text-xs font-semibold text-foreground/85 line-clamp-1">
+                        {d.title}
+                      </span>
+                    </div>
+
+                    <p className="mt-2 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                      {d.description}
+                    </p>
+                  </button>
                 </div>
-                <h4 className="mt-3 text-lg font-semibold group-hover:text-primary transition-colors">{d.title}</h4>
-                <p className="text-xs font-medium text-muted-foreground">{d.company}</p>
-                <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{d.description}</p>
+
                 <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/50">
                   <button
                     onClick={() => setDeal(d)}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
                   >
                     View deal details →
                   </button>
@@ -363,24 +393,48 @@ export function Index() {
           {featuredDeals.map((d, i) => (
             <div
               key={d.id}
-              className="glass group relative flex flex-col justify-between overflow-hidden p-5 transition-transform hover:-translate-y-1"
+              className="glass group relative flex flex-col justify-between overflow-hidden p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-float border border-border/70 hover:border-border"
             >
               <div>
-                <div className="flex items-center justify-between">
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${chipTone(i)}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(i)}`}>
                     {d.category}
                   </span>
-                  <span className="text-xs font-semibold text-accent">{d.value}</span>
+                  <span className="text-xs font-bold text-accent">
+                    {d.value}
+                  </span>
                 </div>
-                <h3 className="mt-3 text-lg font-semibold group-hover:text-primary transition-colors">{d.title}</h3>
-                <p className="text-xs font-medium text-muted-foreground">{d.company}</p>
-                <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{d.description}</p>
+
+                <button onClick={() => setDeal(d)} className="mt-3.5 block w-full text-left focus:outline-none">
+                  <div className="flex items-center gap-3">
+                    <CompanyLogo company={d.company} url={d.url} size={44} />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-xl font-bold tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
+                        {d.company}
+                      </h3>
+                      <p className="text-xs text-muted-foreground truncate">{d.duration || "Active student discount"}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-1 text-sm font-bold text-accent ring-1 ring-accent/30">
+                      🏷️ {d.value}
+                    </span>
+                    <span className="text-xs font-semibold text-foreground/85 line-clamp-1">
+                      {d.title}
+                    </span>
+                  </div>
+
+                  <p className="mt-2.5 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                    {d.description}
+                  </p>
+                </button>
               </div>
 
               <div className="mt-5 flex items-center justify-between pt-3 border-t border-border/50">
                 <button
                   onClick={() => setDeal(d)}
-                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors"
                 >
                   View perk →
                 </button>

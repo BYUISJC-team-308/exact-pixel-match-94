@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import type { Deal } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
-import { DealDetail, FilterChips, PageHeader, SearchInput, chipTone, Btn } from "@/components/ui-bits";
+import { DealDetail, FilterChips, PageHeader, SearchInput, chipTone, Btn, CompanyLogo } from "@/components/ui-bits";
 import { useDealsQuery } from "@/lib/deals";
 
 export const Route = createFileRoute("/discounts")({
@@ -54,11 +54,22 @@ function Discounts() {
 
       {isLoading && (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="glass animate-pulse p-5">
-              <div className="h-4 w-20 rounded bg-muted" />
-              <div className="mt-3 h-8 w-24 rounded bg-muted" />
-              <div className="mt-2 h-5 w-3/4 rounded bg-muted" />
+              <div className="flex items-center justify-between">
+                <div className="h-4 w-20 rounded-full bg-muted" />
+                <div className="h-5 w-5 rounded bg-muted" />
+              </div>
+              <div className="mt-4 flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-muted" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="h-5 w-32 rounded bg-muted" />
+                  <div className="h-3 w-20 rounded bg-muted" />
+                </div>
+              </div>
+              <div className="mt-3.5 h-6 w-28 rounded-lg bg-muted" />
+              <div className="mt-2.5 h-4 w-full rounded bg-muted" />
+              <div className="mt-1.5 h-4 w-3/4 rounded bg-muted" />
             </div>
           ))}
         </div>
@@ -76,18 +87,80 @@ function Discounts() {
           {list.map((d, i) => {
             const saved = savedDeals.includes(d.id);
             return (
-              <div key={d.id} className="glass group relative overflow-hidden p-5 transition-transform hover:-translate-y-1">
-                <div className="flex items-start justify-between">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${chipTone(i)}`}>{d.category}{d.isNew && " · New"}</span>
-                  <button onClick={() => actions.toggleDeal(d.id)} aria-label={saved ? "Unsave" : "Save"} className={`text-xl ${saved ? "text-gold" : "text-muted-foreground hover:text-gold"}`}>{saved ? "★" : "☆"}</button>
+              <div
+                key={d.id}
+                className="glass group relative flex flex-col justify-between overflow-hidden p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-float border border-border/70 hover:border-border"
+              >
+                <div>
+                  {/* Top Bar: Category Pill & Save Star */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(i)}`}>
+                      {d.category}{d.isNew && " · New"}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        actions.toggleDeal(d.id);
+                      }}
+                      aria-label={saved ? "Unsave deal" : "Save deal"}
+                      className={`text-2xl transition-transform active:scale-125 ${
+                        saved ? "text-gold" : "text-muted-foreground/50 hover:text-gold"
+                      }`}
+                    >
+                      {saved ? "★" : "☆"}
+                    </button>
+                  </div>
+
+                  {/* Main Card Content */}
+                  <button onClick={() => setOpen(d)} className="mt-3.5 block w-full text-left focus:outline-none">
+                    {/* 1. Company Name & Logo at the Top */}
+                    <div className="flex items-center gap-3">
+                      <CompanyLogo company={d.company} url={d.url} size={44} />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-xl font-bold tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
+                          {d.company}
+                        </h3>
+                        <p className="text-xs text-muted-foreground truncate">{d.duration || "Active student discount"}</p>
+                      </div>
+                    </div>
+
+                    {/* 2. Noticeable Percent Off / Value (smaller than company name) */}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-1 text-sm font-bold text-accent ring-1 ring-accent/30">
+                        🏷️ {d.value}
+                      </span>
+                      <span className="text-xs font-semibold text-foreground/85 line-clamp-1">
+                        {d.title}
+                      </span>
+                    </div>
+
+                    {/* 3. Description */}
+                    <p className="mt-2.5 text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                      {d.description}
+                    </p>
+                  </button>
                 </div>
-                <button onClick={() => setOpen(d)} className="block w-full text-left">
-                  <p className="mt-4 font-display text-4xl font-semibold text-accent">{d.value}</p>
-                  <h3 className="mt-2 text-lg font-semibold">{d.title}</h3>
-                  <p className="text-xs font-medium text-muted-foreground">{d.company}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">{d.description}</p>
-                  <span className="mt-4 inline-block text-sm font-medium text-primary">Details →</span>
-                </button>
+
+                {/* Footer */}
+                <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/50">
+                  <button
+                    onClick={() => setOpen(d)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                  >
+                    View redemption details →
+                  </button>
+                  {d.url && (
+                    <a
+                      href={d.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Website ↗
+                    </a>
+                  )}
+                </div>
               </div>
             );
           })}
