@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { DealDetail, EventDetail, chipTone, CompanyLogo } from "@/components/ui-bits";
 import { useFoodEventsQuery, type NormalizedFoodEvent, getLocalDateString } from "@/lib/food-events";
 import { useDealsQuery } from "@/lib/deals";
+import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -340,7 +341,9 @@ export function Index() {
                         <h4 className="text-lg font-bold tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
                           {d.company}
                         </h4>
-                        <p className="text-xs text-muted-foreground truncate">{d.duration || "Active discount"}</p>
+                        <p className="text-xs text-muted-foreground truncate font-medium">
+                          {getCompanyCatalogEntry(d.company)?.tagline || d.duration || "Active discount"}
+                        </p>
                       </div>
                     </div>
 
@@ -412,7 +415,9 @@ export function Index() {
                       <h3 className="text-xl font-bold tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
                         {d.company}
                       </h3>
-                      <p className="text-xs text-muted-foreground truncate">{d.duration || "Active student discount"}</p>
+                      <p className="text-xs text-muted-foreground truncate font-medium">
+                        {getCompanyCatalogEntry(d.company)?.tagline || d.duration || "Active student discount"}
+                      </p>
                     </div>
                   </div>
 

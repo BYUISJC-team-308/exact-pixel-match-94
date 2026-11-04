@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import type { Deal, FoodEvent, SSDeal } from "@/lib/data";
 import { eventDate } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
+import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
   github: "github.com",
@@ -71,6 +72,49 @@ const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
   chegg: "chegg.com",
   quizlet: "quizlet.com",
   duolingo: "duolingo.com",
+  saatva: "saatva.com",
+  leesa: "leesa.com",
+  glassesusa: "glassesusa.com",
+  "glassesusa.com": "glassesusa.com",
+  "red wing": "redwingshoes.com",
+  "sam's club": "samsclub.com",
+  "bj's wholesale club": "bjs.com",
+  "b1g+": "bigtenplus.com",
+  hoka: "hoka.com",
+  on: "on.com",
+  saucony: "saucony.com",
+  merrell: "merrell.com",
+  crocs: "crocs.com",
+  birkenstock: "birkenstock.com",
+  heydude: "heydude.com",
+  reebok: "reebok.com",
+  tecovas: "tecovas.com",
+  oofos: "oofos.com",
+  "beyond yoga": "beyondyoga.com",
+  comfrt: "comfrt.com",
+  "aventon bikes": "aventon.com",
+  canyon: "canyon.com",
+  "avocado mattress": "avocadogreenmattress.com",
+  "brooklyn bedding": "brooklynbedding.com",
+  "mattress firm": "mattressfirm.com",
+  caraway: "carawayhome.com",
+  "stanley 1913": "stanley1913.com",
+  ecoflow: "ecoflow.com",
+  roborock: "roborock.com",
+  sonos: "sonos.com",
+  sony: "sony.com",
+  turbotax: "turbotax.intuit.com",
+  betterhelp: "betterhelp.com",
+  "aaa membership": "aaa.com",
+  "the farmer's dog": "thefarmersdog.com",
+  "home chef": "homechef.com",
+  untuckit: "untuckit.com",
+  "southern tide": "southerntide.com",
+  "lenscrafters": "lenscrafters.com",
+  "lensdirect": "lensdirect.com",
+  "contactsdirect": "contactsdirect.com",
+  "zenni optical": "zennioptical.com",
+  "sunglass hut": "sunglasshut.com",
 };
 
 export function getCompanyDomain(company: string, url?: string): string {
@@ -179,6 +223,9 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
           <CompanyLogo company={deal.company} url={deal.url} size={48} />
           <div>
             <h3 className="text-2xl font-bold tracking-tight text-foreground">{deal.company}</h3>
+            {getCompanyCatalogEntry(deal.company)?.tagline && (
+              <p className="text-xs font-medium text-muted-foreground">{getCompanyCatalogEntry(deal.company)?.tagline}</p>
+            )}
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
               {deal.category} · {deal.type}
             </span>
