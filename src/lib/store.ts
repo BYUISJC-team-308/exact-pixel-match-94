@@ -11,9 +11,15 @@ export type User = {
   avatar?: string;
 };
 
-type State = { savedDeals: string[]; savedEvents: string[]; usedSS: string[]; user: User | null };
+export type RecentMapSearch = {
+  query: string;
+  view: "area" | "campus";
+  searchedAt: string;
+};
+
+type State = { savedDeals: string[]; savedEvents: string[]; usedSS: string[]; recentMapSearches: RecentMapSearch[]; user: User | null };
 const KEY = "studeats-state";
-const empty: State = { savedDeals: [], savedEvents: [], usedSS: [], user: null };
+const empty: State = { savedDeals: [], savedEvents: [], usedSS: [], recentMapSearches: [], user: null };
 let state: State = empty;
 let loaded = false;
 const listeners = new Set<() => void>();
@@ -31,6 +37,7 @@ function load() {
           (id: string) => !["d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10"].includes(id)
         );
       }
+      if (!Array.isArray(parsed.recentMapSearches)) parsed.recentMapSearches = [];
       state = { ...empty, ...parsed };
     } else {
       state = { ...empty, savedDeals: [] };
@@ -57,7 +64,21 @@ export function useStore() {
 
 const toggle = (arr: string[], id: string) => (arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]);
 
+export function nextRecentMapSearches(current: RecentMapSearch[], query: string, view: RecentMapSearch["view"], searchedAt = new Date().toISOString()) {
+  const cleanQuery = query.trim().replace(/\s+/g, " ");
+  if (cleanQuery.length < 2) return current;
+  const withoutDuplicate = current.filter((item) =>
+    item.view !== view || item.query.toLowerCase() !== cleanQuery.toLowerCase()
+  );
+  return [{ query: cleanQuery, view, searchedAt }, ...withoutDuplicate].slice(0, 8);
+}
+
 export const actions = {
+  addRecentMapSearch: (query: string, view: RecentMapSearch["view"]) => {
+    const next = nextRecentMapSearches(state.recentMapSearches, query, view);
+    if (next !== state.recentMapSearches) set({ recentMapSearches: next });
+  },
+  clearRecentMapSearches: () => set({ recentMapSearches: [] }),
   toggleDeal: (id: string) => {
     const isAdding = !state.savedDeals.includes(id);
     if (isAdding) {
