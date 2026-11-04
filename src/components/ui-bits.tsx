@@ -119,6 +119,20 @@ const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
   "contactsdirect": "contactsdirect.com",
   "zenni optical": "zennioptical.com",
   "sunglass hut": "sunglasshut.com",
+  therabody: "therabody.com",
+  "the ge appliances store": "geappliances.com",
+  "ge appliances": "geappliances.com",
+};
+
+const KNOWN_COMPANY_LOGOS: Record<string, string> = {
+  sony: "https://upload.wikimedia.org/wikipedia/commons/c/ca/Sony_logo.svg",
+  openai: "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg",
+  chatgpt: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
+  google: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg",
+  apple: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg",
+  github: "https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg",
+  spotify: "https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg",
+  figma: "https://upload.wikimedia.org/wikipedia/commons/3/33/Figma-logo.svg",
 };
 
 export function getCompanyDomain(company: string, url?: string): string {
@@ -154,9 +168,19 @@ export function CompanyLogo({
   size?: number;
   className?: string;
 }) {
-  const [hasError, setHasError] = useState(false);
+  const cleanName = (company || "").toLowerCase().trim();
+  const directLogo = Object.entries(KNOWN_COMPANY_LOGOS).find(([k]) => cleanName.includes(k))?.[1];
+
+
+  const [srcIndex, setSrcIndex] = useState(0);
+
+  const sources = directLogo
+    ? [directLogo, `https://icons.duckduckgo.com/ip3/${domain}.ico`, `https://www.google.com/s2/favicons?domain=${domain}&sz=128`]
+    : [`https://icons.duckduckgo.com/ip3/${domain}.ico`, `https://www.google.com/s2/favicons?domain=${domain}&sz=128`];
+
+  const currentSrc = srcIndex < sources.length ? sources[srcIndex] : null;
+
   const domain = getCompanyDomain(company, url);
-  const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
   const initials =
     company
@@ -173,13 +197,13 @@ export function CompanyLogo({
       className={`relative grid place-items-center rounded-xl bg-card border border-border/80 shadow-sm overflow-hidden flex-shrink-0 ${className}`}
       title={company}
     >
-      {!hasError ? (
+      {currentSrc ? (
         <img
-          src={iconUrl}
+          src={currentSrc}
           alt={`${company} logo`}
           loading="lazy"
           className="h-3/4 w-3/4 object-contain transition-transform duration-200 group-hover:scale-110"
-          onError={() => setHasError(true)}
+          onError={() => setSrcIndex((prev) => prev + 1)}
         />
       ) : (
         <div className="grid h-full w-full place-items-center bg-gradient-to-br from-primary/15 via-accent/10 to-primary/5 font-bold text-xs tracking-wider text-primary">
