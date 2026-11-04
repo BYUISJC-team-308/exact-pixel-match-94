@@ -550,6 +550,21 @@ export const COMPANY_CATALOG: Record<string, CompanyCatalogEntry> = {
     whatTheyDo: 'Microsoft provides productivity applications including Word, Excel, PowerPoint, OneDrive, and Azure cloud credits.',
     category: 'Tech',
   },
+  'google': {
+    tagline: 'Gemini AI & Cloud Productivity',
+    whatTheyDo: 'Google delivers Gemini Advanced AI models, 2TB Google One storage, and Workspace AI integrations.',
+    category: 'AI',
+  },
+  'openai': {
+    tagline: 'ChatGPT & Generative AI Models',
+    whatTheyDo: 'OpenAI develops ChatGPT, GPT-4o, and conversational AI tools for writing, coding, and academic research.',
+    category: 'AI',
+  },
+  'google cloud': {
+    tagline: 'Cloud Computing & Vertex AI',
+    whatTheyDo: 'Google Cloud provides scalable infrastructure, BigQuery analytics, Vertex AI machine learning, and student lab credits.',
+    category: 'Tech',
+  },
   'tableau': {
     tagline: 'Analytics & Business Intelligence',
     whatTheyDo: 'Tableau delivers visual analytics, business intelligence dashboards, and data exploration tools.',

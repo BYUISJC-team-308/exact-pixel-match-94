@@ -7,6 +7,10 @@ import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
   github: "github.com",
+  google: "google.com",
+  openai: "openai.com",
+  chatgpt: "chatgpt.com",
+  "google cloud": "cloud.google.com",
   cursor: "cursor.com",
   perplexity: "perplexity.ai",
   notion: "notion.so",
