@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { BadgePercent, CalendarDays, ChevronLeft, ChevronRight, CreditCard, Utensils } from "lucide-react";
+import { BadgePercent, CalendarDays, ChevronLeft, ChevronRight, Clock3, CreditCard, Search, Utensils } from "lucide-react";
 import { MapCanvas } from "@/components/MapCanvas";
 import { DealDetail, EventDetail, PageHeader, SSDetail } from "@/components/ui-bits";
 import type { Deal, SSDeal } from "@/lib/data";
@@ -9,6 +9,7 @@ import { logActivityEvent } from "@/lib/analytics";
 import { getMapFoodEvents, normalizeFoodEvent, type NormalizedFoodEvent } from "@/lib/food-events";
 import { buildingPlaces, cardPlaces, campusBuildings, discountPlaces, eventPlaces, type MapPlace } from "@/lib/map-places";
 import { getStarvingStudentOffers } from "@/lib/starving-student";
+import { actions, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/map")({
   loader: async () => {
@@ -77,6 +78,7 @@ function MapPage() {
   const [openDeal, setOpenDeal] = useState<Deal | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [campusDate, setCampusDate] = useState(denverDateString);
+  const { recentMapSearches } = useStore();
   useEffect(() => { void logActivityEvent("map_opened"); }, []);
   useEffect(() => { setSelected(null); }, [campusDate]);
   const events = useMemo(() => eventRows.filter(isUpcomingEvent).map(normalizeFoodEvent), [eventRows]);
@@ -155,12 +157,28 @@ function MapPage() {
           </div>
         </section>
       )}
-      <label className="mt-4 block max-w-md text-sm font-medium">
-        Search map locations
-        <input value={query} onChange={(event) => { setQuery(event.target.value); setSelected(null); setListLimit(20); }}
-          placeholder={view === "campus" ? "Search a building, event, or food" : "Search a business, offer, or address"}
-          className="mt-1 block w-full rounded-xl border border-border bg-background px-4 py-2 outline-none focus:ring-2 focus:ring-primary" />
-      </label>
+      <div className="mt-4 max-w-2xl">
+        <form onSubmit={(event) => { event.preventDefault(); actions.addRecentMapSearch(query, view); }}>
+          <label className="block text-sm font-medium" htmlFor="map-location-search">Search map locations</label>
+          <div className="mt-1 flex gap-2">
+            <input id="map-location-search" value={query} onChange={(event) => { setQuery(event.target.value); setSelected(null); setListLimit(20); }}
+              placeholder={view === "campus" ? "Search a building, event, or food" : "Search a business, offer, or address"}
+              className="block min-w-0 flex-1 rounded-xl border border-border bg-background px-4 py-2 outline-none focus:ring-2 focus:ring-primary" />
+            <button type="submit" disabled={query.trim().length < 2} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-45"><Search className="size-4" />Search</button>
+          </div>
+        </form>
+        {recentMapSearches.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-2" aria-label="Recent map searches">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground"><Clock3 className="size-3.5" />Recent</span>
+            {recentMapSearches.slice(0, 5).map((item) => (
+              <button key={`${item.view}-${item.query}`} type="button" onClick={() => { setView(item.view); setQuery(item.query); setSelected(null); setListLimit(20); }} className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground hover:bg-muted">
+                {item.query}<span className="ml-1 text-muted-foreground">· {item.view === "campus" ? "BYU" : "Area"}</span>
+              </button>
+            ))}
+            <button type="button" onClick={actions.clearRecentMapSearches} className="px-1 text-xs font-semibold text-muted-foreground underline hover:text-foreground">Clear</button>
+          </div>
+        )}
+      </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className={`glass relative overflow-hidden rounded-2xl p-0 ${view === "campus" ? "ring-1 ring-[#224f75]/20 shadow-xl" : ""}`}>
           <MapCanvas key={view} places={matchingPlaces} view={view} onSelect={setSelected} onOpenOffer={setOpenOffer} onOpenEvent={setOpenEvent} onOpenDeal={setOpenDeal} onUserLocation={setUserLocation} />
