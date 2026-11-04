@@ -83,6 +83,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
     let cancelled = false;
     let map: import("maplibre-gl").Map | undefined;
     let mobileCard: HTMLDivElement | undefined;
+    let recenterButton: HTMLButtonElement | undefined;
     const byId = new Map(places.map((place) => [place.id, place]));
     const isMobileMap = () => window.matchMedia("(max-width: 640px)").matches;
 
@@ -94,11 +95,21 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
         style: mapStyle,
         center: view === "campus" && places.length === 1 && places[0] ? [places[0].lng, places[0].lat] : view === "campus" ? [-111.6502, 40.2487] : [-111.664, 40.264],
         zoom: view === "campus" && places.length === 1 ? 17 : view === "campus" ? 15.3 : 10.2,
+        pitch: view === "campus" ? 46 : 0,
+        bearing: view === "campus" ? -18 : 0,
         minZoom: 3,
         maxZoom: 19,
         attributionControl: {},
       });
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
+      if (view === "campus" && container.current) {
+        recenterButton = document.createElement("button");
+        recenterButton.type = "button";
+        recenterButton.className = "absolute left-3 top-3 z-10 rounded-full border border-white/60 bg-[#082e4f]/95 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur hover:bg-[#123f65]";
+        recenterButton.textContent = "⌖ Recenter on BYU";
+        recenterButton.addEventListener("click", () => map?.easeTo({ center: [-111.6502, 40.2487], zoom: 15.3, pitch: 46, bearing: -18, duration: 900 }));
+        container.current.append(recenterButton);
+      }
       if (view === "area") {
         const geolocate = new GeolocateControl({
           positionOptions: { enableHighAccuracy: true },
@@ -228,7 +239,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
         content.append(eyebrow, title, items, directions);
         if (isMobileMap() && container.current) {
           mobileCard = document.createElement("div");
-          mobileCard.className = "absolute inset-x-3 bottom-3 z-10 max-h-[72%] overflow-hidden rounded-2xl border border-border bg-popover p-4 pr-11 shadow-float";
+          mobileCard.className = `absolute inset-x-3 bottom-3 z-10 max-h-[76%] overflow-hidden rounded-[1.4rem] border bg-popover p-4 pt-6 pr-11 shadow-float ${view === "campus" ? "border-[#224f75]/25" : "border-border"}`;
           mobileCard.setAttribute("role", "dialog");
           mobileCard.setAttribute("aria-label", `${place.title} map details`);
 
@@ -242,8 +253,11 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
             mobileCard = undefined;
           });
 
+          const handle = document.createElement("div");
+          handle.className = "absolute left-1/2 top-2 h-1 w-11 -translate-x-1/2 rounded-full bg-muted-foreground/25";
+
           items.className = "mt-2.5 max-h-48 space-y-2 overflow-y-auto overscroll-contain pr-1";
-          mobileCard.append(content, close);
+          mobileCard.append(handle, content, close);
           container.current.append(mobileCard);
           mobileCard.scrollIntoView({ behavior: "smooth", block: "center" });
           return;
@@ -256,27 +270,62 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
       map.on("load", () => {
         if (!map) return;
         if (view === "campus") {
+          const styleLayers = map.getStyle().layers ?? [];
+          for (const layer of styleLayers) {
+            try {
+              if (layer.type === "background") map.setPaintProperty(layer.id, "background-color", "#eef2ea");
+              if (layer.type === "fill" && /park|landcover|grass|wood/i.test(layer.id)) map.setPaintProperty(layer.id, "fill-color", "#cdddc8");
+              if (layer.type === "fill" && /water/i.test(layer.id)) map.setPaintProperty(layer.id, "fill-color", "#9fc8dc");
+              if (layer.type === "line" && /road|street|path/i.test(layer.id)) map.setPaintProperty(layer.id, "line-color", "#f8f4e8");
+            } catch { /* Map styles expose different paint properties. */ }
+          }
+
+          const vectorSource = Object.entries(map.getStyle().sources ?? {}).find(([, source]) => source.type === "vector")?.[0];
+          if (vectorSource && !map.getLayer("campus-3d-buildings")) {
+            try {
+              const firstLabel = styleLayers.find((layer) => layer.type === "symbol")?.id;
+              map.addLayer({
+                id: "campus-3d-buildings", type: "fill-extrusion", source: vectorSource, "source-layer": "building", minzoom: 14,
+                paint: {
+                  "fill-extrusion-color": ["interpolate", ["linear"], ["zoom"], 14, "#d8d4c8", 17, "#f6f1e6"],
+                  "fill-extrusion-height": ["coalesce", ["get", "render_height"], ["get", "height"], 12],
+                  "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], ["get", "min_height"], 0],
+                  "fill-extrusion-opacity": 0.88,
+                },
+              }, firstLabel);
+            } catch { /* The fallback map style may not expose building polygons. */ }
+          }
+
           map.addSource("buildings", {
             type: "geojson",
             data: { type: "FeatureCollection", features: places.map((place) => ({
+              id: place.id,
               type: "Feature" as const,
               geometry: { type: "Point" as const, coordinates: [place.lng, place.lat] },
-              properties: { id: place.id, code: place.code || place.title, name: place.title },
+              properties: { id: place.id, code: place.code || place.title, name: place.title, eventCount: place.events.length },
             })) },
           });
           map.addLayer({ id: "building-points", type: "circle", source: "buildings", paint: {
-            "circle-color": "#fff", "circle-radius": 5, "circle-stroke-color": "#245b4d", "circle-stroke-width": 1.5,
+            "circle-color": ["case", ["boolean", ["feature-state", "selected"], false], "#f5b942", [">", ["get", "eventCount"], 0], "#fff3cf", "#ffffff"],
+            "circle-radius": ["case", ["boolean", ["feature-state", "selected"], false], 10, [">", ["get", "eventCount"], 0], 7, 4],
+            "circle-stroke-color": ["case", [">", ["get", "eventCount"], 0], "#082e4f", "#58738a"],
+            "circle-stroke-width": ["case", ["boolean", ["feature-state", "selected"], false], 4, [">", ["get", "eventCount"], 0], 2.5, 1],
           } });
           map.addLayer({ id: "building-labels", type: "symbol", source: "buildings", minzoom: 14.5, layout: {
             "text-field": ["step", ["zoom"], ["get", "code"], 17, ["get", "name"]],
             "text-font": ["Roboto Regular", "Noto Sans Regular"],
             "text-size": 12, "text-offset": [0, 1], "text-anchor": "top", "text-optional": true,
-          }, paint: { "text-color": "#173e34", "text-halo-color": "#fff", "text-halo-width": 2 } });
+          }, paint: { "text-color": "#082e4f", "text-halo-color": "#f8f4e8", "text-halo-width": 2.5 } });
+          let selectedBuildingId: string | number | undefined;
           for (const layer of ["building-points", "building-labels"]) {
             map.on("click", layer, (event) => {
               if (map?.queryRenderedFeatures(event.point, { layers: ["place-points"] }).length) return;
               const place = byId.get(event.features?.[0]?.properties?.["id"]);
               if (place) {
+                if (selectedBuildingId !== undefined) map?.setFeatureState({ source: "buildings", id: selectedBuildingId }, { selected: false });
+                selectedBuildingId = place.id;
+                map?.setFeatureState({ source: "buildings", id: place.id }, { selected: true });
+                map?.easeTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), 16.2), pitch: 52, bearing: -18, duration: 750 });
                 void logActivityEvent("map_pin_selected", { placeId: place.id, kind: place.kind, view });
                 if (!isMobileMap()) onSelectRef.current(place);
                 showPlacePopup(place, [place.lng, place.lat]);
@@ -293,10 +342,10 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
             features: places.filter((place) => view !== "campus" || place.events.length > 0).map((place) => ({
               type: "Feature" as const,
               geometry: { type: "Point" as const, coordinates: [place.lng, place.lat] },
-              properties: { id: place.id, kind: place.events.length > 0 ? "event" : place.kind },
+              properties: { id: place.id, kind: place.events.length > 0 ? "event" : place.kind, eventCount: place.events.length },
             })),
           },
-          cluster: true,
+          cluster: view !== "campus",
           clusterMaxZoom: view === "campus" ? 16 : 13,
           clusterRadius: 42,
         });
@@ -311,17 +360,20 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
           "text-field": ["get", "point_count_abbreviated"], "text-size": 13,
         }, paint: { "text-color": "#fff" } });
         map.addLayer({ id: "place-points", type: "circle", source: "places", filter: ["!", ["has", "point_count"]], paint: {
-          "circle-color": ["match", ["get", "kind"], "event", "#e3a629", "discount", "#7357a4", "#245b4d"],
-          "circle-radius": 16, "circle-stroke-color": "#fff", "circle-stroke-width": 2.5,
+          "circle-color": ["match", ["get", "kind"], "event", view === "campus" ? "#d99516" : "#e3a629", "discount", "#7357a4", "#245b4d"],
+          "circle-radius": view === "campus" ? 19 : 16, "circle-stroke-color": "#fff", "circle-stroke-width": 2.5,
         } });
         map.addLayer({ id: "place-icons", type: "symbol", source: "places", filter: ["!", ["has", "point_count"]], layout: {
-          "icon-image": ["match", ["get", "kind"], "event", "place-food-icon", "discount", "place-discount-icon", "place-card-icon"],
-          "icon-size": 1, "icon-allow-overlap": true, "icon-ignore-placement": true,
-        } });
+          ...(view === "campus" ? { "text-field": ["to-string", ["get", "eventCount"]], "text-size": 14, "text-font": ["Roboto Bold", "Noto Sans Bold"], "text-allow-overlap": true } : {
+            "icon-image": ["match", ["get", "kind"], "event", "place-food-icon", "discount", "place-discount-icon", "place-card-icon"],
+            "icon-size": 1, "icon-allow-overlap": true, "icon-ignore-placement": true,
+          }),
+        }, paint: view === "campus" ? { "text-color": "#ffffff" } : {} });
         map.on("click", "place-points", (event) => {
           const id = event.features?.[0]?.properties?.["id"];
           const place = byId.get(id);
           if (place) {
+            if (view === "campus") map?.easeTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), 16.2), pitch: 52, bearing: -18, duration: 750 });
             void logActivityEvent("map_pin_selected", { placeId: place.id, kind: place.kind, view });
             if (!isMobileMap()) onSelectRef.current(place);
             showPlacePopup(place, [place.lng, place.lat]);
@@ -341,7 +393,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
         }
       });
     });
-    return () => { cancelled = true; mobileCard?.remove(); map?.remove(); };
+    return () => { cancelled = true; mobileCard?.remove(); recenterButton?.remove(); map?.remove(); };
   }, [places, view]);
 
   return <div ref={container} className="relative h-[440px] w-full overflow-hidden rounded-2xl sm:h-[600px]" aria-label={view === "campus" ? "BYU campus events map" : "Area discounts and free food map"} />;
