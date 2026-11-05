@@ -19,7 +19,7 @@ export const Route = createFileRoute("/starving-student")({
 });
 
 const discountTypes = ["All Deals", "Free Only", "Discounts Only", "Unlimited Only"] as const;
-const statusFilters = ["Any Status", "Unused / Available", "Fully Redeemed"] as const;
+const statusFilters = ["Any Status", "Unused / Available", "Used"] as const;
 
 function SSHub() {
   const { ssUsedCounts = {} } = useStore();
@@ -69,7 +69,7 @@ function SSHub() {
       const isUsed = isNoLimit ? count > 0 : count >= (d.totalUses ?? 1);
 
       if (statusFilter === "Unused / Available" && isUsed) return false;
-      if (statusFilter === "Fully Redeemed" && !isUsed) return false;
+      if (statusFilter === "Used" && !isUsed) return false;
 
       // 4. Search query
       if (t) {
