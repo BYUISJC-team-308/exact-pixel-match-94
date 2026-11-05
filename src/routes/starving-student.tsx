@@ -331,7 +331,7 @@ function SSHub() {
                   {/* Multi-use badge: shows count on card badge ONLY */}
                   {isNoLimit ? (
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
-                      {count > 0 ? `Unlimited (${count} used)` : "Unlimited Uses"}
+                      Unlimited
                     </span>
                   ) : total && total > 1 ? (
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
@@ -369,17 +369,13 @@ function SSHub() {
                   }`}
                 >
                   {isFullyUsed ? (
-                    <>
-                      <span>✓ Used</span>
-                    </>
+                    <span>&check; Used</span>
+                  ) : isNoLimit ? (
+                    <span>{count > 0 ? `Record Use (${count} used)` : "Record Use"}</span>
                   ) : count > 0 ? (
-                    <>
-                      <span>Punch Use {count + 1}</span>
-                    </>
+                    <span>{total && total > 1 ? `Mark Used (${count}/${total})` : "Mark Used"}</span>
                   ) : (
-                    <>
-                      <span>Mark Used</span>
-                    </>
+                    <span>{total && total > 1 ? `Mark Used (0/${total})` : "Mark Used"}</span>
                   )}
                 </button>
               </div>
