@@ -92,13 +92,18 @@ function RootComponent() {
         <div className="relative">
           <SiteHeader />
           <main className="mx-auto max-w-7xl px-6"><Outlet /></main>
-          <footer className="mx-auto mt-10 max-w-7xl border-t border-border px-6 py-8">
-            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-              {siteSections.map((s) => (
-                <Link key={s.to} to={s.to} className="text-muted-foreground hover:text-primary">{s.label}</Link>
-              ))}
+          <footer className="mx-auto mt-12 max-w-7xl border-t border-border/60 px-6 py-8">
+            <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+              <p className="text-xs text-muted-foreground">Studeats &middot; Verified student discounts &amp; campus perks</p>
+              <button
+                type="button"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                className="inline-flex items-center gap-1.5 rounded-full bg-secondary/80 px-3.5 py-1.5 text-xs font-medium text-muted-foreground ring-1 ring-border transition-colors hover:bg-secondary hover:text-foreground active:scale-95"
+              >
+                <span>Back to top</span>
+                <span>&uarr;</span>
+              </button>
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">Studeats · the bulletin board for broke students</p>
           </footer>
         </div>
       </div>

@@ -1,12 +1,29 @@
 /**
  * Local BYU & Provo Student Discounts Directory
- * Covering popular local eateries, entertainment, and university services.
+ * Covering popular local eateries, entertainment, and university services with exact geolocation.
  */
 
 export async function scrapeByuProvoDeals() {
-  console.log('[BYU & Provo] Loading local campus and Utah County student deals...');
+  console.log('[BYU & Provo] Loading local campus and Utah County student deals with geolocation...');
 
   const localDeals = [
+    {
+      company: 'BYU Store',
+      title: 'BYU Tech & Apple Campus Discount',
+      category: 'Tech',
+      deal_type: 'Percent off',
+      value: 'Education Pricing ($50–$200 Off)',
+      description: 'Education pricing on Apple laptops, iPads, accessories, and campus course materials for all currently enrolled students.',
+      how_to_redeem: 'Visit the BYU Store Technology department or sign in to byustore.com with your NetID.',
+      duration: 'Ongoing Campus Benefit',
+      url: 'https://byustore.com/',
+      source: 'BYU / Provo Local',
+      is_new: true,
+      address: 'Wilkinson Student Center, Brigham Young University',
+      city: 'Provo',
+      latitude: 40.2505,
+      longitude: -111.6492,
+    },
     {
       company: 'Slab Pizza',
       title: 'Slab Pizza Provo Student Discount',
@@ -19,6 +36,10 @@ export async function scrapeByuProvoDeals() {
       url: 'https://slabpizza.com/',
       source: 'BYU / Provo Local',
       is_new: true,
+      address: '3140 N University Ave',
+      city: 'Provo',
+      latitude: 40.2741,
+      longitude: -111.6601,
     },
     {
       company: 'Cupbop Korean BBQ',
@@ -32,19 +53,27 @@ export async function scrapeByuProvoDeals() {
       url: 'https://cupbop.com/',
       source: 'BYU / Provo Local',
       is_new: true,
+      address: '1474 N University Ave',
+      city: 'Provo',
+      latitude: 40.2526,
+      longitude: -111.6583,
     },
     {
-      company: 'BYU Store',
-      title: 'BYU Tech & Apple Campus Discount',
-      category: 'Tech',
+      company: 'Swig',
+      title: 'Swig Canyon Road Student Special',
+      category: 'Food',
       deal_type: 'Percent off',
-      value: 'Education Pricing ($50–$200 Off)',
-      description: 'Education pricing on Apple laptops, iPads, accessories, and campus course materials for all currently enrolled students.',
-      how_to_redeem: 'Visit the BYU Store Technology department or sign in to byustore.com with your NetID.',
-      duration: 'Ongoing Campus Benefit',
-      url: 'https://byustore.com/',
+      value: 'Student Punch Card Deals',
+      description: 'Custom dirty sodas, refreshers, and warm cookies just north of campus with student reward incentives.',
+      how_to_redeem: 'Scan your Swig app or mention student promo at the drive-thru.',
+      duration: 'Ongoing Local Deal',
+      url: 'https://swigdrinks.com/',
       source: 'BYU / Provo Local',
       is_new: true,
+      address: '1523 N Canyon Rd',
+      city: 'Provo',
+      latitude: 40.2533,
+      longitude: -111.6521,
     },
     {
       company: 'Cinemark 16 Provo',
@@ -55,9 +84,13 @@ export async function scrapeByuProvoDeals() {
       description: 'Discounted movie admissions every Tuesday and with student identification at Cinemark 16 on Towne Centre Blvd.',
       how_to_redeem: 'Show valid university ID at the box office or select Student pricing online.',
       duration: 'Weekly Promo',
-      url: 'https://www.cinemark.com/theatres/ut-provo/cinemark-16-provo',
+      url: 'https://www.cinemark.com/movie-theaters/ut-provo/cinemark-provo-16',
       source: 'BYU / Provo Local',
       is_new: true,
+      address: '1200 Towne Centre Blvd',
+      city: 'Provo',
+      latitude: 40.2185,
+      longitude: -111.6534,
     },
     {
       company: 'FatCats Provo',
@@ -71,6 +104,10 @@ export async function scrapeByuProvoDeals() {
       url: 'https://www.fatcatsfun.com/provo',
       source: 'BYU / Provo Local',
       is_new: true,
+      address: '1200 N University Ave',
+      city: 'Provo',
+      latitude: 40.2492,
+      longitude: -111.6586,
     },
     {
       company: 'JCW’s The Burger Boys',
@@ -79,11 +116,15 @@ export async function scrapeByuProvoDeals() {
       deal_type: 'Percent off',
       value: '10% Off Combo Meals',
       description: 'Enjoy 10% off thick burgers, fresh fries, and famous shakes with student ID.',
-      how_to_redeem: 'Show student ID during checkout in Provo.',
+      how_to_redeem: 'Show student ID during checkout in Provo or Orem.',
       duration: 'Ongoing Local Deal',
-      url: 'https://www.jcws.com/',
+      url: 'https://jcws.com/',
       source: 'BYU / Provo Local',
       is_new: true,
+      address: '396 S State St',
+      city: 'Orem',
+      latitude: 40.2917,
+      longitude: -111.6934,
     },
     {
       company: 'Hruska’s Kolaches',
@@ -97,9 +138,30 @@ export async function scrapeByuProvoDeals() {
       url: 'https://www.hruskaskolaches.com/',
       source: 'BYU / Provo Local',
       is_new: true,
+      address: '434 W Center St',
+      city: 'Provo',
+      latitude: 40.2338,
+      longitude: -111.6661,
+    },
+    {
+      company: 'The Wall BYU',
+      title: 'The Wall Campus Eatery Student Combo',
+      category: 'Food',
+      deal_type: 'Fixed price',
+      value: '$7.99 Burger & Drink Combo',
+      description: 'Casual campus dining, live student open-mic events, and student-priced comfort food right in the Wilkinson Student Center.',
+      how_to_redeem: 'Order at the counter in the Wilkinson Student Center.',
+      duration: 'Campus Regular',
+      url: 'https://dining.byu.edu/',
+      source: 'BYU / Provo Local',
+      is_new: true,
+      address: '1151 WSC, Brigham Young University',
+      city: 'Provo',
+      latitude: 40.2502,
+      longitude: -111.6489,
     }
   ];
 
-  console.log(`[BYU & Provo] Loaded ${localDeals.length} local student deals.`);
+  console.log(`[BYU & Provo] Loaded ${localDeals.length} local student deals with geolocation.`);
   return localDeals;
 }

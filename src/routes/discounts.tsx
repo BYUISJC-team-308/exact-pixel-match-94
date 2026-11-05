@@ -4,6 +4,7 @@ import type { Deal } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
 import { DealDetail, FilterChips, PageHeader, SearchInput, chipTone, Btn, CompanyLogo } from "@/components/ui-bits";
 import { useDealsQuery } from "@/lib/deals";
+import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 export const Route = createFileRoute("/discounts")({
   head: () => ({
@@ -120,7 +121,9 @@ function Discounts() {
                         <h3 className="text-xl font-bold tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
                           {d.company}
                         </h3>
-                        <p className="text-xs text-muted-foreground truncate">{d.duration || "Active student discount"}</p>
+                        <p className="text-xs text-muted-foreground truncate font-medium">
+                          {getCompanyCatalogEntry(d.company)?.tagline || d.duration || "Active student discount"}
+                        </p>
                       </div>
                     </div>
 

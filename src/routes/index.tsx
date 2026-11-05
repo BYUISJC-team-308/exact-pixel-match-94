@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { DealDetail, EventDetail, chipTone, CompanyLogo } from "@/components/ui-bits";
 import { useFoodEventsQuery, type NormalizedFoodEvent, getLocalDateString } from "@/lib/food-events";
 import { useDealsQuery } from "@/lib/deals";
+import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,7 +49,7 @@ export function Index() {
         <div className="rise">
           <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-primary ring-1 ring-border">
             <span className="size-2 rounded-full bg-primary animate-pulse" />
-            <span>The bulletin board for broke students</span>
+            <span>Verified student discounts & campus perks</span>
           </div>
 
           <h1 className="mt-5 max-w-[18ch] text-balance font-display text-5xl font-semibold leading-[1.05] tracking-tight xl:text-6xl">
@@ -340,7 +341,9 @@ export function Index() {
                         <h4 className="text-lg font-bold tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
                           {d.company}
                         </h4>
-                        <p className="text-xs text-muted-foreground truncate">{d.duration || "Active discount"}</p>
+                        <p className="text-xs text-muted-foreground truncate font-medium">
+                          {getCompanyCatalogEntry(d.company)?.tagline || d.duration || "Active discount"}
+                        </p>
                       </div>
                     </div>
 
@@ -377,7 +380,7 @@ export function Index() {
       </section>
 
       {/* 5. Verified Discounts (Popular Student Perks & AI Tools) */}
-      <section className="py-10">
+      <section className="pt-10 pb-16 sm:pb-20">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <span className="text-xs font-semibold text-primary uppercase tracking-wider">Top Picks</span>
@@ -412,7 +415,9 @@ export function Index() {
                       <h3 className="text-xl font-bold tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
                         {d.company}
                       </h3>
-                      <p className="text-xs text-muted-foreground truncate">{d.duration || "Active student discount"}</p>
+                      <p className="text-xs text-muted-foreground truncate font-medium">
+                        {getCompanyCatalogEntry(d.company)?.tagline || d.duration || "Active student discount"}
+                      </p>
                     </div>
                   </div>
 
