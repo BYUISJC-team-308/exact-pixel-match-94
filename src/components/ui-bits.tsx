@@ -28,6 +28,8 @@ function ReportIssueButton({ itemType, itemId, itemLabel }: Pick<DataIssueInput,
       <Btn className="mt-4" disabled={status === "sending" || status === "sent"} onClick={async () => { setStatus("sending"); try { await submitDataIssue({ itemType, itemId, itemLabel, issueType, details }); setStatus("sent"); } catch { setStatus("error"); } }}>{status === "sending" ? "Submitting…" : "Submit report"}</Btn>
     </Modal>
   </>;
+}
+
 import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
@@ -247,14 +249,6 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
   const saved = savedDeals.includes(deal.id);
   return (
     <Modal open onClose={onClose}>
-      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{deal.category} · {deal.type}</span>
-      <h3 className="mt-3 text-2xl font-semibold">{deal.title}</h3>
-      <p className="mt-1 text-3xl font-semibold text-accent">{deal.value}</p>
-      <p className="mt-3 text-sm text-muted-foreground">{deal.description}</p>
-      <dl className="mt-4 space-y-2 text-sm">
-        <div><dt className="font-semibold">Company</dt><dd className="text-muted-foreground">{deal.company}</dd></div>
-        <div><dt className="font-semibold">Duration</dt><dd className="text-muted-foreground">{deal.duration}</dd></div>
-        <div><dt className="font-semibold">How to get it</dt><dd className="text-muted-foreground">{deal.howTo}</dd></div>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <CompanyLogo company={deal.company} url={deal.url} size={48} />
