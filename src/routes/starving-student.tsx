@@ -187,7 +187,7 @@ function SSHub() {
           <div className="h-2 w-full overflow-hidden rounded-full bg-secondary ring-1 ring-border">
             <div
               className="h-full bg-primary transition-all duration-500 ease-out"
-              style={{ width: `${Math.max(2, (fullyUsedCount / totalOffers) * 100)}%` }}
+              style={{ width: `${fullyUsedCount === 0 ? 0 : Math.max(2, (fullyUsedCount / totalOffers) * 100)}%` }}
             />
           </div>
         </div>
