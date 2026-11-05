@@ -21,6 +21,17 @@ export const Route = createFileRoute("/starving-student")({
 const discountTypes = ["All Deals", "Free Only", "Discounts Only", "Unlimited Only"] as const;
 const statusFilters = ["Any Status", "Unused / Available", "Used"] as const;
 
+const sortOptions = [
+  { value: "company-asc", label: "Company (A–Z)" },
+  { value: "company-desc", label: "Company (Z–A)" },
+  { value: "item-asc", label: "Deal Title (A–Z)" },
+  { value: "free-first", label: "Free Deals First" },
+  { value: "locations-desc", label: "Most Locations" },
+  { value: "most-punched", label: "Most Punched" },
+] as const;
+
+type SortOption = (typeof sortOptions)[number]["value"];
+
 const CATEGORY_ICONS: Record<string, string> = {
   "Freebies": "🎁",
   "Treats & Drinks": "🥤",
@@ -41,7 +52,7 @@ function SSHub() {
   const [typeFilter, setTypeFilter] = useState<(typeof discountTypes)[number]>("All Deals");
   const [cat, setCat] = useState("All categories");
   const [statusFilter, setStatusFilter] = useState<(typeof statusFilters)[number]>("Any Status");
-  const [sort, setSort] = useState<"company" | "type">("company");
+  const [sort, setSort] = useState<SortOption>("company-asc");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<SSDeal | null>(null);
 
@@ -99,10 +110,37 @@ function SSHub() {
       const totalB = b.totalUses === null ? Infinity : (b.totalUses ?? 1);
       const isUsedB = countB >= totalB;
 
-      // Group fully used deals at the bottom
-      if (isUsedA !== isUsedB) return Number(isUsedA) - Number(isUsedB);
+      // Group fully used deals at the bottom (unless sorting by most punched)
+      if (sort !== "most-punched" && isUsedA !== isUsedB) {
+        return Number(isUsedA) - Number(isUsedB);
+      }
 
-      return sort === "company" ? a.company.localeCompare(b.company) : a.type.localeCompare(b.type);
+      if (sort === "company-asc") {
+        return a.company.localeCompare(b.company);
+      }
+      if (sort === "company-desc") {
+        return b.company.localeCompare(a.company);
+      }
+      if (sort === "item-asc") {
+        return a.item.localeCompare(b.item);
+      }
+      if (sort === "free-first") {
+        const isFreeA = a.type === "Free" ? 0 : 1;
+        const isFreeB = b.type === "Free" ? 0 : 1;
+        if (isFreeA !== isFreeB) return isFreeA - isFreeB;
+        return a.company.localeCompare(b.company);
+      }
+      if (sort === "locations-desc") {
+        const locDiff = b.locations.length - a.locations.length;
+        if (locDiff !== 0) return locDiff;
+        return a.company.localeCompare(b.company);
+      }
+      if (sort === "most-punched") {
+        const punchDiff = countB - countA;
+        if (punchDiff !== 0) return punchDiff;
+        return a.company.localeCompare(b.company);
+      }
+      return a.company.localeCompare(b.company);
     });
 
   // Group deals by category
@@ -270,11 +308,14 @@ function SSHub() {
             <select
               aria-label="Sort card offers"
               value={sort}
-              onChange={(e) => setSort(e.target.value as "company" | "type")}
-              className="h-9 rounded-full bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none"
+              onChange={(e) => setSort(e.target.value as SortOption)}
+              className="h-9 rounded-full bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer"
             >
-              <option value="company">Company (A-Z)</option>
-              <option value="type">Discount type</option>
+              {sortOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -580,6 +621,7 @@ function SSHub() {
                 setTypeFilter("All Deals");
                 setStatusFilter("Any Status");
                 setCat("All categories");
+                setSort("company-asc");
               }}
               className="mt-4 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
             >
