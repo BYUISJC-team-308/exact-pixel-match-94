@@ -14,12 +14,13 @@ type OfferRow = {
   source_url: string | null;
   captured_at: string | null;
   locations: { address: string; city: string; lat: number; lng: number }[] | null;
+  total_uses?: number | null;
 };
 
 export async function fetchStarvingStudentOffers(): Promise<SSDeal[]> {
   const { data, error } = await supabase
     .from("ss_deals")
-    .select("id,source_key,category,company,item,deal_type,value,details,source_url,captured_at,locations")
+    .select("id,source_key,category,company,item,deal_type,value,details,source_url,captured_at,locations,total_uses")
     .order("company", { ascending: true });
   if (error) throw error;
   return ((data ?? []) as OfferRow[]).map((offer) => ({
@@ -36,6 +37,7 @@ export async function fetchStarvingStudentOffers(): Promise<SSDeal[]> {
     sourceUrl: offer.source_url ?? "",
     capturedAt: offer.captured_at ?? "",
     locations: offer.locations ?? [],
+    totalUses: offer.total_uses !== undefined ? offer.total_uses : 1,
   }));
 }
 

@@ -32,6 +32,7 @@ export type SSDeal = {
   y: number;
   sourceUrl: string;
   capturedAt: string;
+  totalUses?: number | null;
   locations: { address: string; city: string; lat: number; lng: number }[];
 };
 

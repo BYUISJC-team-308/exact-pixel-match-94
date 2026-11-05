@@ -17,9 +17,9 @@ export type RecentMapSearch = {
   searchedAt: string;
 };
 
-type State = { savedDeals: string[]; savedEvents: string[]; usedSS: string[]; recentMapSearches: RecentMapSearch[]; preferredCampus: string; user: User | null };
+type State = { savedDeals: string[]; savedEvents: string[]; usedSS: string[]; ssUsedCounts?: Record<string, number>; recentMapSearches: RecentMapSearch[]; preferredCampus: string; user: User | null };
 const KEY = "studeats-state";
-const empty: State = { savedDeals: [], savedEvents: [], usedSS: [], recentMapSearches: [], preferredCampus: "byu-provo", user: null };
+const empty: State = { savedDeals: [], savedEvents: [], usedSS: [], ssUsedCounts: {}, recentMapSearches: [], preferredCampus: "byu-provo", user: null };
 let state: State = empty;
 let loaded = false;
 const listeners = new Set<() => void>();
@@ -38,7 +38,13 @@ function load() {
         );
       }
       if (!Array.isArray(parsed.recentMapSearches)) parsed.recentMapSearches = [];
-      state = { ...empty, ...parsed };
+      const counts = parsed.ssUsedCounts || {};
+      if (Array.isArray(parsed.usedSS)) {
+        parsed.usedSS.forEach((id: string) => {
+          if (!counts[id]) counts[id] = 1;
+        });
+      }
+      state = { ...empty, ...parsed, ssUsedCounts: counts };
     } else {
       state = { ...empty, savedDeals: [] };
     }
