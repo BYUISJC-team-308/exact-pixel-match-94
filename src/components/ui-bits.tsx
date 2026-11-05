@@ -3,6 +3,31 @@ import { Link } from "@tanstack/react-router";
 import type { Deal, FoodEvent, SSDeal } from "@/lib/data";
 import { eventDate } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
+import { submitDataIssue, type DataIssueInput } from "@/lib/data-issues";
+
+function ReportIssueButton({ itemType, itemId, itemLabel }: Pick<DataIssueInput, "itemType" | "itemId" | "itemLabel">) {
+  const [open, setOpen] = useState(false);
+  const [issueType, setIssueType] = useState("Offer details are incorrect");
+  const [details, setDetails] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  return <>
+    <button type="button" onClick={() => setOpen(true)} className="text-xs font-semibold text-muted-foreground underline hover:text-foreground">Report incorrect information</button>
+    <Modal open={open} onClose={() => setOpen(false)}>
+      <h3 className="text-xl font-semibold">Report an information problem</h3>
+      <p className="mt-1 text-sm text-muted-foreground">Help the team keep {itemLabel} accurate.</p>
+      <label className="mt-4 block text-sm font-medium">What is wrong?
+        <select value={issueType} onChange={(event) => setIssueType(event.target.value)} className="mt-1 block w-full rounded-lg border border-border bg-background p-2">
+          <option>Offer details are incorrect</option><option>Offer is expired</option><option>Location is incorrect</option><option>Event was cancelled</option><option>Other</option>
+        </select>
+      </label>
+      <label className="mt-3 block text-sm font-medium">More details
+        <textarea value={details} onChange={(event) => setDetails(event.target.value)} maxLength={2000} className="mt-1 block min-h-24 w-full rounded-lg border border-border bg-background p-2" />
+      </label>
+      {status === "sent" && <p className="mt-3 text-sm font-semibold text-primary">Thanks—your report was submitted.</p>}
+      {status === "error" && <p className="mt-3 text-sm text-destructive">The report could not be submitted. Please try again.</p>}
+      <Btn className="mt-4" disabled={status === "sending" || status === "sent"} onClick={async () => { setStatus("sending"); try { await submitDataIssue({ itemType, itemId, itemLabel, issueType, details }); setStatus("sent"); } catch { setStatus("error"); } }}>{status === "sending" ? "Submitting…" : "Submit report"}</Btn>
+    </Modal>
+  </>;
 import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
@@ -222,6 +247,14 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
   const saved = savedDeals.includes(deal.id);
   return (
     <Modal open onClose={onClose}>
+      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{deal.category} · {deal.type}</span>
+      <h3 className="mt-3 text-2xl font-semibold">{deal.title}</h3>
+      <p className="mt-1 text-3xl font-semibold text-accent">{deal.value}</p>
+      <p className="mt-3 text-sm text-muted-foreground">{deal.description}</p>
+      <dl className="mt-4 space-y-2 text-sm">
+        <div><dt className="font-semibold">Company</dt><dd className="text-muted-foreground">{deal.company}</dd></div>
+        <div><dt className="font-semibold">Duration</dt><dd className="text-muted-foreground">{deal.duration}</dd></div>
+        <div><dt className="font-semibold">How to get it</dt><dd className="text-muted-foreground">{deal.howTo}</dd></div>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <CompanyLogo company={deal.company} url={deal.url} size={48} />
@@ -254,6 +287,7 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
         <a href={deal.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Go to provider →</a>
         <Btn variant="soft" onClick={() => actions.toggleDeal(deal.id)}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
       </div>
+      <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="deal" itemId={deal.id} itemLabel={`${deal.company}: ${deal.title}`} /></div>
     </Modal>
   );
 }
@@ -277,6 +311,7 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
         <Btn onClick={() => actions.toggleEvent(event.id)}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
         <Link to="/map" className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">See on map</Link>
       </div>
+      <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="event" itemId={event.id} itemLabel={event.title} /></div>
     </Modal>
   );
 }
@@ -302,6 +337,7 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
         {deal.locations[0] && <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(deal.locations[0].address)}`} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">Directions to first location →</a>}
         <Btn variant="soft" onClick={() => actions.toggleUsed(deal.id)}>{used ? "✓ Used — undo" : "Mark as used"}</Btn>
       </div>
+      <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="starving_student" itemId={deal.id} itemLabel={`${deal.company}: ${deal.item}`} /></div>
     </Modal>
   );
 }

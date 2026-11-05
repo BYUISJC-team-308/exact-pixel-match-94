@@ -13,6 +13,8 @@ export type DbFoodEvent = {
   start_time: string; // HH:mm:ss
   end_time: string;   // HH:mm:ss
   building: string;
+  building_id?: string | null;
+  campus_id?: string | null;
   room?: string | null;
   details?: string | null;
   address?: string | null;
@@ -105,6 +107,7 @@ export function normalizeFoodEvent(row: DbFoodEvent): NormalizedFoodEvent {
     start: startFormatted || row.start_time || "12:00",
     end: endFormatted || row.end_time || "13:00",
     building: row.building || "Campus",
+    buildingId: row.building_id || undefined,
     room: row.room || "",
     details: row.details || "No extra details provided.",
     address: row.address || undefined,
@@ -166,6 +169,8 @@ export type NewFoodEventInput = {
   start_time: string;
   end_time: string;
   building: string;
+  building_id?: string;
+  campus_id?: string;
   room?: string;
   details?: string;
   address?: string;

@@ -1,6 +1,6 @@
 import type { Deal, SSDeal } from "@/lib/data";
 import type { NormalizedFoodEvent } from "@/lib/food-events";
-import buildingRecords from "@/lib/byu-buildings.json";
+import { fallbackCampusBuildings, type CampusBuilding } from "@/lib/campus-buildings";
 
 export type MapPlace = {
   id: string;
@@ -18,39 +18,32 @@ export type MapPlace = {
 
 // Centroids and names come from BYU's public Campus Buildings GIS layer.
 // These identify buildings, not rooms or entrances.
-export const campusBuildings = buildingRecords
-  .filter((building) => Number.isFinite(building.lat) && Number.isFinite(building.lng))
-  .map((building, index) => ({
-    ...building,
-    id: `${building.code.trim() || "building"}-${index}`,
-    code: building.code.trim(),
-    name: building.label?.trim() || building.name.trim(),
-    aliases: [building.name.trim().toLowerCase(), building.label?.trim().toLowerCase()].filter(Boolean) as string[],
-  }));
+export const campusBuildings = fallbackCampusBuildings;
 
-export function findCampusBuilding(input: string) {
+export function findCampusBuilding(input: string, buildings: CampusBuilding[] = campusBuildings) {
   const text = input.trim().toLowerCase();
   if (!text) return undefined;
-  return campusBuildings.find((building) =>
+  return buildings.find((building) =>
     (building.code && new RegExp(`(^|[^a-z0-9])${building.code.toLowerCase()}([^a-z0-9]|$)`).test(text)) ||
     building.aliases.some((alias) => text.includes(alias)),
   );
 }
 
-export function buildingPlaces(events: NormalizedFoodEvent[]): MapPlace[] {
+export function buildingPlaces(events: NormalizedFoodEvent[], buildings: CampusBuilding[] = campusBuildings): MapPlace[] {
+  const mappedBuildings = buildings.filter((building) => Number.isFinite(building.lat) && Number.isFinite(building.lng));
   const byBuilding = new Map<string, NormalizedFoodEvent[]>();
   for (const event of events) {
-    const building = findCampusBuilding(event.building);
+    const building = buildings.find((item) => item.id === event.buildingId) || findCampusBuilding(event.building, buildings);
     if (building) byBuilding.set(building.id, [...(byBuilding.get(building.id) ?? []), event]);
   }
-  return campusBuildings.map((building) => ({
+  return mappedBuildings.map((building) => ({
     id: `building-${building.id}`,
     kind: "building" as const,
     title: building.name,
     subtitle: building.code,
     code: building.code,
-    lat: building.lat,
-    lng: building.lng,
+    lat: building.lat as number,
+    lng: building.lng as number,
     address: `${building.name}, BYU, Provo, UT`,
     cardOffers: [],
     deals: [],
@@ -104,10 +97,10 @@ export function discountPlaces(discounts: Deal[]): MapPlace[] {
   }));
 }
 
-export function eventPlaces(events: NormalizedFoodEvent[]): MapPlace[] {
+export function eventPlaces(events: NormalizedFoodEvent[], buildings: CampusBuilding[] = campusBuildings): MapPlace[] {
   const places = new Map<string, MapPlace>();
   for (const event of events) {
-    const building = findCampusBuilding(event.building);
+    const building = buildings.find((item) => item.id === event.buildingId) || findCampusBuilding(event.building, buildings);
     const lat = building?.lat ?? event.latitude;
     const lng = building?.lng ?? event.longitude;
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
