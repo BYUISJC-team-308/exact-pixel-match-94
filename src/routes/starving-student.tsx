@@ -369,7 +369,7 @@ function SSHub() {
                   }`}
                 >
                   {isFullyUsed ? (
-                    <span>&check; Used</span>
+                    <span>✓ Used</span>
                   ) : isNoLimit ? (
                     <span>{count > 0 ? `Record Use (${count} used)` : "Record Use"}</span>
                   ) : count > 0 ? (
