@@ -9,14 +9,14 @@ import { logActivityEvent } from "@/lib/analytics";
 import { getMapFoodEvents, normalizeFoodEvent, type NormalizedFoodEvent } from "@/lib/food-events";
 import { buildingPlaces, cardPlaces, discountPlaces, eventPlaces, type MapPlace } from "@/lib/map-places";
 import { getStarvingStudentOffers } from "@/lib/starving-student";
-import { getMapCampusBuildings } from "@/lib/campus-buildings";
+import { getMapCampusBuildings, getMapCampuses } from "@/lib/campus-buildings";
 import { actions, useStore } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/map")({
   loader: async () => {
-    const [offers, eventRows, dealRows, campusBuildingRows] = await Promise.all([getStarvingStudentOffers(), getMapFoodEvents(), getMapDeals(), getMapCampusBuildings()]);
-    return { offers, eventRows, dealRows, campusBuildingRows };
+    const [offers, eventRows, dealRows, campusBuildingRows, campuses] = await Promise.all([getStarvingStudentOffers(), getMapFoodEvents(), getMapDeals(), getMapCampusBuildings(), getMapCampuses()]);
+    return { offers, eventRows, dealRows, campusBuildingRows, campuses };
   },
   head: () => ({
     meta: [
@@ -85,7 +85,7 @@ function eventCountdown(event: NormalizedFoodEvent) {
 
 function MapPage() {
   const router = useRouter();
-  const { offers, eventRows, dealRows, campusBuildingRows } = Route.useLoaderData();
+  const { offers, eventRows, dealRows, campusBuildingRows, campuses } = Route.useLoaderData();
   const [view, setView] = useState<View>("area");
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -99,6 +99,7 @@ function MapPage() {
   const [showInactiveBuildings, setShowInactiveBuildings] = useState(false);
   const [radius, setRadius] = useState<Radius>("all");
   const [focusPlaceId, setFocusPlaceId] = useState<string | null>(null);
+  const [campusSlug, setCampusSlug] = useState(() => campuses[0]?.slug || "byu-provo");
   const { recentMapSearches } = useStore();
   useEffect(() => { void logActivityEvent("map_opened"); }, []);
   useEffect(() => {
@@ -107,15 +108,18 @@ function MapPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "deals" }, () => void router.invalidate())
       .on("postgres_changes", { event: "*", schema: "public", table: "ss_deals" }, () => void router.invalidate())
       .on("postgres_changes", { event: "*", schema: "public", table: "campus_buildings" }, () => void router.invalidate())
+      .on("postgres_changes", { event: "*", schema: "public", table: "campuses" }, () => void router.invalidate())
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [router]);
   useEffect(() => { setSelected(null); }, [campusDate]);
   const events = useMemo(() => eventRows.filter(isUpcomingEvent).map(normalizeFoodEvent), [eventRows]);
+  const selectedCampus = campuses.find((campus) => campus.slug === campusSlug) || campuses[0];
+  const campusBuildingRowsForSelection = useMemo(() => campusBuildingRows.filter((building) => !selectedCampus || building.campusId === selectedCampus.id || (selectedCampus.slug === "byu-provo" && !building.campusId)), [campusBuildingRows, selectedCampus]);
   const cards = useMemo(() => cardPlaces(offers), [offers]);
   const campusEvents = useMemo(() => eventPlaces(events, campusBuildingRows), [events, campusBuildingRows]);
-  const selectedCampusEvents = useMemo(() => eventRows.filter((row) => row.event_date === campusDate).map(normalizeFoodEvent), [eventRows, campusDate]);
-  const buildings = useMemo(() => buildingPlaces(selectedCampusEvents, campusBuildingRows), [selectedCampusEvents, campusBuildingRows]);
+  const selectedCampusEvents = useMemo(() => eventRows.filter((row) => row.event_date === campusDate && (!selectedCampus || row.campus_id === selectedCampus.id || (selectedCampus.slug === "byu-provo" && !row.campus_id && Boolean(row.building_id)))).map(normalizeFoodEvent), [eventRows, campusDate, selectedCampus]);
+  const buildings = useMemo(() => buildingPlaces(selectedCampusEvents, campusBuildingRowsForSelection), [selectedCampusEvents, campusBuildingRowsForSelection]);
   const discounts = useMemo(() => discountPlaces(dealRows.map(normalizeDeal)), [dealRows]);
   const places = useMemo(() => view === "campus" ? buildings : [
     ...(filter === "event" || filter === "discount" ? [] : cards),
@@ -143,13 +147,13 @@ function MapPage() {
   return (
     <>
       <PageHeader eyebrow="Two ways to explore" title="Interactive Maps">
-        <p className="max-w-xl text-sm text-muted-foreground">Find a card deal near you or see where the next free food event is happening at BYU.</p>
+        <p className="max-w-xl text-sm text-muted-foreground">Find nearby student deals or explore free-food events on your college campus.</p>
       </PageHeader>
       <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Map view">
         <button type="button" role="tab" aria-selected={view === "area"} onClick={() => changeView("area")}
           className={`rounded-full px-5 py-2 text-sm font-semibold ${view === "area" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>Area Map</button>
         <button type="button" role="tab" aria-selected={view === "campus"} onClick={() => changeView("campus")}
-          className={`rounded-full px-5 py-2 text-sm font-semibold ${view === "campus" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>BYU Campus Map</button>
+          className={`rounded-full px-5 py-2 text-sm font-semibold ${view === "campus" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>Campus Map</button>
       </div>
       {view === "area" ? (
         <div className="mt-4 space-y-3">
@@ -174,6 +178,14 @@ function MapPage() {
         </div>
       ) : (
         <section className="mt-4 overflow-hidden rounded-2xl border border-[#224f75]/20 bg-gradient-to-br from-[#f8f4e8] via-white to-[#e4edf3] p-4 shadow-sm" aria-label="Campus day controls">
+          <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-[#224f75]/15 bg-white/80 p-3">
+            <label className="min-w-[220px] flex-1 text-xs font-semibold text-[#082e4f]">Choose your campus
+              <select value={campusSlug} onChange={(event) => { setCampusSlug(event.target.value); setSelected(null); setFocusPlaceId(null); setQuery(""); }} className="mt-1 block w-full rounded-lg border border-[#224f75]/20 bg-white px-3 py-2 text-sm font-semibold">
+                {campuses.map((campus) => <option key={campus.id} value={campus.slug}>{campus.name} · {campus.city}</option>)}
+              </select>
+            </label>
+            {selectedCampus?.mapUrl && <a href={selectedCampus.mapUrl} target="_blank" rel="noopener noreferrer" className="rounded-full border border-[#224f75]/20 bg-white px-3 py-2 text-xs font-semibold text-[#082e4f]">Official campus map ↗</a>}
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#224f75]">Explore a day</p>
@@ -190,7 +202,7 @@ function MapPage() {
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[#36566f]">
-            <strong className="rounded-full bg-[#082e4f] px-3 py-1.5 text-white">{selectedCampusEvents.length} free-food event{selectedCampusEvents.length === 1 ? "" : "s"}</strong>
+            <strong className="rounded-full px-3 py-1.5 text-white" style={{ backgroundColor: selectedCampus?.primaryColor || "#082e4f" }}>{selectedCampusEvents.length} free-food event{selectedCampusEvents.length === 1 ? "" : "s"}</strong>
             <span>across {buildings.filter((building) => building.events.length).length} campus location{buildings.filter((building) => building.events.length).length === 1 ? "" : "s"}</span>
             <span className="ml-auto">Numbered pins show events · highlighted buildings are active</span>
           </div>
@@ -231,7 +243,7 @@ function MapPage() {
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className={`glass relative overflow-hidden rounded-2xl p-0 ${view === "campus" ? "ring-1 ring-[#224f75]/20 shadow-xl" : ""}`}>
-          <MapCanvas key={view} places={matchingPlaces} view={view} showInactiveBuildings={showInactiveBuildings} focusPlaceId={focusPlaceId} onSelect={setSelected} onOpenOffer={setOpenOffer} onOpenEvent={setOpenEvent} onOpenDeal={setOpenDeal} onUserLocation={setUserLocation} />
+          <MapCanvas key={`${view}-${campusSlug}`} places={matchingPlaces} view={view} campus={selectedCampus} showInactiveBuildings={showInactiveBuildings} focusPlaceId={focusPlaceId} onSelect={setSelected} onOpenOffer={setOpenOffer} onOpenEvent={setOpenEvent} onOpenDeal={setOpenDeal} onUserLocation={setUserLocation} />
         </div>
         <aside id="map-place-details" className="glass max-h-[600px] scroll-mt-24 overflow-y-auto p-4" aria-live="polite">
           {selected ? (
@@ -239,6 +251,7 @@ function MapPage() {
               <button type="button" onClick={() => setSelected(null)} className="mb-3 text-xs font-semibold text-primary">← Back to map summary</button>
               <h2 className="text-xl font-semibold">{selected.title}</h2>
               {selected.code && <p className="text-sm font-semibold text-primary">{selected.code}</p>}
+              {userLocation && <p className="mt-1 text-xs text-muted-foreground">About {Math.max(1, Math.round(distanceMiles(userLocation, selected) * 20))} min walking · {distanceMiles(userLocation, selected).toFixed(2)} mi</p>}
               <div className="mt-4 space-y-2">
                 {selected.kind === "building" && selected.events.length === 0 && <p className="text-sm text-muted-foreground">No upcoming free food events at this building.</p>}
                 {selected.cardOffers.map((offer) => (
@@ -278,8 +291,8 @@ function MapPage() {
               <p className="mt-2 text-sm text-muted-foreground">{view === "area" ? "Use the location button on the map to find nearby offers, or select a pin for details. Numbered area pins group nearby locations." : `Select a highlighted building to see free food on ${friendlyMapDate(campusDate)}.`}</p>
               <div className="mt-5 space-y-3 text-sm">
                 {view === "area" && <p><span className="mr-2 inline-block size-3 rounded-full bg-primary" />{offers.length} card offers at {cards.length} locations</p>}
-                <p><span className="mr-2 inline-block size-3 rounded-full bg-amber-500" />{view === "campus" ? selectedCampusEvents.length : mappedEvents} free food event{(view === "campus" ? selectedCampusEvents.length : mappedEvents) === 1 ? "" : "s"} at {view === "campus" ? buildings.filter((building) => building.events.length).length : campusEvents.length} BYU building{(view === "campus" ? buildings.filter((building) => building.events.length).length : campusEvents.length) === 1 ? "" : "s"}</p>
-                {view === "campus" && <p><span className="mr-2 inline-block size-3 rounded-full border border-primary bg-white" />{campusBuildingRows.length} named BYU buildings from Supabase</p>}
+                <p><span className="mr-2 inline-block size-3 rounded-full bg-amber-500" />{view === "campus" ? selectedCampusEvents.length : mappedEvents} free food event{(view === "campus" ? selectedCampusEvents.length : mappedEvents) === 1 ? "" : "s"} at {view === "campus" ? buildings.filter((building) => building.events.length).length : campusEvents.length} campus building{(view === "campus" ? buildings.filter((building) => building.events.length).length : campusEvents.length) === 1 ? "" : "s"}</p>
+                {view === "campus" && <p><span className="mr-2 inline-block size-3 rounded-full border border-primary bg-white" />{campusBuildingRowsForSelection.length} named {selectedCampus?.shortName} buildings in Supabase</p>}
               </div>
               {events.length > mappedEvents && <p className="mt-5 text-xs text-muted-foreground">{events.length - mappedEvents} upcoming event{events.length - mappedEvents === 1 ? " has" : "s have"} an unverified map location. <Link to="/free-food" className="underline">Browse all events</Link>.</p>}
               {view === "area" && <p className="mt-5 text-xs text-muted-foreground">Other student discounts will appear as their locations are verified. <Link to="/discounts" className="underline">Browse all discounts</Link>.</p>}
@@ -298,7 +311,7 @@ function MapPage() {
           )}
         </aside>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">Map data © OpenStreetMap contributors. Building names and centers from the <a href="https://map.byu.edu/" target="_blank" rel="noopener noreferrer" className="underline">BYU Campus Map</a>; pins identify buildings, not exact rooms.</p>
+      <p className="mt-3 text-xs text-muted-foreground">Map data © OpenStreetMap contributors. Campus directories come from official university sources; pins identify buildings, not exact rooms. UVU coordinates appear only after verification because its official Concept3D location API is private.</p>
       <SSDetail deal={openOffer} onClose={() => setOpenOffer(null)} />
       <DealDetail deal={openDeal} onClose={() => setOpenDeal(null)} />
       <EventDetail event={openEvent} onClose={() => setOpenEvent(null)} />

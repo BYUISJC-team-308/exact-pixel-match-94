@@ -5,10 +5,12 @@ import type { NormalizedFoodEvent } from "@/lib/food-events";
 import { logActivityEvent } from "@/lib/analytics";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
+import type { Campus } from "@/lib/campus-buildings";
 
 type Props = {
   places: MapPlace[];
   view: "area" | "campus";
+  campus?: Campus;
   showInactiveBuildings: boolean;
   focusPlaceId: string | null;
   onSelect: (place: MapPlace) => void;
@@ -67,7 +69,7 @@ function createMapIcon(kind: "card" | "event" | "discount") {
   return context.getImageData(0, 0, 40, 40);
 }
 
-export function MapCanvas({ places, view, showInactiveBuildings, focusPlaceId, onSelect, onOpenOffer, onOpenEvent, onOpenDeal, onUserLocation }: Props) {
+export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPlaceId, onSelect, onOpenOffer, onOpenEvent, onOpenDeal, onUserLocation }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const onSelectRef = useRef(onSelect);
   const onOpenOfferRef = useRef(onOpenOffer);
@@ -96,8 +98,8 @@ export function MapCanvas({ places, view, showInactiveBuildings, focusPlaceId, o
       map = new MapLibreMap({
         container: container.current,
         style: mapStyle,
-        center: focusedPlace ? [focusedPlace.lng, focusedPlace.lat] : view === "campus" && places.length === 1 && places[0] ? [places[0].lng, places[0].lat] : view === "campus" ? [-111.6502, 40.2487] : [-111.664, 40.264],
-        zoom: focusedPlace ? 16.5 : view === "campus" && places.length === 1 ? 17 : view === "campus" ? 15.3 : 10.2,
+        center: focusedPlace ? [focusedPlace.lng, focusedPlace.lat] : view === "campus" && places.length === 1 && places[0] ? [places[0].lng, places[0].lat] : view === "campus" ? [campus?.lng ?? -111.6502, campus?.lat ?? 40.2487] : [-111.664, 40.264],
+        zoom: focusedPlace ? 16.5 : view === "campus" && places.length === 1 ? 17 : view === "campus" ? (campus?.zoom ?? 15.3) : 10.2,
         pitch: view === "campus" ? 46 : 0,
         bearing: view === "campus" ? -18 : 0,
         minZoom: 3,
@@ -109,11 +111,12 @@ export function MapCanvas({ places, view, showInactiveBuildings, focusPlaceId, o
         recenterButton = document.createElement("button");
         recenterButton.type = "button";
         recenterButton.className = "absolute left-3 top-3 z-10 rounded-full border border-white/60 bg-[#082e4f]/95 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur hover:bg-[#123f65]";
-        recenterButton.textContent = "⌖ Recenter on BYU";
-        recenterButton.addEventListener("click", () => map?.easeTo({ center: [-111.6502, 40.2487], zoom: 15.3, pitch: 46, bearing: -18, duration: 900 }));
+        recenterButton.style.backgroundColor = campus?.primaryColor || "#082e4f";
+        recenterButton.textContent = `⌖ Recenter on ${campus?.shortName || "campus"}`;
+        recenterButton.addEventListener("click", () => map?.easeTo({ center: [campus?.lng ?? -111.6502, campus?.lat ?? 40.2487], zoom: campus?.zoom ?? 15.3, pitch: 46, bearing: -18, duration: 900 }));
         container.current.append(recenterButton);
       }
-      if (view === "area") {
+      if (view === "area" || view === "campus") {
         const geolocate = new GeolocateControl({
           positionOptions: { enableHighAccuracy: true },
           trackUserLocation: true,
@@ -319,14 +322,14 @@ export function MapCanvas({ places, view, showInactiveBuildings, focusPlaceId, o
           map.addLayer({ id: "building-points", type: "circle", source: "buildings", paint: {
             "circle-color": ["case", ["boolean", ["feature-state", "selected"], false], "#f5b942", [">", ["get", "eventCount"], 0], "#fff3cf", "#ffffff"],
             "circle-radius": ["case", ["boolean", ["feature-state", "selected"], false], 10, [">", ["get", "eventCount"], 0], 7, 4],
-            "circle-stroke-color": ["case", [">", ["get", "eventCount"], 0], "#082e4f", "#58738a"],
+            "circle-stroke-color": ["case", [">", ["get", "eventCount"], 0], campus?.primaryColor || "#082e4f", "#58738a"],
             "circle-stroke-width": ["case", ["boolean", ["feature-state", "selected"], false], 4, [">", ["get", "eventCount"], 0], 2.5, 1],
           } });
           map.addLayer({ id: "building-labels", type: "symbol", source: "buildings", minzoom: 14.5, layout: {
             "text-field": ["step", ["zoom"], ["get", "code"], 17, ["get", "name"]],
             "text-font": ["Roboto Regular", "Noto Sans Regular"],
             "text-size": 12, "text-offset": [0, 1], "text-anchor": "top", "text-optional": true,
-          }, paint: { "text-color": "#082e4f", "text-halo-color": "#f8f4e8", "text-halo-width": 2.5 } });
+          }, paint: { "text-color": campus?.primaryColor || "#082e4f", "text-halo-color": campus?.secondaryColor || "#f8f4e8", "text-halo-width": 2.5 } });
           let selectedBuildingId: string | number | undefined;
           for (const layer of ["building-points", "building-labels"]) {
             map.on("click", layer, (event) => {
@@ -371,7 +374,7 @@ export function MapCanvas({ places, view, showInactiveBuildings, focusPlaceId, o
           "text-field": ["get", "point_count_abbreviated"], "text-size": 13,
         }, paint: { "text-color": "#fff" } });
         map.addLayer({ id: "place-points", type: "circle", source: "places", filter: ["!", ["has", "point_count"]], paint: {
-          "circle-color": ["match", ["get", "kind"], "event", view === "campus" ? "#d99516" : "#e3a629", "discount", "#7357a4", "#245b4d"],
+          "circle-color": ["match", ["get", "kind"], "event", view === "campus" ? "#d99516" : "#e3a629", "discount", "#7357a4", campus?.primaryColor || "#245b4d"],
           "circle-radius": view === "campus" ? 19 : 16, "circle-stroke-color": "#fff", "circle-stroke-width": 2.5,
         } });
         map.addLayer({ id: "place-icons", type: "symbol", source: "places", filter: ["!", ["has", "point_count"]], layout: {
@@ -405,7 +408,7 @@ export function MapCanvas({ places, view, showInactiveBuildings, focusPlaceId, o
       });
     });
     return () => { cancelled = true; mobileCard?.remove(); recenterButton?.remove(); map?.remove(); };
-  }, [places, view, showInactiveBuildings, focusPlaceId]);
+  }, [places, view, campus, showInactiveBuildings, focusPlaceId]);
 
-  return <div ref={container} className="relative h-[440px] w-full overflow-hidden rounded-2xl sm:h-[600px]" aria-label={view === "campus" ? "BYU campus events map" : "Area discounts and free food map"} />;
+  return <div ref={container} className="relative h-[440px] w-full overflow-hidden rounded-2xl sm:h-[600px]" aria-label={view === "campus" ? `${campus?.shortName || "College"} campus events map` : "Area discounts and free food map"} />;
 }

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Modal, Btn } from "@/components/ui-bits";
 import { useSubmitFoodEventMutation, getLocalDateString, geocodeEventAddress } from "@/lib/food-events";
 import { findCampusBuilding } from "@/lib/map-places";
-import { useCampusBuildingsQuery } from "@/lib/campus-buildings";
+import { useCampusBuildingsQuery, useCampusesQuery } from "@/lib/campus-buildings";
 import { toast } from "sonner";
 
 export function SubmitFoodEventModal({
@@ -14,6 +14,7 @@ export function SubmitFoodEventModal({
 }) {
   const submitMutation = useSubmitFoodEventMutation();
   const { data: campusBuildings } = useCampusBuildingsQuery();
+  const { data: campuses } = useCampusesQuery();
 
   const todayStr = getLocalDateString();
 
@@ -25,6 +26,7 @@ export function SubmitFoodEventModal({
   const [endTime, setEndTime] = useState("13:00");
   const [building, setBuilding] = useState("");
   const [locationType, setLocationType] = useState<"campus" | "off_campus">("campus");
+  const [campusId, setCampusId] = useState("");
   const [address, setAddress] = useState("");
   const [room, setRoom] = useState("");
   const [details, setDetails] = useState("");
@@ -37,7 +39,9 @@ export function SubmitFoodEventModal({
     }
 
     try {
-      const selectedBuilding = locationType === "campus" ? findCampusBuilding(building, campusBuildings) : undefined;
+      const selectedCampusId = campusId || campuses[0]?.id || "";
+      const availableBuildings = campusBuildings.filter((item) => !selectedCampusId || item.campusId === selectedCampusId || !item.campusId);
+      const selectedBuilding = locationType === "campus" ? findCampusBuilding(building, availableBuildings) : undefined;
       const coordinates = locationType === "off_campus" ? await geocodeEventAddress(address.trim()) : {};
       await submitMutation.mutateAsync({
         title: title.trim(),
@@ -48,6 +52,7 @@ export function SubmitFoodEventModal({
         end_time: endTime ? `${endTime}:00` : "13:00:00",
         building: building.trim(),
         ...(selectedBuilding ? { building_id: selectedBuilding.id } : {}),
+        ...(locationType === "campus" && selectedCampusId ? { campus_id: selectedCampusId } : {}),
         ...(address.trim() ? { address: address.trim() } : {}),
         ...coordinates,
         ...(room.trim() ? { room: room.trim() } : {}),
@@ -134,6 +139,13 @@ export function SubmitFoodEventModal({
             </div>
           </div>
 
+          {locationType === "campus" && <div>
+            <label className="block text-xs font-medium text-muted-foreground">College campus</label>
+            <select value={campusId || campuses[0]?.id || ""} onChange={(event) => { setCampusId(event.target.value); setBuilding(""); }} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary">
+              {campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}
+            </select>
+          </div>}
+
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="block text-xs font-medium text-muted-foreground">
@@ -186,7 +198,7 @@ export function SubmitFoodEventModal({
                 className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
               />
               <datalist id="byu-map-buildings">
-                {campusBuildings.map((campusBuilding) => (
+                {campusBuildings.filter((campusBuilding) => !campusId || campusBuilding.campusId === campusId || !campusBuilding.campusId).map((campusBuilding) => (
                   <option key={campusBuilding.id} value={campusBuilding.code ? `${campusBuilding.code} (${campusBuilding.name})` : campusBuilding.name} />
                 ))}
               </datalist>

@@ -30,19 +30,20 @@ export function findCampusBuilding(input: string, buildings: CampusBuilding[] = 
 }
 
 export function buildingPlaces(events: NormalizedFoodEvent[], buildings: CampusBuilding[] = campusBuildings): MapPlace[] {
+  const mappedBuildings = buildings.filter((building) => Number.isFinite(building.lat) && Number.isFinite(building.lng));
   const byBuilding = new Map<string, NormalizedFoodEvent[]>();
   for (const event of events) {
     const building = buildings.find((item) => item.id === event.buildingId) || findCampusBuilding(event.building, buildings);
     if (building) byBuilding.set(building.id, [...(byBuilding.get(building.id) ?? []), event]);
   }
-  return buildings.map((building) => ({
+  return mappedBuildings.map((building) => ({
     id: `building-${building.id}`,
     kind: "building" as const,
     title: building.name,
     subtitle: building.code,
     code: building.code,
-    lat: building.lat,
-    lng: building.lng,
+    lat: building.lat as number,
+    lng: building.lng as number,
     address: `${building.name}, BYU, Provo, UT`,
     cardOffers: [],
     deals: [],

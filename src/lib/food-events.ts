@@ -14,6 +14,7 @@ export type DbFoodEvent = {
   end_time: string;   // HH:mm:ss
   building: string;
   building_id?: string | null;
+  campus_id?: string | null;
   room?: string | null;
   details?: string | null;
   address?: string | null;
@@ -169,6 +170,7 @@ export type NewFoodEventInput = {
   end_time: string;
   building: string;
   building_id?: string;
+  campus_id?: string;
   room?: string;
   details?: string;
   address?: string;
