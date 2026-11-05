@@ -18,7 +18,7 @@ export const Route = createFileRoute("/starving-student")({
   component: SSHub,
 });
 
-const discountTypes = ["All Deals", "Free Only", "Discounts Only"] as const;
+const discountTypes = ["All Deals", "Free Only", "Discounts Only", "Unlimited Only"] as const;
 const statusFilters = ["Any Status", "Unused / Available", "Fully Redeemed"] as const;
 
 function SSHub() {
@@ -55,9 +55,10 @@ function SSHub() {
 
   const list = ssDeals
     .filter((d) => {
-      // 1. Discount type filter
+      // 1. Discount type & unlimited filter
       if (typeFilter === "Free Only" && d.type !== "Free") return false;
       if (typeFilter === "Discounts Only" && d.type !== "Discount") return false;
+      if (typeFilter === "Unlimited Only" && d.totalUses !== null) return false;
 
       // 2. Category filter
       if (cat !== "All categories" && d.category !== cat) return false;
@@ -327,7 +328,7 @@ function SSHub() {
                     {d.item}
                   </h3>
 
-                  {/* Multi-use badge: never show fractions for unlimited */}
+                  {/* Multi-use badge: shows count on card badge ONLY */}
                   {isNoLimit ? (
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
                       {count > 0 ? `Unlimited (${count} used)` : "Unlimited Uses"}
@@ -353,12 +354,12 @@ function SSHub() {
                 </p>
               </button>
 
-              {/* Prominent "Mark as Used" Action Button */}
+              {/* Prominent Action Button: No redundant badge text in button */}
               <div className="flex w-full items-center justify-end sm:w-auto shrink-0">
                 <button
                   type="button"
                   onClick={(e) => handleCardAction(e, d)}
-                  title={isFullyUsed ? "Click to unmark/reset this deal" : isNoLimit ? "Click to record a use" : "Click to mark this deal as used"}
+                  title={isFullyUsed ? "Click to unmark/reset this deal" : isNoLimit ? "Click to record another use" : "Click to mark this deal as used"}
                   className={`inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 active:scale-95 ${
                     isFullyUsed
                       ? "bg-secondary text-foreground/80 ring-1 ring-border hover:bg-destructive/10 hover:text-destructive hover:ring-destructive/30"
@@ -370,21 +371,14 @@ function SSHub() {
                   {isFullyUsed ? (
                     <>
                       <span>✓ Used</span>
-                      <span className="text-[10px] opacity-70">({count}/{total})</span>
                     </>
                   ) : count > 0 ? (
                     <>
                       <span>Punch Use {count + 1}</span>
-                      {isNoLimit ? (
-                        <span className="text-[10px] opacity-80">(Used {count}x)</span>
-                      ) : (
-                        <span className="text-[10px] opacity-80">({count}/{total})</span>
-                      )}
                     </>
                   ) : (
                     <>
                       <span>Mark Used</span>
-                      {!isNoLimit && total && total > 1 && <span className="text-[10px] opacity-80">(0/{total})</span>}
                     </>
                   )}
                 </button>
