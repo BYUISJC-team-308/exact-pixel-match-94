@@ -100,12 +100,40 @@ export const actions = {
     }
     set({ savedEvents: toggle(state.savedEvents, id) });
   },
-  toggleUsed: (id: string) => {
-    const isAdding = !state.usedSS.includes(id);
-    if (isAdding) {
-      void logActivityEvent("deal_redeemed", { dealId: id });
+  toggleUsed: (id: string, maxUses?: number | null) => {
+    const counts = { ...(state.ssUsedCounts || {}) };
+    const current = counts[id] || 0;
+    const isNoLimit = maxUses === null;
+    const limit = isNoLimit ? Infinity : (maxUses ?? 1);
+
+    if (current >= limit) {
+      delete counts[id];
+      const nextUsedSS = state.usedSS.filter((x) => x !== id);
+      set({ usedSS: nextUsedSS, ssUsedCounts: counts });
+    } else {
+      const nextCount = current + 1;
+      counts[id] = nextCount;
+      const nextUsedSS = state.usedSS.includes(id) ? state.usedSS : [...state.usedSS, id];
+      void logActivityEvent("deal_redeemed", { dealId: id, timesUsed: nextCount });
+      set({ usedSS: nextUsedSS, ssUsedCounts: counts });
     }
-    set({ usedSS: toggle(state.usedSS, id) });
+  },
+  decrementUsed: (id: string) => {
+    const counts = { ...(state.ssUsedCounts || {}) };
+    const current = counts[id] || 0;
+    if (current <= 1) {
+      delete counts[id];
+      const nextUsedSS = state.usedSS.filter((x) => x !== id);
+      set({ usedSS: nextUsedSS, ssUsedCounts: counts });
+    } else {
+      counts[id] = current - 1;
+      set({ ssUsedCounts: counts });
+    }
+  },
+  resetUsed: (id: string) => {
+    const counts = { ...(state.ssUsedCounts || {}) };
+    delete counts[id];
+    set({ usedSS: state.usedSS.filter((x) => x !== id), ssUsedCounts: counts });
   },
   setUser: (user: User | null) => {
     if (user && !state.user) {
