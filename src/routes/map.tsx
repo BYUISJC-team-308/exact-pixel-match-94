@@ -83,6 +83,13 @@ function eventCountdown(event: NormalizedFoodEvent) {
   return `Starts in ${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }
 
+function eventStatus(event: NormalizedFoodEvent) {
+  const label = eventCountdown(event);
+  if (label === "Happening now") return { label, className: "bg-emerald-100 text-emerald-800" };
+  if (label.startsWith("Starts in") && !label.includes("h")) return { label, className: "bg-amber-100 text-amber-800" };
+  return { label, className: "bg-sky-100 text-sky-800" };
+}
+
 function MapPage() {
   const router = useRouter();
   const { offers, eventRows, dealRows, campusBuildingRows, campuses } = Route.useLoaderData();
@@ -99,8 +106,8 @@ function MapPage() {
   const [showInactiveBuildings, setShowInactiveBuildings] = useState(false);
   const [radius, setRadius] = useState<Radius>("all");
   const [focusPlaceId, setFocusPlaceId] = useState<string | null>(null);
-  const [campusSlug, setCampusSlug] = useState(() => campuses[0]?.slug || "byu-provo");
-  const { recentMapSearches } = useStore();
+  const { recentMapSearches, preferredCampus } = useStore();
+  const [campusSlug, setCampusSlug] = useState(() => campuses.some((campus) => campus.slug === preferredCampus) ? preferredCampus : campuses[0]?.slug || "byu-provo");
   useEffect(() => { void logActivityEvent("map_opened"); }, []);
   useEffect(() => {
     const channel = supabase.channel("map-live-updates")
@@ -180,7 +187,7 @@ function MapPage() {
         <section className="mt-4 overflow-hidden rounded-2xl border border-[#224f75]/20 bg-gradient-to-br from-[#f8f4e8] via-white to-[#e4edf3] p-4 shadow-sm" aria-label="Campus day controls">
           <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-[#224f75]/15 bg-white/80 p-3">
             <label className="min-w-[220px] flex-1 text-xs font-semibold text-[#082e4f]">Choose your campus
-              <select value={campusSlug} onChange={(event) => { setCampusSlug(event.target.value); setSelected(null); setFocusPlaceId(null); setQuery(""); }} className="mt-1 block w-full rounded-lg border border-[#224f75]/20 bg-white px-3 py-2 text-sm font-semibold">
+              <select value={campusSlug} onChange={(event) => { setCampusSlug(event.target.value); actions.setPreferredCampus(event.target.value); setSelected(null); setFocusPlaceId(null); setQuery(""); }} className="mt-1 block w-full rounded-lg border border-[#224f75]/20 bg-white px-3 py-2 text-sm font-semibold">
                 {campuses.map((campus) => <option key={campus.id} value={campus.slug}>{campus.name} · {campus.city}</option>)}
               </select>
             </label>
@@ -211,6 +218,7 @@ function MapPage() {
             {nextCampusEvent && <button type="button" onClick={() => { const place = buildings.find((building) => building.events.some((event) => event.id === nextCampusEvent.id)); if (place) { setSelected(place); setFocusPlaceId(place.id); } }} className="ml-auto rounded-xl bg-[#fff3cf] px-3 py-2 text-left text-xs text-[#082e4f] ring-1 ring-[#d99516]/30">
               <strong>{eventCountdown(nextCampusEvent)}:</strong> {nextCampusEvent.food} at {nextCampusEvent.building}{nextCampusEvent.room ? ` · ${nextCampusEvent.room}` : ""}
             </button>}
+            {!nextCampusEvent && <div className="ml-auto rounded-xl bg-white px-3 py-2 text-xs text-[#36566f] ring-1 ring-[#224f75]/15"><strong>No events this day.</strong> Try another date or post a free-food event.</div>}
           </div>
         </section>
       )}
@@ -270,7 +278,7 @@ function MapPage() {
                 ))}
                 {selected.events.map((event) => (
                   <button key={event.id} type="button" onClick={() => setOpenEvent(event)} className="w-full rounded-xl bg-secondary p-3 text-left hover:bg-muted">
-                    <span className="text-xs font-semibold text-amber-700">Free food event</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${eventStatus(event).className}`}>{eventStatus(event).label}</span>
                     <strong className="mt-1 block text-sm">{event.title}</strong>
                     <span className="block text-xs text-muted-foreground">{event.food} · {event.formattedDate}, {event.formattedTime}</span>
                     <span className="text-xs text-muted-foreground">{event.building}{event.room ? ` · ${event.room}` : ""}</span>

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildingPlaces, campusBuildings, cardPlaces, discountPlaces, eventPlaces, findCampusBuilding } from "@/lib/map-places";
 import type { Deal, SSDeal } from "@/lib/data";
 import type { NormalizedFoodEvent } from "@/lib/food-events";
+import type { CampusBuilding } from "@/lib/campus-buildings";
 
 describe("map locations", () => {
   it("groups offers at the same real location and skips missing coordinates", () => {
@@ -65,5 +66,12 @@ describe("map locations", () => {
       kind: "event", title: "Downtown Provo", address: "100 Center St, Provo, UT",
       lat: 40.2338, lng: -111.6585,
     });
+  });
+
+  it("keeps unverified campus directory entries searchable without inventing map pins", () => {
+    const buildings: CampusBuilding[] = [{ id: "uvu-cb", sourceKey: "uvu-cb", campusId: "uvu", code: "CB", name: "Clarke Building", officialName: "Clarke Building", aliases: ["clarke building"], address: "", use: "CAMPUS", lat: null, lng: null }];
+    expect(findCampusBuilding("CB (Clarke Building)", buildings)?.id).toBe("uvu-cb");
+    expect(buildingPlaces([], buildings)).toHaveLength(0);
+    expect(eventPlaces([{ id: "uvu-event", buildingId: "uvu-cb", building: "CB" } as NormalizedFoodEvent], buildings)).toHaveLength(0);
   });
 });

@@ -3,143 +3,31 @@ import { Link } from "@tanstack/react-router";
 import type { Deal, FoodEvent, SSDeal } from "@/lib/data";
 import { eventDate } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
+import { submitDataIssue, type DataIssueInput } from "@/lib/data-issues";
 
-const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
-  github: "github.com",
-  cursor: "cursor.com",
-  perplexity: "perplexity.ai",
-  notion: "notion.so",
-  figma: "figma.com",
-  jetbrains: "jetbrains.com",
-  spotify: "spotify.com",
-  apple: "apple.com",
-  amazon: "amazon.com",
-  adobe: "adobe.com",
-  microsoft: "microsoft.com",
-  youtube: "youtube.com",
-  tableau: "tableau.com",
-  autodesk: "autodesk.com",
-  "1password": "1password.com",
-  "t-mobile": "t-mobile.com",
-  figs: "wearfigs.com",
-  oura: "ouraring.com",
-  "amc theatres": "amctheatres.com",
-  "amc theatres®": "amctheatres.com",
-  "7-eleven": "7-eleven.com",
-  target: "target.com",
-  nike: "nike.com",
-  samsung: "samsung.com",
-  adidas: "adidas.com",
-  costco: "costco.com",
-  hulu: "hulu.com",
-  disney: "disneyplus.com",
-  "disney+": "disneyplus.com",
-  paramount: "paramountplus.com",
-  "paramount+": "paramountplus.com",
-  peacock: "peacocktv.com",
-  canva: "canva.com",
-  swig: "swigdrinks.com",
-  "costa vida": "costavida.com",
-  chipotle: "chipotle.com",
-  subway: "subway.com",
-  "byu store": "byustore.com",
-  byu: "byu.edu",
-  starbucks: "starbucks.com",
-  dominos: "dominos.com",
-  "domino's": "dominos.com",
-  "papa johns": "papajohns.com",
-  "papa john's": "papajohns.com",
-  chickfila: "chick-fil-a.com",
-  "chick-fil-a": "chick-fil-a.com",
-  wendys: "wendys.com",
-  "wendy's": "wendys.com",
-  mcdonalds: "mcdonalds.com",
-  "mcdonald's": "mcdonalds.com",
-  dell: "dell.com",
-  hp: "hp.com",
-  lenovo: "lenovo.com",
-  grammarly: "grammarly.com",
-  headspace: "headspace.com",
-  calm: "calm.com",
-  peloton: "onepeloton.com",
-  underarmour: "underarmour.com",
-  "under armour": "underarmour.com",
-  gymshark: "gymshark.com",
-  uber: "uber.com",
-  doordash: "doordash.com",
-  instacart: "instacart.com",
-  chegg: "chegg.com",
-  quizlet: "quizlet.com",
-  duolingo: "duolingo.com",
-};
-
-export function getCompanyDomain(company: string, url?: string): string {
-  const clean = (company || "").toLowerCase().trim();
-  for (const [key, domain] of Object.entries(KNOWN_COMPANY_DOMAINS)) {
-    if (clean.includes(key)) return domain;
-  }
-
-  if (url) {
-    try {
-      const parsed = new URL(url);
-      const host = parsed.hostname.replace(/^www\./, "");
-      if (!host.includes("id.me") && !host.includes("google.com") && !host.includes("bing.com")) {
-        return host;
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  const stripped = clean.replace(/[^a-z0-9]/g, "");
-  return stripped ? `${stripped}.com` : "example.com";
-}
-
-export function CompanyLogo({
-  company,
-  url,
-  size = 44,
-  className = "",
-}: {
-  company: string;
-  url?: string;
-  size?: number;
-  className?: string;
-}) {
-  const [hasError, setHasError] = useState(false);
-  const domain = getCompanyDomain(company, url);
-  const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-
-  const initials =
-    company
-      .replace(/[^a-zA-Z0-9 ]/g, "")
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0].toUpperCase())
-      .join("") || company.slice(0, 2).toUpperCase() || "ST";
-
-  return (
-    <div
-      style={{ width: size, height: size, minWidth: size, minHeight: size }}
-      className={`relative grid place-items-center rounded-xl bg-card border border-border/80 shadow-sm overflow-hidden flex-shrink-0 ${className}`}
-      title={company}
-    >
-      {!hasError ? (
-        <img
-          src={iconUrl}
-          alt={`${company} logo`}
-          loading="lazy"
-          className="h-3/4 w-3/4 object-contain transition-transform duration-200 group-hover:scale-110"
-          onError={() => setHasError(true)}
-        />
-      ) : (
-        <div className="grid h-full w-full place-items-center bg-gradient-to-br from-primary/15 via-accent/10 to-primary/5 font-bold text-xs tracking-wider text-primary">
-          {initials}
-        </div>
-      )}
-    </div>
-  );
+function ReportIssueButton({ itemType, itemId, itemLabel }: Pick<DataIssueInput, "itemType" | "itemId" | "itemLabel">) {
+  const [open, setOpen] = useState(false);
+  const [issueType, setIssueType] = useState("Offer details are incorrect");
+  const [details, setDetails] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  return <>
+    <button type="button" onClick={() => setOpen(true)} className="text-xs font-semibold text-muted-foreground underline hover:text-foreground">Report incorrect information</button>
+    <Modal open={open} onClose={() => setOpen(false)}>
+      <h3 className="text-xl font-semibold">Report an information problem</h3>
+      <p className="mt-1 text-sm text-muted-foreground">Help the team keep {itemLabel} accurate.</p>
+      <label className="mt-4 block text-sm font-medium">What is wrong?
+        <select value={issueType} onChange={(event) => setIssueType(event.target.value)} className="mt-1 block w-full rounded-lg border border-border bg-background p-2">
+          <option>Offer details are incorrect</option><option>Offer is expired</option><option>Location is incorrect</option><option>Event was cancelled</option><option>Other</option>
+        </select>
+      </label>
+      <label className="mt-3 block text-sm font-medium">More details
+        <textarea value={details} onChange={(event) => setDetails(event.target.value)} maxLength={2000} className="mt-1 block min-h-24 w-full rounded-lg border border-border bg-background p-2" />
+      </label>
+      {status === "sent" && <p className="mt-3 text-sm font-semibold text-primary">Thanks—your report was submitted.</p>}
+      {status === "error" && <p className="mt-3 text-sm text-destructive">The report could not be submitted. Please try again.</p>}
+      <Btn className="mt-4" disabled={status === "sending" || status === "sent"} onClick={async () => { setStatus("sending"); try { await submitDataIssue({ itemType, itemId, itemLabel, issueType, details }); setStatus("sent"); } catch { setStatus("error"); } }}>{status === "sending" ? "Submitting…" : "Submit report"}</Btn>
+    </Modal>
+  </>;
 }
 
 export function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
@@ -174,35 +62,20 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
   const saved = savedDeals.includes(deal.id);
   return (
     <Modal open onClose={onClose}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <CompanyLogo company={deal.company} url={deal.url} size={48} />
-          <div>
-            <h3 className="text-2xl font-bold tracking-tight text-foreground">{deal.company}</h3>
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              {deal.category} · {deal.type}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center rounded-lg bg-accent/15 px-3 py-1 text-base font-bold text-accent ring-1 ring-accent/30">
-          🏷️ {deal.value}
-        </span>
-        <span className="text-sm font-semibold text-foreground/90">{deal.title}</span>
-      </div>
-
-      <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{deal.description}</p>
-      <dl className="mt-4 space-y-2 text-sm border-t border-border/50 pt-3">
-        <div><dt className="font-semibold text-foreground">Company</dt><dd className="text-muted-foreground">{deal.company}</dd></div>
-        <div><dt className="font-semibold text-foreground">Duration</dt><dd className="text-muted-foreground">{deal.duration}</dd></div>
-        <div><dt className="font-semibold text-foreground">How to get it</dt><dd className="text-muted-foreground">{deal.howTo}</dd></div>
+      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{deal.category} · {deal.type}</span>
+      <h3 className="mt-3 text-2xl font-semibold">{deal.title}</h3>
+      <p className="mt-1 text-3xl font-semibold text-accent">{deal.value}</p>
+      <p className="mt-3 text-sm text-muted-foreground">{deal.description}</p>
+      <dl className="mt-4 space-y-2 text-sm">
+        <div><dt className="font-semibold">Company</dt><dd className="text-muted-foreground">{deal.company}</dd></div>
+        <div><dt className="font-semibold">Duration</dt><dd className="text-muted-foreground">{deal.duration}</dd></div>
+        <div><dt className="font-semibold">How to get it</dt><dd className="text-muted-foreground">{deal.howTo}</dd></div>
       </dl>
       <div className="mt-6 flex flex-wrap gap-2">
         <a href={deal.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Go to provider →</a>
         <Btn variant="soft" onClick={() => actions.toggleDeal(deal.id)}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
       </div>
+      <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="deal" itemId={deal.id} itemLabel={`${deal.company}: ${deal.title}`} /></div>
     </Modal>
   );
 }
@@ -226,6 +99,7 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
         <Btn onClick={() => actions.toggleEvent(event.id)}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
         <Link to="/map" className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">See on map</Link>
       </div>
+      <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="event" itemId={event.id} itemLabel={event.title} /></div>
     </Modal>
   );
 }
@@ -251,6 +125,7 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
         {deal.locations[0] && <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(deal.locations[0].address)}`} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">Directions to first location →</a>}
         <Btn variant="soft" onClick={() => actions.toggleUsed(deal.id)}>{used ? "✓ Used — undo" : "Mark as used"}</Btn>
       </div>
+      <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="starving_student" itemId={deal.id} itemLabel={`${deal.company}: ${deal.item}`} /></div>
     </Modal>
   );
 }

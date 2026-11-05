@@ -17,9 +17,9 @@ export type RecentMapSearch = {
   searchedAt: string;
 };
 
-type State = { savedDeals: string[]; savedEvents: string[]; usedSS: string[]; recentMapSearches: RecentMapSearch[]; user: User | null };
+type State = { savedDeals: string[]; savedEvents: string[]; usedSS: string[]; recentMapSearches: RecentMapSearch[]; preferredCampus: string; user: User | null };
 const KEY = "studeats-state";
-const empty: State = { savedDeals: [], savedEvents: [], usedSS: [], recentMapSearches: [], user: null };
+const empty: State = { savedDeals: [], savedEvents: [], usedSS: [], recentMapSearches: [], preferredCampus: "byu-provo", user: null };
 let state: State = empty;
 let loaded = false;
 const listeners = new Set<() => void>();
@@ -74,6 +74,7 @@ export function nextRecentMapSearches(current: RecentMapSearch[], query: string,
 }
 
 export const actions = {
+  setPreferredCampus: (preferredCampus: string) => set({ preferredCampus }),
   addRecentMapSearch: (query: string, view: RecentMapSearch["view"]) => {
     const next = nextRecentMapSearches(state.recentMapSearches, query, view);
     if (next !== state.recentMapSearches) set({ recentMapSearches: next });
