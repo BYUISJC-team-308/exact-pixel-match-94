@@ -18,17 +18,17 @@ export const Route = createFileRoute("/starving-student")({
   component: SSHub,
 });
 
-const types = ["All", "Free", "Discount"] as const;
-const statusFilters = ["All", "Available", "Used"] as const;
+const discountTypes = ["All Deals", "Free Only", "Discounts Only"] as const;
+const statusFilters = ["Any Status", "Unused / Available", "Fully Redeemed"] as const;
 
 function SSHub() {
   const { ssUsedCounts = {} } = useStore();
   const ssDeals = Route.useLoaderData();
   const cats = ["All categories", ...new Set(ssDeals.map((deal) => deal.category))];
 
-  const [type, setType] = useState<(typeof types)[number]>("All");
+  const [typeFilter, setTypeFilter] = useState<(typeof discountTypes)[number]>("All Deals");
   const [cat, setCat] = useState("All categories");
-  const [statusFilter, setStatusFilter] = useState<(typeof statusFilters)[number]>("All");
+  const [statusFilter, setStatusFilter] = useState<(typeof statusFilters)[number]>("Any Status");
   const [sort, setSort] = useState<"company" | "type">("company");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<SSDeal | null>(null);
@@ -36,8 +36,9 @@ function SSHub() {
   // Confirmation state for un-marking a deal
   const [confirmDeal, setConfirmDeal] = useState<SSDeal | null>(null);
 
-  // Just-punched deal for animation
+  // Animated deal IDs for punching or unpunching
   const [punchedId, setPunchedId] = useState<string | null>(null);
+  const [unpunchedId, setUnpunchedId] = useState<string | null>(null);
 
   const t = q.trim().toLowerCase();
 
@@ -52,16 +53,22 @@ function SSHub() {
 
   const list = ssDeals
     .filter((d) => {
-      if (type !== "All" && d.type !== type) return false;
+      // 1. Discount type filter
+      if (typeFilter === "Free Only" && d.type !== "Free") return false;
+      if (typeFilter === "Discounts Only" && d.type !== "Discount") return false;
+
+      // 2. Category filter
       if (cat !== "All categories" && d.category !== cat) return false;
 
+      // 3. Status filter
       const count = ssUsedCounts[d.id] || 0;
       const isNoLimit = d.totalUses === null;
       const isUsed = isNoLimit ? count > 0 : count >= (d.totalUses ?? 1);
 
-      if (statusFilter === "Available" && isUsed) return false;
-      if (statusFilter === "Used" && !isUsed) return false;
+      if (statusFilter === "Unused / Available" && isUsed) return false;
+      if (statusFilter === "Fully Redeemed" && !isUsed) return false;
 
+      // 4. Search query
       if (t) {
         const text = (d.company + " " + d.item + " " + d.details + " " + d.address).toLowerCase();
         if (!text.includes(t)) return false;
@@ -90,20 +97,24 @@ function SSHub() {
     const total = isNoLimit ? null : (deal.totalUses ?? 1);
     const isFullyUsed = isNoLimit ? false : count >= (total ?? 1);
 
-    if (isFullyUsed || count > 0) {
-      // Need confirmation before resetting / unmarking
+    // ONLY prompt confirmation if it is already fully used and the user is trying to reset it!
+    if (isFullyUsed) {
       setConfirmDeal(deal);
-    } else {
-      // Trigger punch animation and punch deal
-      setPunchedId(deal.id);
-      setTimeout(() => setPunchedId(null), 700);
-      actions.toggleUsed(deal.id, deal.totalUses);
+      return;
     }
+
+    // Trigger punch animation and punch deal
+    setPunchedId(deal.id);
+    setTimeout(() => setPunchedId(null), 800);
+    actions.toggleUsed(deal.id, deal.totalUses);
   };
 
   const handleConfirmReset = () => {
     if (confirmDeal) {
-      actions.resetUsed(confirmDeal.id);
+      const dealId = confirmDeal.id;
+      setUnpunchedId(dealId);
+      setTimeout(() => setUnpunchedId(null), 800);
+      actions.resetUsed(dealId);
       setConfirmDeal(null);
     }
   };
@@ -163,25 +174,48 @@ function SSHub() {
         </div>
       </div>
 
-      {/* Filter and sorting controls */}
-      <div className="flex flex-wrap items-center gap-3" aria-label="Filter card offers">
-        <FilterChips options={types} value={type} onChange={setType} />
-        <FilterChips options={statusFilters} value={statusFilter} onChange={setStatusFilter} />
-        <FilterChips options={cats} value={cat} onChange={setCat} />
-        <select
-          aria-label="Sort card offers"
-          value={sort}
-          onChange={(e) => setSort(e.target.value as "company" | "type")}
-          className="h-9 rounded-full bg-secondary px-3 text-sm ring-1 ring-border"
-        >
-          <option value="company">Sort: company</option>
-          <option value="type">Sort: discount type</option>
-        </select>
+      {/* Filter and sorting controls with clear grouping */}
+      <div className="space-y-3" aria-label="Filter card offers">
+        {/* Row 1: Deal Type & Card Status */}
+        <div className="flex flex-wrap items-center gap-4 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">Type:</span>
+            <FilterChips options={discountTypes} value={typeFilter} onChange={setTypeFilter} />
+          </div>
+
+          <div className="h-4 w-px bg-border hidden sm:block" />
+
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">Status:</span>
+            <FilterChips options={statusFilters} value={statusFilter} onChange={setStatusFilter} />
+          </div>
+        </div>
+
+        {/* Row 2: Category & Sort */}
+        <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-border/40">
+          <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">Category:</span>
+            <FilterChips options={cats} value={cat} onChange={setCat} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">Sort:</span>
+            <select
+              aria-label="Sort card offers"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as "company" | "type")}
+              className="h-9 rounded-full bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none"
+            >
+              <option value="company">Company (A-Z)</option>
+              <option value="type">Discount type</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Confirmation Modal when unmarking */}
       {confirmDeal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-sm rounded-2xl bg-popover p-6 shadow-float ring-1 ring-border">
             <span className="grid size-10 place-items-center rounded-xl bg-destructive/10 text-xl text-destructive mb-3">⚠️</span>
             <h3 className="text-lg font-semibold text-foreground">Reset deal to unused?</h3>
@@ -216,13 +250,14 @@ function SSHub() {
           const total = isNoLimit ? null : (d.totalUses ?? 1);
           const isFullyUsed = isNoLimit ? false : count >= (total ?? 1);
           const isPunched = punchedId === d.id;
+          const isUnpunched = unpunchedId === d.id;
 
           return (
             <div
               key={d.id}
               className={`glass group relative flex flex-wrap items-center gap-3 p-4 sm:flex-nowrap sm:gap-4 transition-all duration-300 ${
                 isFullyUsed ? "bg-muted/40 opacity-70" : "hover:-translate-y-0.5 hover:shadow-sm"
-              } ${isPunched ? "scale-[0.98] ring-2 ring-primary" : ""}`}
+              } ${isPunched ? "is-punched-card ring-2 ring-primary" : ""} ${isUnpunched ? "is-unpunched-card" : ""}`}
             >
               {/* Value Badge */}
               <span
@@ -251,7 +286,7 @@ function SSHub() {
                     </span>
                   ) : total && total > 1 ? (
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
-                      {total} Uses
+                      {count > 0 ? `${count}/${total} Uses` : `${total} Uses`}
                     </span>
                   ) : null}
 
@@ -270,7 +305,7 @@ function SSHub() {
                 </p>
               </button>
 
-              {/* Prominent "Mark as Used" Action Button (Replaces tiny checkbox) */}
+              {/* Prominent "Mark as Used" Action Button */}
               <div className="flex w-full items-center justify-end sm:w-auto shrink-0">
                 <button
                   type="button"
@@ -280,7 +315,7 @@ function SSHub() {
                     isFullyUsed
                       ? "bg-secondary text-foreground/80 ring-1 ring-border hover:bg-destructive/10 hover:text-destructive hover:ring-destructive/30"
                       : count > 0
-                      ? "bg-primary/15 text-primary ring-1 ring-primary/30 hover:bg-primary hover:text-primary-foreground shadow-sm"
+                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 hover:bg-primary hover:text-primary-foreground shadow-sm"
                       : "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:scale-[1.02]"
                   }`}
                 >
@@ -314,8 +349,8 @@ function SSHub() {
               type="button"
               onClick={() => {
                 setQ("");
-                setType("All");
-                setStatusFilter("All");
+                setTypeFilter("All Deals");
+                setStatusFilter("Any Status");
                 setCat("All categories");
               }}
               className="mt-4 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
