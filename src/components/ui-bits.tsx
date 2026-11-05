@@ -321,7 +321,7 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
   const isFullyUsed = isNoLimit ? false : count >= (total ?? 1);
 
   const handleAction = () => {
-    if (isFullyUsed || count > 0) {
+    if (isFullyUsed) {
       setShowConfirm(true);
     } else {
       actions.toggleUsed(deal.id, deal.totalUses);
@@ -368,7 +368,7 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
           </div>
           {isFullyUsed && (
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
-              &check; Redeemed
+              ✓ Redeemed
             </span>
           )}
         </div>
@@ -419,7 +419,7 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
         >
           {isFullyUsed ? (
             <>
-              <span>&check; Fully Used</span>
+              <span>✓ Used</span>
               <span className="text-xs text-muted-foreground">(Tap to reset)</span>
             </>
           ) : count > 0 ? (
