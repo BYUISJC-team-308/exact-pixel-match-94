@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Modal, Btn } from "@/components/ui-bits";
 import { useSubmitFoodEventMutation, getLocalDateString, geocodeEventAddress } from "@/lib/food-events";
-import { campusBuildings } from "@/lib/map-places";
+import { findCampusBuilding } from "@/lib/map-places";
+import { useCampusBuildingsQuery } from "@/lib/campus-buildings";
 import { toast } from "sonner";
 
 export function SubmitFoodEventModal({
@@ -12,6 +13,7 @@ export function SubmitFoodEventModal({
   onClose: () => void;
 }) {
   const submitMutation = useSubmitFoodEventMutation();
+  const { data: campusBuildings } = useCampusBuildingsQuery();
 
   const todayStr = getLocalDateString();
 
@@ -35,6 +37,7 @@ export function SubmitFoodEventModal({
     }
 
     try {
+      const selectedBuilding = locationType === "campus" ? findCampusBuilding(building, campusBuildings) : undefined;
       const coordinates = locationType === "off_campus" ? await geocodeEventAddress(address.trim()) : {};
       await submitMutation.mutateAsync({
         title: title.trim(),
@@ -44,6 +47,7 @@ export function SubmitFoodEventModal({
         start_time: startTime ? `${startTime}:00` : "12:00:00",
         end_time: endTime ? `${endTime}:00` : "13:00:00",
         building: building.trim(),
+        ...(selectedBuilding ? { building_id: selectedBuilding.id } : {}),
         ...(address.trim() ? { address: address.trim() } : {}),
         ...coordinates,
         ...(room.trim() ? { room: room.trim() } : {}),

@@ -9,6 +9,8 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 type Props = {
   places: MapPlace[];
   view: "area" | "campus";
+  showInactiveBuildings: boolean;
+  focusPlaceId: string | null;
   onSelect: (place: MapPlace) => void;
   onOpenOffer: (offer: SSDeal) => void;
   onOpenEvent: (event: NormalizedFoodEvent) => void;
@@ -65,7 +67,7 @@ function createMapIcon(kind: "card" | "event" | "discount") {
   return context.getImageData(0, 0, 40, 40);
 }
 
-export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, onOpenDeal, onUserLocation }: Props) {
+export function MapCanvas({ places, view, showInactiveBuildings, focusPlaceId, onSelect, onOpenOffer, onOpenEvent, onOpenDeal, onUserLocation }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const onSelectRef = useRef(onSelect);
   const onOpenOfferRef = useRef(onOpenOffer);
@@ -87,14 +89,15 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
     const byId = new Map(places.map((place) => [place.id, place]));
     const isMobileMap = () => window.matchMedia("(max-width: 640px)").matches;
 
-    void import("maplibre-gl").then(({ GeolocateControl, Map: MapLibreMap, NavigationControl, Popup, setWorkerUrl }) => {
+    void import("maplibre-gl").then(({ GeolocateControl, LngLatBounds, Map: MapLibreMap, NavigationControl, Popup, setWorkerUrl }) => {
       if (cancelled || !container.current) return;
       setWorkerUrl(workerUrl);
+      const focusedPlace = focusPlaceId ? byId.get(focusPlaceId) : undefined;
       map = new MapLibreMap({
         container: container.current,
         style: mapStyle,
-        center: view === "campus" && places.length === 1 && places[0] ? [places[0].lng, places[0].lat] : view === "campus" ? [-111.6502, 40.2487] : [-111.664, 40.264],
-        zoom: view === "campus" && places.length === 1 ? 17 : view === "campus" ? 15.3 : 10.2,
+        center: focusedPlace ? [focusedPlace.lng, focusedPlace.lat] : view === "campus" && places.length === 1 && places[0] ? [places[0].lng, places[0].lat] : view === "campus" ? [-111.6502, 40.2487] : [-111.664, 40.264],
+        zoom: focusedPlace ? 16.5 : view === "campus" && places.length === 1 ? 17 : view === "campus" ? 15.3 : 10.2,
         pitch: view === "campus" ? 46 : 0,
         bearing: view === "campus" ? -18 : 0,
         minZoom: 3,
@@ -269,6 +272,14 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
       };
       map.on("load", () => {
         if (!map) return;
+        if (view === "campus" && !focusedPlace) {
+          const active = places.filter((place) => place.events.length > 0);
+          if (active.length === 1 && active[0]) map.easeTo({ center: [active[0].lng, active[0].lat], zoom: 16.2, pitch: 46, bearing: -18 });
+          else if (active.length > 1) {
+            const bounds = active.reduce((box, place) => box.extend([place.lng, place.lat]), new LngLatBounds());
+            map.fitBounds(bounds, { padding: 80, maxZoom: 16.2, pitch: 46, bearing: -18 });
+          }
+        }
         if (view === "campus") {
           const styleLayers = map.getStyle().layers ?? [];
           for (const layer of styleLayers) {
@@ -298,7 +309,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
 
           map.addSource("buildings", {
             type: "geojson",
-            data: { type: "FeatureCollection", features: places.map((place) => ({
+            data: { type: "FeatureCollection", features: places.filter((place) => showInactiveBuildings || place.events.length > 0).map((place) => ({
               id: place.id,
               type: "Feature" as const,
               geometry: { type: "Point" as const, coordinates: [place.lng, place.lat] },
@@ -394,7 +405,7 @@ export function MapCanvas({ places, view, onSelect, onOpenOffer, onOpenEvent, on
       });
     });
     return () => { cancelled = true; mobileCard?.remove(); recenterButton?.remove(); map?.remove(); };
-  }, [places, view]);
+  }, [places, view, showInactiveBuildings, focusPlaceId]);
 
   return <div ref={container} className="relative h-[440px] w-full overflow-hidden rounded-2xl sm:h-[600px]" aria-label={view === "campus" ? "BYU campus events map" : "Area discounts and free food map"} />;
 }
