@@ -10,7 +10,7 @@ export const Route = createFileRoute("/starving-student")({
   head: () => ({
     meta: [
       { title: "Starving Student Card Hub — Studeats" },
-      { name: "description", content: "Every Starving Student Card deal, sorted by free vs discount, with a tracker for deals you've used." },
+      { name: "description", content: "Every Starving Student Card deal, sorted by category, with a tracker for deals you've used." },
       { property: "og:title", content: "Starving Student Card Hub — Studeats" },
       { property: "og:description", content: "Track which Starving Student Card deals you've used." },
     ],
@@ -20,6 +20,17 @@ export const Route = createFileRoute("/starving-student")({
 
 const discountTypes = ["All Deals", "Free Only", "Discounts Only", "Unlimited Only"] as const;
 const statusFilters = ["Any Status", "Unused / Available", "Used"] as const;
+
+const CATEGORY_ICONS: Record<string, string> = {
+  "Freebies": "🎁",
+  "Treats & Drinks": "🥤",
+  "Burgers & Sandwiches": "🍔",
+  "Pizza": "🍕",
+  "Restaurants": "🍽️",
+  "Entertainment": "🎳",
+  "Retail, Auto, & More": "🛍️",
+  "Health & Beauty": "✨",
+};
 
 function SSHub() {
   const { ssUsedCounts = {} } = useStore();
@@ -53,7 +64,7 @@ function SSHub() {
   }).length;
   const totalClaimedPunches = Object.values(ssUsedCounts).reduce((a, b) => a + b, 0);
 
-  const list = ssDeals
+  const filteredDeals = ssDeals
     .filter((d) => {
       // 1. Discount type & unlimited filter
       if (typeFilter === "Free Only" && d.type !== "Free") return false;
@@ -92,6 +103,9 @@ function SSHub() {
 
       return sort === "company" ? a.company.localeCompare(b.company) : a.type.localeCompare(b.type);
     });
+
+  // Group deals by category
+  const categoriesPresent = Array.from(new Set(filteredDeals.map((d) => d.category)));
 
   const handleCardAction = (e: React.MouseEvent, deal: SSDeal) => {
     e.stopPropagation();
@@ -291,99 +305,128 @@ function SSHub() {
         </div>
       )}
 
-      {/* 2. Deals List with Prominent "Mark as Used" Actions */}
-      <div className="mt-6 grid gap-3">
-        {list.map((d) => {
-          const count = ssUsedCounts[d.id] || 0;
-          const isNoLimit = d.totalUses === null;
-          const total = isNoLimit ? null : (d.totalUses ?? 1);
-          const isFullyUsed = isNoLimit ? false : count >= (total ?? 1);
-          const isPunched = punchedId === d.id;
-          const isUnpunched = unpunchedId === d.id;
+      {/* 2. Deals List Split cleanly by Categories */}
+      <div className="mt-8 space-y-10">
+        {categoriesPresent.map((categoryName) => {
+          const categoryDeals = filteredDeals.filter((d) => d.category === categoryName);
+          const icon = CATEGORY_ICONS[categoryName] || "🏷️";
 
           return (
-            <div
-              key={d.id}
-              className={`glass group relative flex flex-wrap items-center gap-3 p-4 sm:flex-nowrap sm:gap-4 transition-all duration-300 ${
-                isFullyUsed ? "bg-muted/40 opacity-70" : "hover:-translate-y-0.5 hover:shadow-sm"
-              } ${isPunched ? "is-punched-card ring-2 ring-primary" : ""} ${isUnpunched ? "is-unpunched-card" : ""}`}
-            >
-              {/* Value Badge */}
-              <span
-                className={`grid size-14 shrink-0 place-items-center rounded-xl font-display text-sm font-semibold transition-transform ${
-                  d.type === "Free" ? "bg-gold/15 text-gold" : "bg-accent/10 text-accent"
-                }`}
-              >
-                {d.value}
-              </span>
-
-              {/* Deal Info (Opens detail modal) */}
-              <button
-                onClick={() => setOpen(d)}
-                className="min-w-0 flex-1 text-left rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                aria-label={`View details for ${d.item} at ${d.company}`}
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className={`text-base font-semibold sm:text-lg transition-colors ${isFullyUsed ? "line-through text-muted-foreground" : "text-foreground group-hover:text-primary"}`}>
-                    {d.item}
-                  </h3>
-
-                  {/* Multi-use badge: shows count on card badge ONLY */}
-                  {isNoLimit ? (
-                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
-                      Unlimited
-                    </span>
-                  ) : total && total > 1 ? (
-                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
-                      {count > 0 ? `${count}/${total} Uses` : `${total} Uses`}
-                    </span>
-                  ) : null}
-
-                  {/* Stamped punch badge if fully used */}
-                  {isFullyUsed && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary animate-punch">
-                      <span>✓</span>
-                      <span>REDEEMED</span>
-                    </span>
-                  )}
+            <section key={categoryName} className="space-y-3">
+              {/* Category Section Header */}
+              <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid size-8 place-items-center rounded-xl bg-secondary text-lg ring-1 ring-border">
+                    {icon}
+                  </span>
+                  <div>
+                    <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+                      {categoryName}
+                    </h2>
+                  </div>
                 </div>
-
-                <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-                  <strong className="text-foreground/90 font-medium">{d.company}</strong> · {d.category} ·{" "}
-                  {d.locations.length ? `${d.locations.length} ${d.locations.length === 1 ? "location" : "locations"}` : "Location not confirmed"}
-                </p>
-              </button>
-
-              {/* Prominent Action Button: No redundant badge text in button */}
-              <div className="flex w-full items-center justify-end sm:w-auto shrink-0">
-                <button
-                  type="button"
-                  onClick={(e) => handleCardAction(e, d)}
-                  title={isFullyUsed ? "Click to unmark/reset this deal" : isNoLimit ? "Click to record another use" : "Click to mark this deal as used"}
-                  className={`inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 active:scale-95 ${
-                    isFullyUsed
-                      ? "bg-secondary text-foreground/80 ring-1 ring-border hover:bg-destructive/10 hover:text-destructive hover:ring-destructive/30"
-                      : count > 0
-                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 hover:bg-primary hover:text-primary-foreground shadow-sm"
-                      : "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:scale-[1.02]"
-                  }`}
-                >
-                  {isFullyUsed ? (
-                    <span>✓ Used</span>
-                  ) : isNoLimit ? (
-                    <span>{count > 0 ? `Record Use (${count} used)` : "Record Use"}</span>
-                  ) : count > 0 ? (
-                    <span>{total && total > 1 ? `Mark Used (${count}/${total})` : "Mark Used"}</span>
-                  ) : (
-                    <span>{total && total > 1 ? `Mark Used (0/${total})` : "Mark Used"}</span>
-                  )}
-                </button>
+                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-muted-foreground ring-1 ring-border">
+                  {categoryDeals.length} {categoryDeals.length === 1 ? "offer" : "offers"}
+                </span>
               </div>
-            </div>
+
+              {/* Category Deals Grid/List */}
+              <div className="grid gap-3">
+                {categoryDeals.map((d) => {
+                  const count = ssUsedCounts[d.id] || 0;
+                  const isNoLimit = d.totalUses === null;
+                  const total = isNoLimit ? null : (d.totalUses ?? 1);
+                  const isFullyUsed = isNoLimit ? false : count >= (total ?? 1);
+                  const isPunched = punchedId === d.id;
+                  const isUnpunched = unpunchedId === d.id;
+
+                  return (
+                    <div
+                      key={d.id}
+                      className={`glass group relative flex flex-wrap items-center gap-3 p-4 sm:flex-nowrap sm:gap-4 transition-all duration-300 ${
+                        isFullyUsed ? "bg-muted/40 opacity-70" : "hover:-translate-y-0.5 hover:shadow-sm"
+                      } ${isPunched ? "is-punched-card ring-2 ring-primary" : ""} ${isUnpunched ? "is-unpunched-card" : ""}`}
+                    >
+                      {/* Value Badge */}
+                      <span
+                        className={`grid size-14 shrink-0 place-items-center rounded-xl font-display text-sm font-semibold transition-transform ${
+                          d.type === "Free" ? "bg-gold/15 text-gold" : "bg-accent/10 text-accent"
+                        }`}
+                      >
+                        {d.value}
+                      </span>
+
+                      {/* Deal Info (Opens detail modal) */}
+                      <button
+                        onClick={() => setOpen(d)}
+                        className="min-w-0 flex-1 text-left rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        aria-label={`View details for ${d.item} at ${d.company}`}
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className={`text-base font-semibold sm:text-lg transition-colors ${isFullyUsed ? "line-through text-muted-foreground" : "text-foreground group-hover:text-primary"}`}>
+                            {d.item}
+                          </h3>
+
+                          {/* Multi-use badge: shows count on card badge ONLY */}
+                          {isNoLimit ? (
+                            <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
+                              Unlimited
+                            </span>
+                          ) : total && total > 1 ? (
+                            <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
+                              {count > 0 ? `${count}/${total} Uses` : `${total} Uses`}
+                            </span>
+                          ) : null}
+
+                          {/* Stamped punch badge if fully used */}
+                          {isFullyUsed && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary animate-punch">
+                              <span>✓</span>
+                              <span>REDEEMED</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                          <strong className="text-foreground/90 font-medium">{d.company}</strong> ·{" "}
+                          {d.locations.length ? `${d.locations.length} ${d.locations.length === 1 ? "location" : "locations"}` : "Location not confirmed"}
+                        </p>
+                      </button>
+
+                      {/* Prominent Action Button */}
+                      <div className="flex w-full items-center justify-end sm:w-auto shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => handleCardAction(e, d)}
+                          title={isFullyUsed ? "Click to unmark/reset this deal" : isNoLimit ? "Click to record another use" : "Click to mark this deal as used"}
+                          className={`inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 active:scale-95 ${
+                            isFullyUsed
+                              ? "bg-secondary text-foreground/80 ring-1 ring-border hover:bg-destructive/10 hover:text-destructive hover:ring-destructive/30"
+                              : count > 0
+                              ? "bg-primary/20 text-primary ring-1 ring-primary/40 hover:bg-primary hover:text-primary-foreground shadow-sm"
+                              : "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:scale-[1.02]"
+                          }`}
+                        >
+                          {isFullyUsed ? (
+                            <span>✓ Used</span>
+                          ) : isNoLimit ? (
+                            <span>{count > 0 ? `Record Use (${count} used)` : "Record Use"}</span>
+                          ) : count > 0 ? (
+                            <span>{total && total > 1 ? `Mark Used (${count}/${total})` : "Mark Used"}</span>
+                          ) : (
+                            <span>{total && total > 1 ? `Mark Used (0/${total})` : "Mark Used"}</span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
           );
         })}
 
-        {list.length === 0 && (
+        {filteredDeals.length === 0 && (
           <div className="glass p-8 text-center" role="status">
             <h2 className="text-xl font-semibold">No card offers found</h2>
             <p className="mt-2 text-sm text-muted-foreground">Try another search or change the filters.</p>
