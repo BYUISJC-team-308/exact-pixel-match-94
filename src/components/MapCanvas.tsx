@@ -367,12 +367,16 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
         map.addImage("place-food-icon", createMapIcon("event"), { pixelRatio: 2 });
         map.addImage("place-discount-icon", createMapIcon("discount"), { pixelRatio: 2 });
         map.addLayer({ id: "clusters", type: "circle", source: "places", filter: ["has", "point_count"], paint: {
-          "circle-color": "#245b4d", "circle-radius": ["step", ["get", "point_count"], 20, 20, 26, 100, 34],
-          "circle-stroke-color": "#fff", "circle-stroke-width": 2,
+          "circle-color": "#245b4d", "circle-opacity": 0.94, "circle-radius": ["step", ["get", "point_count"], 20, 20, 26, 100, 34],
+          "circle-stroke-color": "#fff", "circle-stroke-width": 3,
         } });
         map.addLayer({ id: "cluster-count", type: "symbol", source: "places", filter: ["has", "point_count"], layout: {
           "text-field": ["get", "point_count_abbreviated"], "text-size": 13,
         }, paint: { "text-color": "#fff" } });
+        map.addLayer({ id: "selected-place-halo", type: "circle", source: "places", filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "id"], focusPlaceId || "__none__"]], paint: {
+          "circle-color": "#ffffff", "circle-radius": view === "campus" ? 27 : 24,
+          "circle-opacity": 0.92, "circle-stroke-color": campus?.primaryColor || "#245b4d", "circle-stroke-width": 3,
+        } });
         map.addLayer({ id: "place-points", type: "circle", source: "places", filter: ["!", ["has", "point_count"]], paint: {
           "circle-color": ["match", ["get", "kind"], "event", view === "campus" ? "#d99516" : "#e3a629", "discount", "#7357a4", campus?.primaryColor || "#245b4d"],
           "circle-radius": view === "campus" ? 19 : 16, "circle-stroke-color": "#fff", "circle-stroke-width": 2.5,
@@ -410,5 +414,5 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
     return () => { cancelled = true; mobileCard?.remove(); recenterButton?.remove(); map?.remove(); };
   }, [places, view, campus, showInactiveBuildings, focusPlaceId]);
 
-  return <div ref={container} className="relative h-[440px] w-full overflow-hidden rounded-2xl sm:h-[600px]" aria-label={view === "campus" ? `${campus?.shortName || "College"} campus events map` : "Area discounts and free food map"} />;
+  return <div ref={container} className="relative h-[62dvh] min-h-[500px] w-full overflow-hidden rounded-[1.6rem] sm:h-[640px] xl:h-[calc(100vh-2rem)] xl:max-h-[820px]" aria-label={view === "campus" ? `${campus?.shortName || "College"} campus events map` : "Area discounts and free food map"} />;
 }
