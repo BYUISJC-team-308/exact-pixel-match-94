@@ -49,7 +49,7 @@ export function Index() {
         <div className="rise">
           <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-primary ring-1 ring-border">
             <span className="size-2 rounded-full bg-primary animate-pulse" />
-            <span>The bulletin board for broke students</span>
+            <span>Verified student discounts & campus perks</span>
           </div>
 
           <h1 className="mt-5 max-w-[18ch] text-balance font-display text-5xl font-semibold leading-[1.05] tracking-tight xl:text-6xl">
@@ -380,7 +380,7 @@ export function Index() {
       </section>
 
       {/* 5. Verified Discounts (Popular Student Perks & AI Tools) */}
-      <section className="py-10">
+      <section className="pt-10 pb-16 sm:pb-20">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <span className="text-xs font-semibold text-primary uppercase tracking-wider">Top Picks</span>
