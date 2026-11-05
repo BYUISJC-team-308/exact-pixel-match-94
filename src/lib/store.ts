@@ -135,6 +135,9 @@ export const actions = {
     delete counts[id];
     set({ usedSS: state.usedSS.filter((x) => x !== id), ssUsedCounts: counts });
   },
+  resetAllUsedSS: () => {
+    set({ usedSS: [], ssUsedCounts: {} });
+  },
   setUser: (user: User | null) => {
     if (user && !state.user) {
       void logActivityEvent("signup", { username: user.username, email: user.email });

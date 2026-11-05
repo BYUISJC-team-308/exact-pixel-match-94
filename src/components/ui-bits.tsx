@@ -425,12 +425,16 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
           ) : count > 0 ? (
             <>
               <span>Punch next use</span>
-              <span className="text-xs opacity-90">({count + 1}/{total})</span>
+              {isNoLimit ? (
+                <span className="text-xs opacity-90">(Used {count}x)</span>
+              ) : (
+                <span className="text-xs opacity-90">({count + 1}/{total})</span>
+              )}
             </>
           ) : (
             <>
               <span>Mark as used</span>
-              {total && total > 1 && <span className="text-xs opacity-90">(1/{total})</span>}
+              {!isNoLimit && total && total > 1 && <span className="text-xs opacity-90">(1/{total})</span>}
             </>
           )}
         </button>

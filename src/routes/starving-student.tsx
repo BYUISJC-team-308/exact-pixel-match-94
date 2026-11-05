@@ -33,8 +33,9 @@ function SSHub() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<SSDeal | null>(null);
 
-  // Confirmation state for un-marking a deal
+  // Confirmation state for un-marking a deal or unmarking all
   const [confirmDeal, setConfirmDeal] = useState<SSDeal | null>(null);
+  const [confirmResetAll, setConfirmResetAll] = useState(false);
 
   // Animated deal IDs for punching or unpunching
   const [punchedId, setPunchedId] = useState<string | null>(null);
@@ -50,6 +51,7 @@ function SSHub() {
     if (isNoLimit) return false;
     return count >= (d.totalUses ?? 1);
   }).length;
+  const totalClaimedPunches = Object.values(ssUsedCounts).reduce((a, b) => a + b, 0);
 
   const list = ssDeals
     .filter((d) => {
@@ -119,6 +121,11 @@ function SSHub() {
     }
   };
 
+  const handleResetAll = () => {
+    actions.resetAllUsedSS();
+    setConfirmResetAll(false);
+  };
+
   return (
     <>
       <PageHeader eyebrow={`${ssDeals.length} offers`} title="Starving Student Card Hub">
@@ -159,10 +166,22 @@ function SSHub() {
           </div>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar & Testing Reset All Control */}
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs font-medium text-muted-foreground mb-1.5">
-            <span>Punchcard Completion</span>
+            <div className="flex items-center gap-2">
+              <span>Punchcard Completion</span>
+              {totalClaimedPunches > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmResetAll(true)}
+                  className="rounded-full bg-secondary/90 px-2.5 py-0.5 text-[10px] font-medium text-destructive ring-1 ring-destructive/30 hover:bg-destructive/10 transition-colors"
+                  title="Testing control: reset all saved card punches"
+                >
+                  Reset all used deals
+                </button>
+              )}
+            </div>
             <span>{Math.round((fullyUsedCount / totalOffers) * 100)}%</span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-secondary ring-1 ring-border">
@@ -213,7 +232,7 @@ function SSHub() {
         </div>
       </div>
 
-      {/* Confirmation Modal when unmarking */}
+      {/* Confirmation Modal when unmarking a single deal */}
       {confirmDeal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-sm rounded-2xl bg-popover p-6 shadow-float ring-1 ring-border">
@@ -236,6 +255,35 @@ function SSHub() {
                 className="rounded-full bg-destructive px-4 py-2 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90 transition-colors shadow-sm"
               >
                 Yes, unmark
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal when resetting ALL deals */}
+      {confirmResetAll && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm rounded-2xl bg-popover p-6 shadow-float ring-1 ring-border">
+            <span className="grid size-10 place-items-center rounded-xl bg-destructive/10 text-xl text-destructive mb-3">🔄</span>
+            <h3 className="text-lg font-semibold text-foreground">Reset all used deals?</h3>
+            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+              This will clear all redeemed punches across the entire Starving Student Card Hub on this device.
+            </p>
+            <div className="mt-5 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setConfirmResetAll(false)}
+                className="rounded-full bg-secondary px-4 py-2 text-xs font-semibold ring-1 ring-border hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleResetAll}
+                className="rounded-full bg-destructive px-4 py-2 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90 transition-colors shadow-sm"
+              >
+                Yes, reset all
               </button>
             </div>
           </div>
@@ -279,10 +327,10 @@ function SSHub() {
                     {d.item}
                   </h3>
 
-                  {/* Multi-use badge */}
+                  {/* Multi-use badge: never show fractions for unlimited */}
                   {isNoLimit ? (
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
-                      Unlimited Uses
+                      {count > 0 ? `Unlimited (${count} used)` : "Unlimited Uses"}
                     </span>
                   ) : total && total > 1 ? (
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
@@ -310,7 +358,7 @@ function SSHub() {
                 <button
                   type="button"
                   onClick={(e) => handleCardAction(e, d)}
-                  title={isFullyUsed ? "Click to unmark/reset this deal" : "Click to mark this deal as used"}
+                  title={isFullyUsed ? "Click to unmark/reset this deal" : isNoLimit ? "Click to record a use" : "Click to mark this deal as used"}
                   className={`inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 active:scale-95 ${
                     isFullyUsed
                       ? "bg-secondary text-foreground/80 ring-1 ring-border hover:bg-destructive/10 hover:text-destructive hover:ring-destructive/30"
@@ -327,12 +375,16 @@ function SSHub() {
                   ) : count > 0 ? (
                     <>
                       <span>Punch Use {count + 1}</span>
-                      <span className="text-[10px] opacity-80">({count}/{total})</span>
+                      {isNoLimit ? (
+                        <span className="text-[10px] opacity-80">(Used {count}x)</span>
+                      ) : (
+                        <span className="text-[10px] opacity-80">({count}/{total})</span>
+                      )}
                     </>
                   ) : (
                     <>
                       <span>Mark Used</span>
-                      {total && total > 1 && <span className="text-[10px] opacity-80">(0/{total})</span>}
+                      {!isNoLimit && total && total > 1 && <span className="text-[10px] opacity-80">(0/{total})</span>}
                     </>
                   )}
                 </button>
