@@ -405,7 +405,6 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
       <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{deal.description}</p>
       <dl className="mt-4 space-y-2 text-sm border-t border-border/50 pt-3">
         <div><dt className="font-semibold text-foreground">Company</dt><dd className="text-muted-foreground">{deal.company}</dd></div>
-        <div><dt className="font-semibold text-foreground">Duration</dt><dd className="text-muted-foreground">{deal.duration}</dd></div>
         <div><dt className="font-semibold text-foreground">How to get it</dt><dd className="text-muted-foreground">{deal.howTo}</dd></div>
       </dl>
       <div className="mt-6 flex flex-wrap gap-2">
