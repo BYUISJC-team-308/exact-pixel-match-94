@@ -6,6 +6,7 @@ import { actions, useStore } from "@/lib/store";
 import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
+  // Top tech, developer tools & streaming
   github: "github.com",
   google: "google.com",
   openai: "openai.com",
@@ -25,30 +26,81 @@ const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
   tableau: "tableau.com",
   autodesk: "autodesk.com",
   "1password": "1password.com",
+  datacamp: "datacamp.com",
+  digitalocean: "digitalocean.com",
+  termius: "termius.com",
+  namecheap: "namecheap.com",
+  "frontend masters": "frontendmasters.com",
+  mongodb: "mongodb.com",
+  sonos: "sonos.com",
+  sony: "sony.com",
+  bose: "bose.com",
+  ecoflow: "ecoflow.com",
+  roborock: "roborock.com",
   "t-mobile": "t-mobile.com",
-  figs: "wearfigs.com",
-  oura: "ouraring.com",
-  "amc theatres": "amctheatres.com",
-  "amc theatres®": "amctheatres.com",
-  "7-eleven": "7-eleven.com",
-  target: "target.com",
-  nike: "nike.com",
-  samsung: "samsung.com",
-  adidas: "adidas.com",
-  costco: "costco.com",
-  hulu: "hulu.com",
-  disney: "disneyplus.com",
-  "disney+": "disneyplus.com",
-  paramount: "paramountplus.com",
-  "paramount+": "paramountplus.com",
-  peacock: "peacocktv.com",
-  canva: "canva.com",
+  verizon: "verizon.com",
+  "verizon home internet": "verizon.com",
+  turbotax: "turbotax.intuit.com",
+
+  // Entertainment, Tickets, Theme Parks & Travel (resolves grey-earth-globe placeholder glitch)
+  "hotels.com": "hotels.com",
+  hotels: "hotels.com",
+  "new york hotels": "hotels.com",
+  "anaheim hotels": "disneyland.disney.go.com",
+  "las vegas hotels": "caesars.com",
+  "caesars palace": "caesars.com",
+  "caesars rewards": "caesars.com",
+  "disneyland® resort - california": "disneyland.disney.go.com",
+  "walt disney world® resort": "disneyworld.disney.go.com",
+  "universal orlando resort": "universalorlando.com",
+  "universal studios hollywood memberdeals": "universalstudioshollywood.com",
+  "dollywood memberdeals": "dollywood.com",
+  dollywood: "dollywood.com",
+  "broadway shows": "broadway.com",
+  "memberdeals hotels": "memberdeals.com",
+  memberdeals: "memberdeals.com",
+  "theme parks": "memberdeals.com",
+  "nba basketball tickets": "nba.com",
+  "nfl football tickets": "nfl.com",
+  stubhub: "stubhub.com",
+  "vivid seats": "vividseats.com",
+  "san diego zoo": "sandiegozoo.org",
+  "cinemark 16 provo": "cinemark.com",
+  "fatcats provo": "fatcatsfun.com",
+  "ikon pass": "ikonpass.com",
+  expedia: "expedia.com",
+  travelocity: "travelocity.com",
+  vrbo: "vrbo.com",
+  away: "awaytravel.com",
+  "aaa membership": "aaa.com",
+
+  // Home, Sleep & Appliances
+  "the ge appliances store": "geappliances.com",
+  "ge appliances": "geappliances.com",
+  caraway: "carawayhome.com",
+  "stanley 1913": "stanley1913.com",
+  "the farmer's dog": "thefarmersdog.com",
+  "home chef": "homechef.com",
+  "tempo by home chef": "homechef.com",
+  saatva: "saatva.com",
+  leesa: "leesa.com",
+  "avocado mattress": "avocadogreenmattress.com",
+  "brooklyn bedding": "brooklynbedding.com",
+  "titan mattress": "titanmattress.com",
+  "mattress firm": "mattressfirm.com",
+
+  // Food & Dining (including Slab Pizza)
+  "slab pizza": "theslabpizza.com",
+  "the wall byu": "byu.edu",
+  "cupbop korean bbq": "cupbop.com",
+  cupbop: "cupbop.com",
+  "jcw’s the burger boys": "jcws.com",
+  "jcw's": "jcws.com",
+  "hruska’s kolaches": "hruskaskolaches.com",
   swig: "swigdrinks.com",
   "costa vida": "costavida.com",
   chipotle: "chipotle.com",
   subway: "subway.com",
-  "byu store": "byustore.com",
-  byu: "byu.edu",
   starbucks: "starbucks.com",
   dominos: "dominos.com",
   "domino's": "dominos.com",
@@ -60,73 +112,116 @@ const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
   "wendy's": "wendys.com",
   mcdonalds: "mcdonalds.com",
   "mcdonald's": "mcdonalds.com",
-  dell: "dell.com",
-  hp: "hp.com",
-  lenovo: "lenovo.com",
-  grammarly: "grammarly.com",
-  headspace: "headspace.com",
-  calm: "calm.com",
-  peloton: "onepeloton.com",
+  doordash: "doordash.com",
+  instacart: "instacart.com",
+
+  // Apparel, Shoes & Fitness (fixes 'on' substring collision)
+  "beyond yoga": "beyondyoga.com",
+  "aventon bikes": "aventon.com",
+  canyon: "canyon.com",
+  "saucony us": "saucony.com",
+  saucony: "saucony.com",
+  "merrell us": "merrell.com",
+  merrell: "merrell.com",
+  "columbia sportswear": "columbia.com",
+  "red wing": "redwingshoes.com",
+  nike: "nike.com",
+  adidas: "adidas.com",
   underarmour: "underarmour.com",
   "under armour": "underarmour.com",
   gymshark: "gymshark.com",
-  uber: "uber.com",
-  doordash: "doordash.com",
-  instacart: "instacart.com",
-  chegg: "chegg.com",
-  quizlet: "quizlet.com",
-  duolingo: "duolingo.com",
-  saatva: "saatva.com",
-  leesa: "leesa.com",
-  glassesusa: "glassesusa.com",
-  "glassesusa.com": "glassesusa.com",
-  "red wing": "redwingshoes.com",
-  "sam's club": "samsclub.com",
-  "bj's wholesale club": "bjs.com",
-  "b1g+": "bigtenplus.com",
   hoka: "hoka.com",
-  on: "on.com",
-  saucony: "saucony.com",
-  merrell: "merrell.com",
   crocs: "crocs.com",
+  "birkenstock usa": "birkenstock.com",
   birkenstock: "birkenstock.com",
   heydude: "heydude.com",
   reebok: "reebok.com",
   tecovas: "tecovas.com",
   oofos: "oofos.com",
-  "beyond yoga": "beyondyoga.com",
   comfrt: "comfrt.com",
-  "aventon bikes": "aventon.com",
-  canyon: "canyon.com",
-  "avocado mattress": "avocadogreenmattress.com",
-  "brooklyn bedding": "brooklynbedding.com",
-  "mattress firm": "mattressfirm.com",
-  caraway: "carawayhome.com",
-  "stanley 1913": "stanley1913.com",
-  ecoflow: "ecoflow.com",
-  roborock: "roborock.com",
-  sonos: "sonos.com",
-  sony: "sony.com",
-  turbotax: "turbotax.intuit.com",
-  betterhelp: "betterhelp.com",
-  "aaa membership": "aaa.com",
-  "the farmer's dog": "thefarmersdog.com",
-  "home chef": "homechef.com",
+  figs: "wearfigs.com",
   untuckit: "untuckit.com",
   "southern tide": "southerntide.com",
-  "lenscrafters": "lenscrafters.com",
-  "lensdirect": "lensdirect.com",
-  "contactsdirect": "contactsdirect.com",
+  tuckernuck: "tnuck.com",
+  peloton: "onepeloton.com",
+  majorfitness: "majorfitness.com",
+  therabody: "therabody.com",
+  oura: "ouraring.com",
+  ultrahuman: "ultrahuman.com",
+  on: "on.com",
+
+  // Retail, Optical & Subscriptions
+  "byu store": "byustore.com",
+  byu: "byu.edu",
+  target: "target.com",
+  costco: "costco.com",
+  "sam's club": "samsclub.com",
+  "bj's wholesale club": "bjs.com",
+  "7-eleven": "7-eleven.com",
+  ebay: "ebay.com",
+  "glassesusa.com": "glassesusa.com",
+  glassesusa: "glassesusa.com",
+  lenscrafters: "lenscrafters.com",
+  lensdirect: "lensdirect.com",
+  contactsdirect: "contactsdirect.com",
   "zenni optical": "zennioptical.com",
   "sunglass hut": "sunglasshut.com",
+  betterhelp: "betterhelp.com",
+  quest: "questdiagnostics.com",
+  hulu: "hulu.com",
+  disney: "disneyplus.com",
+  "disney+": "disneyplus.com",
+  paramount: "paramountplus.com",
+  "paramount+": "paramountplus.com",
+  peacock: "peacocktv.com",
+  "b1g+": "bigtenplus.com",
+  canva: "canva.com",
+  dell: "dell.com",
+  hp: "hp.com",
+  lenovo: "lenovo.com",
+  "lenovo us": "lenovo.com",
+  samsung: "samsung.com",
+  grammarly: "grammarly.com",
+  headspace: "headspace.com",
+  calm: "calm.com",
+  uber: "uber.com",
+  chegg: "chegg.com",
+  quizlet: "quizlet.com",
+  duolingo: "duolingo.com",
+  "amc theatres": "amctheatres.com",
+  "amc theatres®": "amctheatres.com",
 };
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 export function getCompanyDomain(company: string, url?: string): string {
   const clean = (company || "").toLowerCase().trim();
-  for (const [key, domain] of Object.entries(KNOWN_COMPANY_DOMAINS)) {
-    if (clean.includes(key)) return domain;
+  if (!clean) return "example.com";
+
+  // 1. Exact match check first
+  if (KNOWN_COMPANY_DOMAINS[clean]) {
+    return KNOWN_COMPANY_DOMAINS[clean];
   }
 
+  // 2. Sort keys descending by length so longer, specific phrases match before short keys
+  const sortedKeys = Object.keys(KNOWN_COMPANY_DOMAINS).sort((a, b) => b.length - a.length);
+  for (const key of sortedKeys) {
+    if (key.length <= 4) {
+      // Require word boundary for short keys like 'on', 'hp', 'byu', 'away', 'b1g+'
+      const regex = new RegExp("(^|\\s|[._-])" + escapeRegex(key) + "(\\s|[._-]|$)", "i");
+      if (regex.test(clean)) {
+        return KNOWN_COMPANY_DOMAINS[key];
+      }
+    } else {
+      if (clean.includes(key)) {
+        return KNOWN_COMPANY_DOMAINS[key];
+      }
+    }
+  }
+
+  // 3. If a deal URL is provided, extract real hostname
   if (url) {
     try {
       const parsed = new URL(url);
@@ -137,6 +232,11 @@ export function getCompanyDomain(company: string, url?: string): string {
     } catch {
       // ignore
     }
+  }
+
+  // 4. If company name already has a TLD (e.g. "hotels.com" or "glassesusa.com")
+  if (/\.[a-z]{2,}$/i.test(clean)) {
+    return clean.replace(/^https?:\/\//, "").replace(/^www\./, "");
   }
 
   const stripped = clean.replace(/[^a-z0-9]/g, "");
@@ -154,18 +254,29 @@ export function CompanyLogo({
   size?: number;
   className?: string;
 }) {
-  const [hasError, setHasError] = useState(false);
   const domain = getCompanyDomain(company, url);
-  const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+  const [sourceIndex, setSourceIndex] = useState(0);
 
-  const initials =
-    company
-      .replace(/[^a-zA-Z0-9 ]/g, "")
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0].toUpperCase())
-      .join("") || company.slice(0, 2).toUpperCase() || "ST";
+  // Reset source index if company or domain changes
+  useEffect(() => {
+    setSourceIndex(0);
+  }, [domain]);
+
+  const isInvalidDomain = !domain || domain === "example.com";
+
+  // Multi-tier icon resolution:
+  // Tier 1: Google S2 Favicons (128px high-res)
+  // Tier 2: DuckDuckGo icon service (.ico)
+  // Tier 3: Clear, prominent discount tag emoji placeholder (🏷️)
+  const sources = isInvalidDomain
+    ? []
+    : [
+        `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+        `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+      ];
+
+  const currentSrc = !isInvalidDomain && sourceIndex < sources.length ? sources[sourceIndex] : null;
+  const isFallback = isInvalidDomain || sourceIndex >= sources.length;
 
   return (
     <div
@@ -173,17 +284,31 @@ export function CompanyLogo({
       className={`relative grid place-items-center rounded-xl bg-card border border-border/80 shadow-sm overflow-hidden flex-shrink-0 ${className}`}
       title={company}
     >
-      {!hasError ? (
+      {!isFallback && currentSrc ? (
         <img
-          src={iconUrl}
+          src={currentSrc}
           alt={`${company} logo`}
           loading="lazy"
           className="h-3/4 w-3/4 object-contain transition-transform duration-200 group-hover:scale-110"
-          onError={() => setHasError(true)}
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            // If Google S2 served the default fallback globe (16x16 with no real brand icon when sz=128 was requested),
+            // advance to DuckDuckGo or discount tag placeholder so the grey globe is never shown.
+            if (sourceIndex === 0 && img.naturalWidth === 16 && img.naturalHeight === 16) {
+              setSourceIndex((prev) => prev + 1);
+            }
+          }}
+          onError={() => setSourceIndex((prev) => prev + 1)}
         />
       ) : (
-        <div className="grid h-full w-full place-items-center bg-gradient-to-br from-primary/15 via-accent/10 to-primary/5 font-bold text-xs tracking-wider text-primary">
-          {initials}
+        <div
+          className="grid h-full w-full place-items-center bg-gradient-to-br from-amber-500/15 via-primary/10 to-transparent text-foreground select-none"
+          title={`${company} discount deal`}
+          aria-label={`${company} discount deal`}
+        >
+          <span className="text-xl leading-none" role="img" aria-label="Student discount deal">
+            🏷️
+          </span>
         </div>
       )}
     </div>
