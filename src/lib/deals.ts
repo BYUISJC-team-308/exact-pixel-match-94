@@ -30,6 +30,34 @@ export function isCanadianOnlyDeal(row: { title?: string | null; description?: s
   return hasCanada && !hasUS;
 }
 
+export function deduplicateDeals<T extends { company?: string; url?: string | null; value?: string | null }>(items: T[]): T[] {
+  const seenOffers = new Set<string>();
+  const seenCompanyOffers = new Set<string>();
+  const result: T[] = [];
+
+  for (const item of items) {
+    const offerMatch = item.url?.match(/offer\/(\d+)/i);
+    if (offerMatch) {
+      const offerKey = `idme:${offerMatch[1]}`;
+      if (seenOffers.has(offerKey)) continue;
+      seenOffers.add(offerKey);
+    }
+
+    const compKey = (item.company || "").trim().toLowerCase();
+    const valKey = (item.value || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (compKey && valKey) {
+      const pairKey = `${compKey}:${valKey}`;
+      if (seenCompanyOffers.has(pairKey)) continue;
+      seenCompanyOffers.add(pairKey);
+    }
+
+    result.push(item);
+  }
+
+  return result;
+}
+
+
 export function normalizeDeal(row: DbDeal): Deal {
   const rawTitle = row.title || "Student Discount";
   const rawValue = row.value || "Discount";
@@ -69,7 +97,8 @@ export function normalizeDeal(row: DbDeal): Deal {
 export const getMapDeals = createServerFn({ method: "GET" }).handler(async (): Promise<DbDeal[]> => {
   const { data, error } = await supabase.from("deals").select("*").order("title", { ascending: true });
   if (error) throw error;
-  return ((data ?? []) as DbDeal[]).filter((d) => !isCanadianOnlyDeal(d));
+  const filtered = ((data ?? []) as DbDeal[]).filter((d) => !isCanadianOnlyDeal(d));
+  return deduplicateDeals(filtered);
 });
 
 export async function fetchDeals(): Promise<Deal[]> {
@@ -83,9 +112,9 @@ export async function fetchDeals(): Promise<Deal[]> {
     return [];
   }
 
-  return (data || [])
-    .filter((d) => !isCanadianOnlyDeal(d))
-    .map(normalizeDeal);
+  const rawDeals = ((data || []) as DbDeal[]).filter((d) => !isCanadianOnlyDeal(d));
+  const dedupedRaw = deduplicateDeals(rawDeals);
+  return dedupedRaw.map(normalizeDeal);
 }
 
 export function useDealsQuery() {
