@@ -389,11 +389,10 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex items-center">
         <span className="inline-flex items-center rounded-lg bg-accent/15 px-3 py-1 text-base font-bold text-accent ring-1 ring-accent/30">
           🏷️ {deal.value}
         </span>
-        <span className="text-sm font-semibold text-foreground/90">{deal.title}</span>
       </div>
 
       <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{deal.description}</p>

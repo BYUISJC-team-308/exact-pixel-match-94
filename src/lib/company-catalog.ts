@@ -10,6 +10,96 @@ export interface CompanyCatalogEntry {
 }
 
 export const COMPANY_CATALOG: Record<string, CompanyCatalogEntry> = {
+  '1password': {
+    tagline: 'Password Security & Digital Vault',
+    whatTheyDo: '1Password provides industry-standard encrypted password management, passkey storage, and digital credential security.',
+    category: 'Tech',
+  },
+  'autodesk': {
+    tagline: '3D CAD & Engineering Software',
+    whatTheyDo: 'Autodesk provides professional 3D CAD design tools, AutoCAD, Revit, and Inventor for engineering and architectural modeling.',
+    category: 'Tech',
+  },
+  'bose': {
+    tagline: 'Noise-Canceling Headphones & Audio',
+    whatTheyDo: 'Bose engineers high-fidelity wireless noise-canceling headphones, QuietComfort earbuds, and portable Bluetooth speakers.',
+    category: 'Tech',
+  },
+  'digitalocean': {
+    tagline: 'Cloud Hosting, Droplets & Databases',
+    whatTheyDo: 'DigitalOcean provides developer-friendly virtual private servers (Droplets), cloud Kubernetes clusters, and managed databases.',
+    category: 'Tech',
+  },
+  'disneyland® resort - california': {
+    tagline: 'Disneyland Theme Parks & Attractions',
+    whatTheyDo: 'Disneyland Resort in California features iconic Disney theme park attractions, lands, and entertainment.',
+    category: 'Fitness',
+  },
+  'disneyland': {
+    tagline: 'Disneyland Theme Parks & Attractions',
+    whatTheyDo: 'Disneyland Resort in California features iconic Disney theme park attractions, lands, and entertainment.',
+    category: 'Fitness',
+  },
+  'ebay': {
+    tagline: 'Online Marketplace & Tech Deals',
+    whatTheyDo: 'eBay is a global online marketplace for new and refurbished electronics, tech accessories, and textbooks.',
+    category: 'Tech',
+  },
+  'gymshark': {
+    tagline: 'Gym Workout Clothes & Activewear',
+    whatTheyDo: 'Gymshark designs athletic workout apparel, seamless lifting leggings, and performance training clothes.',
+    category: 'Fitness',
+  },
+  'nba basketball tickets': {
+    tagline: 'NBA Game Tickets & Arena Passes',
+    whatTheyDo: 'Exclusive ticket portal for National Basketball Association regular season games, arena seats, and playoff matchups.',
+    category: 'Fitness',
+  },
+  'nba': {
+    tagline: 'NBA Game Tickets & Arena Passes',
+    whatTheyDo: 'Exclusive ticket portal for National Basketball Association regular season games, arena seats, and playoff matchups.',
+    category: 'Fitness',
+  },
+  'nike': {
+    tagline: 'Athletic Running Shoes & Sportswear',
+    whatTheyDo: 'Nike designs industry-leading performance running shoes, athletic apparel, and lifestyle sneakers.',
+    category: 'Fitness',
+  },
+  'samsung': {
+    tagline: 'Galaxy Phones, Tablets & Displays',
+    whatTheyDo: 'Samsung manufactures Galaxy Android smartphones, lightweight tablets, OLED monitors, and student electronics.',
+    category: 'Tech',
+  },
+  'target': {
+    tagline: 'Dorm Essentials, Snacks & Home Goods',
+    whatTheyDo: 'Target provides dorm bedding, college school supplies, fresh groceries, and everyday household essentials.',
+    category: 'Groceries',
+  },
+  'therabody': {
+    tagline: 'Percussive Massage Guns & Recovery',
+    whatTheyDo: 'Therabody creates Theragun handheld percussive therapy massage guns, pneumatic compression boots, and recovery wellness devices.',
+    category: 'Fitness',
+  },
+  'under armour': {
+    tagline: 'Performance Sportswear & Training Gear',
+    whatTheyDo: 'Under Armour designs athletic compression apparel, moisture-wicking workout shirts, and training footwear.',
+    category: 'Fitness',
+  },
+  'walt disney world® resort': {
+    tagline: 'Disney World Theme Parks & Resorts',
+    whatTheyDo: 'Walt Disney World in Florida features four world-class theme parks, water parks, and entertainment complexes.',
+    category: 'Fitness',
+  },
+  'walt disney world': {
+    tagline: 'Disney World Theme Parks & Resorts',
+    whatTheyDo: 'Walt Disney World in Florida features four world-class theme parks, water parks, and entertainment complexes.',
+    category: 'Fitness',
+  },
+  'youtube': {
+    tagline: 'Ad-Free Video Streaming & YouTube Music',
+    whatTheyDo: 'YouTube Premium delivers ad-free video streaming, offline downloads, background playback, and YouTube Music.',
+    category: 'Subscription',
+  },
   'saatva': {
     tagline: 'Luxury Mattresses & Bedding',
     whatTheyDo: 'Saatva crafts luxury handcrafted innerspring and memory foam mattresses, organic bedding, and adjustable bed bases.',
@@ -639,10 +729,43 @@ export function getCompanyCatalogEntry(name: string): CompanyCatalogEntry | null
 /**
  * Generate a rich, descriptive deal description combining company info with the offer
  */
+/**
+ * Strip repetitive "for students" and robotic promo phrases
+ */
+export function cleanOfferText(text: string): string {
+  if (!text) return "";
+  let s = text.trim();
+
+  // Strip robotic prefix introductions
+  s = s.replace(/^Students unlock special savings:\s*/i, "");
+  s = s.replace(/^[A-Za-z0-9\s'&®.-]+ provides exclusive student discounts:\s*/i, "");
+
+  // Strip regional student specifiers
+  s = s.replace(/\s*for\s+(?:u\.s\.\s*(?:and|&)\s*)?canadian\s+students\.?/gi, "");
+  s = s.replace(/\s*for\s+u\.s\.\s+students\.?/gi, "");
+
+  // Strip redundant "for students", "for college students", "for university students"
+  s = s.replace(/\s*for\s+(?:university|college|enrolled)?\s*students\.?/gi, "");
+
+  // Clean redundant Student save phrasing
+  s = s.replace(/Students save an extra/gi, "Save an extra");
+  s = s.replace(/Students save/gi, "Save");
+  s = s.replace(/Cash back for Students/gi, "Cash back");
+  s = s.replace(/Discounts for Students/gi, "Exclusive discount");
+
+  // Fix punctuation and double spaces
+  s = s.replace(/\s+\./g, ".");
+  s = s.replace(/\.\.+/g, ".");
+  s = s.replace(/\s\s+/g, " ");
+  s = s.trim();
+
+  return s;
+}
+
 export function buildEnrichedDescription(company: string, rawTitle?: string, rawDesc?: string): string {
   const entry = getCompanyCatalogEntry(company);
-  const cleanTitle = (rawTitle || '').replace(/\s+/g, ' ').trim();
-  let cleanDesc = (rawDesc || '').replace(/\s+/g, ' ').trim();
+  const cleanTitle = cleanOfferText(rawTitle || '');
+  let cleanDesc = cleanOfferText(rawDesc || '');
 
   // If the company has a catalog entry
   if (entry) {
@@ -655,23 +778,22 @@ export function buildEnrichedDescription(company: string, rawTitle?: string, raw
     }
 
     const isGeneric =
-      /cash back|for students|student discount|save up to|^students save/i.test(cleanDesc) ||
+      /cash back|exclusive discount|save up to|^save/i.test(cleanDesc) ||
       cleanDesc.length < 25 ||
       cleanDesc.toLowerCase() === cleanTitle.toLowerCase();
 
-    if (isGeneric) {
-      return `${entry.whatTheyDo} Students unlock special savings: ${cleanTitle}.`;
+    if (isGeneric && cleanTitle) {
+      return `${entry.whatTheyDo} ${cleanTitle}.`.replace(/\.\./g, '.');
     }
 
-    if (!cleanDesc.toLowerCase().includes(entry.tagline.toLowerCase().split(' ')[0])) {
-      return `${entry.whatTheyDo} ${cleanDesc}`;
+    if (cleanDesc && !cleanDesc.toLowerCase().includes(entry.tagline.toLowerCase().split(' ')[0])) {
+      return `${entry.whatTheyDo} ${cleanDesc}`.replace(/\.\./g, '.');
     }
-    return cleanDesc;
+    return cleanDesc || entry.whatTheyDo;
   }
 
-  // Fallback for uncatalogued companies: ensure it forms a complete, clear sentence
   if (cleanDesc && cleanDesc.length > 20 && cleanDesc.toLowerCase() !== cleanTitle.toLowerCase()) {
     return cleanDesc;
   }
-  return `${company} provides exclusive student discounts: ${cleanTitle}.`;
+  return cleanTitle ? `${cleanTitle}.` : `Special student savings available.`;
 }

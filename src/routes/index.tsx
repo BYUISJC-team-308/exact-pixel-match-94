@@ -342,17 +342,14 @@ export function Index() {
                           {d.company}
                         </h4>
                         <p className="text-xs text-muted-foreground truncate font-medium">
-                          {getCompanyCatalogEntry(d.company)?.tagline || d.duration || "Active discount"}
+                          {getCompanyCatalogEntry(d.company)?.tagline || `${d.category} · Verified Discount`}
                         </p>
                       </div>
                     </div>
 
-                    <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                    <div className="mt-2.5 flex items-center">
                       <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-1 text-xs font-bold text-accent ring-1 ring-accent/30">
                         🏷️ {d.value}
-                      </span>
-                      <span className="text-xs font-semibold text-foreground/85 line-clamp-1">
-                        {d.title}
                       </span>
                     </div>
 
@@ -416,17 +413,14 @@ export function Index() {
                         {d.company}
                       </h3>
                       <p className="text-xs text-muted-foreground truncate font-medium">
-                        {getCompanyCatalogEntry(d.company)?.tagline || d.duration || "Active student discount"}
+                        {getCompanyCatalogEntry(d.company)?.tagline || `${d.category} · Verified Discount`}
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <div className="mt-3 flex items-center">
                     <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-1 text-sm font-bold text-accent ring-1 ring-accent/30">
                       🏷️ {d.value}
-                    </span>
-                    <span className="text-xs font-semibold text-foreground/85 line-clamp-1">
-                      {d.title}
                     </span>
                   </div>
 
