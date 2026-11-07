@@ -1,8 +1,20 @@
+export type DealCategory =
+  | "Food"
+  | "Tech"
+  | "AI"
+  | "Apparel"
+  | "Subscription"
+  | "Groceries"
+  | "Print"
+  | "Fitness"
+  | "Travel";
+
 export type Deal = {
   id: string;
   title: string;
   company: string;
-  category: "Food" | "Tech" | "AI" | "Subscription" | "Groceries" | "Print" | "Fitness" | "Travel";
+  category: DealCategory;
+  categories?: DealCategory[];
   type: "Percent off" | "Free" | "Fixed price";
   value: string;
   description: string;

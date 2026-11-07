@@ -18,7 +18,7 @@ export const Route = createFileRoute("/discounts")({
   component: Discounts,
 });
 
-const cats = ["All", "New", "Saved", "Food", "Tech", "AI", "Subscription", "Fitness", "Travel", "Free", "Percent off"] as const;
+const cats = ["All", "New", "Saved", "Apparel", "Tech", "Fitness", "Food", "AI", "Subscription", "Groceries", "Travel", "Free", "Percent off"] as const;
 type Cat = (typeof cats)[number];
 
 function Discounts() {
@@ -35,8 +35,12 @@ function Discounts() {
     if (cat === "New" && !d.isNew) return false;
     if (cat === "Saved" && !savedDeals.includes(d.id)) return false;
     if ((cat === "Free" || cat === "Percent off") && d.type !== cat) return false;
-    if (!["All", "New", "Saved", "Free", "Percent off"].includes(cat) && d.category !== cat) return false;
-    return !t || (d.title + d.company + d.description + d.category).toLowerCase().includes(t);
+    if (!["All", "New", "Saved", "Free", "Percent off"].includes(cat)) {
+      const match = d.category === cat || (d.categories && d.categories.includes(cat as any));
+      if (!match) return false;
+    }
+    const catStr = d.categories ? d.categories.join(" ") : d.category;
+    return !t || (d.title + d.company + d.description + catStr).toLowerCase().includes(t);
   });
   if (sort === "company") list = [...list].sort((a, b) => a.company.localeCompare(b.company));
 
@@ -93,11 +97,20 @@ function Discounts() {
                 className="glass group relative flex flex-col justify-between overflow-hidden p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-float border border-border/70 hover:border-border"
               >
                 <div>
-                  {/* Top Bar: Category Pill & Save Star */}
+                  {/* Top Bar: Category Pills & Save Star */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(i)}`}>
-                      {d.category}{d.isNew && " · New"}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {(d.categories && d.categories.length > 0 ? d.categories : [d.category]).map((cName, cIdx) => (
+                        <span key={cName} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(cIdx)}`}>
+                          {cName}
+                        </span>
+                      ))}
+                      {d.isNew && (
+                        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                          New
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

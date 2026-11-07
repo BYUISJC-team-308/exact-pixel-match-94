@@ -1,14 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/lib/supabase";
-import type { Deal } from "@/lib/data";
-import { cleanOfferText } from "@/lib/company-catalog";
+import type { Deal, DealCategory } from "@/lib/data";
+import { cleanOfferText, getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 export type DbDeal = {
   id: string;
   title: string;
   company: string;
   category: string;
+  categories?: string[] | null;
   deal_type?: string | null;
   value: string;
   description?: string | null;
@@ -33,12 +34,24 @@ export function normalizeDeal(row: DbDeal): Deal {
   const rawTitle = row.title || "Student Discount";
   const rawValue = row.value || "Discount";
   const rawDesc = row.description || "";
+  const catalogEntry = getCompanyCatalogEntry(row.company);
+
+  const primaryCategory = ((row.category as DealCategory) || catalogEntry?.category || "Tech") as DealCategory;
+  const combinedCategories = [
+    ...(Array.isArray(row.categories) ? row.categories : []),
+    ...(catalogEntry?.categories || []),
+    catalogEntry?.category,
+    primaryCategory,
+  ].filter(Boolean) as DealCategory[];
+
+  const allCategories = [...new Set(combinedCategories)] as DealCategory[];
 
   return {
     id: row.id,
     title: cleanOfferText(rawTitle) || "Discount",
     company: row.company || "Local Provider",
-    category: (row.category as Deal["category"]) || "Food",
+    category: primaryCategory,
+    categories: allCategories.length > 0 ? allCategories : [primaryCategory],
     type: (row.deal_type as Deal["type"]) || "Percent off",
     value: cleanOfferText(rawValue) || "Discount",
     description: cleanOfferText(rawDesc),

@@ -382,9 +382,16 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
             {getCompanyCatalogEntry(deal.company)?.tagline && (
               <p className="text-xs font-medium text-muted-foreground">{getCompanyCatalogEntry(deal.company)?.tagline}</p>
             )}
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              {deal.category} · {deal.type}
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              {(deal.categories && deal.categories.length > 0 ? deal.categories : [deal.category]).map((cName, cIdx) => (
+                <span key={cName} className={`rounded-full px-2 py-0.5 text-xs font-semibold ${chipTone(cIdx)}`}>
+                  {cName}
+                </span>
+              ))}
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground ring-1 ring-border/50">
+                {deal.type}
+              </span>
+            </div>
           </div>
         </div>
       </div>

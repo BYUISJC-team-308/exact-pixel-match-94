@@ -3,10 +3,13 @@
  * Provides explicit descriptions, taglines, and categories for student discount brands.
  */
 
+import type { DealCategory } from '@/lib/data';
+
 export interface CompanyCatalogEntry {
   tagline: string;
   whatTheyDo: string;
-  category: 'Food' | 'Tech' | 'AI' | 'Subscription' | 'Groceries' | 'Print' | 'Fitness' | 'Travel';
+  category: DealCategory;
+  categories?: DealCategory[];
 }
 
 export const COMPANY_CATALOG: Record<string, CompanyCatalogEntry> = {
@@ -48,7 +51,8 @@ export const COMPANY_CATALOG: Record<string, CompanyCatalogEntry> = {
   'gymshark': {
     tagline: 'Gym Workout Clothes & Activewear',
     whatTheyDo: 'Gymshark designs athletic workout apparel, seamless lifting leggings, and performance training clothes.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'nba basketball tickets': {
     tagline: 'NBA Game Tickets & Arena Passes',
@@ -63,7 +67,8 @@ export const COMPANY_CATALOG: Record<string, CompanyCatalogEntry> = {
   'nike': {
     tagline: 'Athletic Running Shoes & Sportswear',
     whatTheyDo: 'Nike designs industry-leading performance running shoes, athletic apparel, and lifestyle sneakers.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'samsung': {
     tagline: 'Galaxy Phones, Tablets & Displays',
@@ -79,11 +84,13 @@ export const COMPANY_CATALOG: Record<string, CompanyCatalogEntry> = {
     tagline: 'Percussive Massage Guns & Recovery',
     whatTheyDo: 'Therabody creates Theragun handheld percussive therapy massage guns, pneumatic compression boots, and recovery wellness devices.',
     category: 'Fitness',
+    categories: ['Fitness', 'Tech'],
   },
   'under armour': {
     tagline: 'Performance Sportswear & Training Gear',
     whatTheyDo: 'Under Armour designs athletic compression apparel, moisture-wicking workout shirts, and training footwear.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'walt disney world® resort': {
     tagline: 'Disney World Theme Parks & Resorts',
@@ -123,12 +130,14 @@ export const COMPANY_CATALOG: Record<string, CompanyCatalogEntry> = {
   'red wing': {
     tagline: 'Handcrafted Leather Work Boots',
     whatTheyDo: 'Red Wing is an iconic American brand known for durable handcrafted leather work boots and heritage footwear.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel'],
   },
   'figs': {
     tagline: 'Medical Scrubs & Healthcare Apparel',
     whatTheyDo: 'FIGS designs premium modern medical scrubs, lab coats, and performance activewear for nursing and medical students.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel'],
   },
   'amc theatres®': {
     tagline: 'Cinema & Movie Admissions',
@@ -193,77 +202,92 @@ export const COMPANY_CATALOG: Record<string, CompanyCatalogEntry> = {
   'hoka': {
     tagline: 'Max-Cushion Running & Trail Shoes',
     whatTheyDo: 'HOKA designs ultra-cushioned running shoes, walking sneakers, and trail footwear for athletes and everyday comfort.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'on': {
     tagline: 'Swiss-Engineered Running Shoes',
     whatTheyDo: 'On designs high-performance Swiss running shoes, cushioned sneakers, and athletic workout apparel.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'saucony us': {
     tagline: 'Performance Running Footwear',
     whatTheyDo: 'Saucony builds technical road running shoes, trail sneakers, and marathon training footwear.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'saucony': {
     tagline: 'Performance Running Footwear',
     whatTheyDo: 'Saucony builds technical road running shoes, trail sneakers, and marathon training footwear.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'merrell us': {
     tagline: 'Outdoor Hiking Boots & Trail Gear',
     whatTheyDo: 'Merrell designs rugged hiking boots, trail running shoes, and outdoor adventure footwear.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'columbia sportswear': {
     tagline: 'Outdoor Jackets, Fleeces & Hiking Gear',
     whatTheyDo: 'Columbia Sportswear manufactures waterproof winter jackets, fleece pullovers, and outdoor hiking equipment.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'crocs': {
     tagline: 'Comfort Clogs & Casual Slides',
     whatTheyDo: 'Crocs makes lightweight foam clogs, casual sandals, and collectible Jibbitz charms popular across campuses.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel'],
   },
   'birkenstock usa': {
     tagline: 'Orthopedic Footbed Cork Sandals',
     whatTheyDo: 'Birkenstock manufactures iconic German cork-footbed sandals, clogs, and casual supportive footwear.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel'],
   },
   'heydude': {
     tagline: 'Lightweight Casual Slip-On Shoes',
     whatTheyDo: 'HEYDUDE designs lightweight, flexible slip-on loafers and casual everyday sneakers.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel'],
   },
   'reebok': {
     tagline: 'Classic Sneakers & Training Apparel',
     whatTheyDo: 'Reebok produces retro lifestyle sneakers, CrossFit training shoes, and fitness workout gear.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'tecovas': {
     tagline: 'Handmade Western Leather Cowboy Boots',
     whatTheyDo: 'Tecovas crafts handmade western leather boots, travel duffels, and classic leather goods.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel'],
   },
   'oofos': {
     tagline: 'Active Recovery Footwear & Slides',
     whatTheyDo: 'OOFOS designs impact-absorbing recovery sandals and foam slides engineered to soothe tired feet.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'beyond yoga': {
     tagline: 'Buttery-Soft Yoga Apparel & Leggings',
     whatTheyDo: 'Beyond Yoga manufactures ultra-soft workout leggings, biker shorts, and athletic activewear.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel', 'Fitness'],
   },
   'comfrt': {
     tagline: 'Weighted Sensory Anxiety Hoodies',
     whatTheyDo: 'Comfrt designs sensory-friendly weighted loungewear and anxiety-relief oversized hoodies.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel'],
   },
   'oura': {
     tagline: 'Smart Health & Sleep Tracking Rings',
     whatTheyDo: 'Oura produces smart rings that track biometric readiness, sleep stages, body temperature, and stress.',
     category: 'Fitness',
+    categories: ['Fitness', 'Tech'],
   },
   'ultrahuman': {
     tagline: 'Smart Metabolic & Sleep Health Rings',
@@ -548,17 +572,20 @@ export const COMPANY_CATALOG: Record<string, CompanyCatalogEntry> = {
   'untuckit': {
     tagline: 'Collared Shirts Designed to Be Untucked',
     whatTheyDo: 'UNTUCKit designs casual and dress button-down shirts tailored to the perfect length to wear untucked.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel'],
   },
   'southern tide': {
     tagline: 'Coastal Collegiate & Prep Fashion',
     whatTheyDo: 'Southern Tide crafts coastal-inspired collegiate apparel, performance polos, and tailored shorts.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel'],
   },
   'tuckernuck': {
     tagline: 'Classic Boutique Apparel & Lifestyle',
     whatTheyDo: 'Tuckernuck offers classic American boutique clothing, collegiate fashion, and preppy accessories.',
-    category: 'Fitness',
+    category: 'Apparel',
+    categories: ['Apparel'],
   },
   'lenscrafters': {
     tagline: 'Prescription Glasses, Lenses & Frames',
@@ -599,6 +626,7 @@ export const COMPANY_CATALOG: Record<string, CompanyCatalogEntry> = {
     tagline: 'Conversational AI Search Engine',
     whatTheyDo: 'Perplexity is an AI-powered conversational search engine offering citation-backed answers and research models.',
     category: 'AI',
+    categories: ['AI', 'Tech'],
   },
   'notion': {
     tagline: 'Connected Workspace & Notion AI',
@@ -649,11 +677,13 @@ export const COMPANY_CATALOG: Record<string, CompanyCatalogEntry> = {
     tagline: 'ChatGPT & Generative AI Models',
     whatTheyDo: 'OpenAI develops ChatGPT, GPT-4o, and conversational AI tools for writing, coding, and academic research.',
     category: 'AI',
+    categories: ['AI', 'Tech'],
   },
   'google cloud': {
     tagline: 'Cloud Computing & Vertex AI',
     whatTheyDo: 'Google Cloud provides scalable infrastructure, BigQuery analytics, Vertex AI machine learning, and student lab credits.',
-    category: 'Tech',
+    category: 'AI',
+    categories: ['AI', 'Tech'],
   },
   'tableau': {
     tagline: 'Analytics & Business Intelligence',

@@ -326,9 +326,13 @@ export function Index() {
               >
                 <div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(i)}`}>
-                      {d.category}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {(d.categories && d.categories.length > 0 ? d.categories : [d.category]).map((cName, cIdx) => (
+                        <span key={cName} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(cIdx)}`}>
+                          {cName}
+                        </span>
+                      ))}
+                    </div>
                     <span className="text-xs font-bold text-accent">
                       {d.value}
                     </span>
@@ -397,13 +401,17 @@ export function Index() {
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(i)}`}>
-                    {d.category}
-                  </span>
-                  <span className="text-xs font-bold text-accent">
-                    {d.value}
-                  </span>
-                </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {(d.categories && d.categories.length > 0 ? d.categories : [d.category]).map((cName, cIdx) => (
+                        <span key={cName} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(cIdx)}`}>
+                          {cName}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="text-xs font-bold text-accent">
+                      {d.value}
+                    </span>
+                  </div>
 
                 <button onClick={() => setDeal(d)} className="mt-3.5 block w-full text-left focus:outline-none">
                   <div className="flex items-center gap-3">
