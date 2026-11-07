@@ -82,3 +82,36 @@
 
 @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 @utility rise { animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }
+
+@keyframes punchStamp {
+  0% { transform: scale(1.4) rotate(-8deg); opacity: 0; }
+  50% { transform: scale(0.95) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@utility animate-punch { animation: punchStamp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+
+@keyframes punchPop {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.94); }
+  65% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes punchFlash {
+  0% { background-color: oklch(0.42 0.08 172 / 0.25); }
+  100% { background-color: transparent; }
+}
+
+@keyframes unpunchPop {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.is-punched-card {
+  animation: punchPop 0.5s ease-out, punchFlash 0.7s ease-out;
+}
+
+.is-unpunched-card {
+  animation: unpunchPop 0.5s ease-out;
+}

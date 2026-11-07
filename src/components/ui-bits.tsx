@@ -3,6 +3,33 @@ import { Link } from "@tanstack/react-router";
 import type { Deal, FoodEvent, SSDeal } from "@/lib/data";
 import { eventDate } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
+import { submitDataIssue, type DataIssueInput } from "@/lib/data-issues";
+
+function ReportIssueButton({ itemType, itemId, itemLabel }: Pick<DataIssueInput, "itemType" | "itemId" | "itemLabel">) {
+  const [open, setOpen] = useState(false);
+  const [issueType, setIssueType] = useState("Offer details are incorrect");
+  const [details, setDetails] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  return <>
+    <button type="button" onClick={() => setOpen(true)} className="text-xs font-semibold text-muted-foreground underline hover:text-foreground">Report incorrect information</button>
+    <Modal open={open} onClose={() => setOpen(false)}>
+      <h3 className="text-xl font-semibold">Report an information problem</h3>
+      <p className="mt-1 text-sm text-muted-foreground">Help the team keep {itemLabel} accurate.</p>
+      <label className="mt-4 block text-sm font-medium">What is wrong?
+        <select value={issueType} onChange={(event) => setIssueType(event.target.value)} className="mt-1 block w-full rounded-lg border border-border bg-background p-2">
+          <option>Offer details are incorrect</option><option>Offer is expired</option><option>Location is incorrect</option><option>Event was cancelled</option><option>Other</option>
+        </select>
+      </label>
+      <label className="mt-3 block text-sm font-medium">More details
+        <textarea value={details} onChange={(event) => setDetails(event.target.value)} maxLength={2000} className="mt-1 block min-h-24 w-full rounded-lg border border-border bg-background p-2" />
+      </label>
+      {status === "sent" && <p className="mt-3 text-sm font-semibold text-primary">Thanks—your report was submitted.</p>}
+      {status === "error" && <p className="mt-3 text-sm text-destructive">The report could not be submitted. Please try again.</p>}
+      <Btn className="mt-4" disabled={status === "sending" || status === "sent"} onClick={async () => { setStatus("sending"); try { await submitDataIssue({ itemType, itemId, itemLabel, issueType, details }); setStatus("sent"); } catch { setStatus("error"); } }}>{status === "sending" ? "Submitting…" : "Submit report"}</Btn>
+    </Modal>
+  </>;
+}
+
 import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
@@ -379,6 +406,7 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
         <a href={deal.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Go to provider →</a>
         <Btn variant="soft" onClick={() => actions.toggleDeal(deal.id)}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
       </div>
+      <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="deal" itemId={deal.id} itemLabel={`${deal.company}: ${deal.title}`} /></div>
     </Modal>
   );
 }
@@ -402,31 +430,162 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
         <Btn onClick={() => actions.toggleEvent(event.id)}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
         <Link to="/map" className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">See on map</Link>
       </div>
+      <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="event" itemId={event.id} itemLabel={event.title} /></div>
     </Modal>
   );
 }
 
 export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () => void }) {
-  const { usedSS } = useStore();
+  const { usedSS, ssUsedCounts = {} } = useStore();
+  const [showConfirm, setShowConfirm] = useState(false);
   if (!deal) return null;
-  const used = usedSS.includes(deal.id);
+
+  const count = ssUsedCounts[deal.id] || 0;
+  const isNoLimit = deal.totalUses === null;
+  const total = isNoLimit ? null : (deal.totalUses ?? 1);
+  const isFullyUsed = isNoLimit ? false : count >= (total ?? 1);
+
+  const handleAction = () => {
+    if (isFullyUsed) {
+      setShowConfirm(true);
+    } else {
+      actions.toggleUsed(deal.id, deal.totalUses);
+    }
+  };
+
+  const confirmReset = () => {
+    actions.resetUsed(deal.id);
+    setShowConfirm(false);
+  };
+
   return (
     <Modal open onClose={onClose}>
-      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${deal.type === "Free" ? "bg-gold/15 text-gold" : "bg-accent/10 text-accent"}`}>Starving Student Card · {deal.category}</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${deal.type === "Free" ? "bg-gold/15 text-gold" : "bg-accent/10 text-accent"}`}>
+          Starving Student Card &middot; {deal.category}
+        </span>
+        <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold ring-1 ring-border text-foreground/80">
+          {isNoLimit ? "Unlimited Uses" : total === 1 ? "1 Use Card Deal" : `${total} Total Uses`}
+        </span>
+      </div>
+
       <h3 className="mt-3 text-2xl font-semibold">{deal.item}</h3>
       <p className="mt-1 text-3xl font-semibold text-accent">{deal.value}</p>
       <p className="mt-1 text-sm font-medium">{deal.company}</p>
+
+      {/* Prominent Punchcard Status Banner in Modal */}
+      <div className="mt-4 rounded-xl bg-secondary/80 p-3.5 ring-1 ring-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-base">{isFullyUsed ? "???" : "??"}</span>
+            <div>
+              <p className="text-xs font-semibold">
+                {isNoLimit
+                  ? `Used ${count} ${count === 1 ? "time" : "times"} (No limit)`
+                  : isFullyUsed
+                  ? `Fully Redeemed (${count}/${total} used)`
+                  : count > 0
+                  ? `${count} of ${total} used (${total! - count} remaining)`
+                  : `Not redeemed yet (0 of ${total} used)`}
+              </p>
+              <p className="text-[11px] text-muted-foreground">Personal reminder on this device</p>
+            </div>
+          </div>
+          {isFullyUsed && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
+              ✓ Redeemed
+            </span>
+          )}
+        </div>
+      </div>
+
       {deal.details && <p className="mt-3 text-sm text-muted-foreground">{deal.details}</p>}
-      <p className="mt-3 text-sm font-medium">{deal.locations.length ? `Available at ${deal.locations.length} verified ${deal.locations.length === 1 ? "location" : "locations"}` : "Location not confirmed in the catalog"}</p>
-      <ul className="mt-2 max-h-40 space-y-1 overflow-auto text-sm text-muted-foreground">
+      <p className="mt-3 text-sm font-medium">
+        {deal.locations.length ? `Available at ${deal.locations.length} verified ${deal.locations.length === 1 ? "location" : "locations"}` : "Location not confirmed in the catalog"}
+      </p>
+      <ul className="mt-2 max-h-36 space-y-1 overflow-auto text-sm text-muted-foreground">
         {deal.locations.map((location) => <li key={location.address}>{location.address}</li>)}
       </ul>
       <p className="mt-3 text-xs text-muted-foreground">Catalog captured {deal.capturedAt}. Check current terms in the card portal.</p>
-      <div className="mt-6 flex flex-wrap gap-2">
-        {deal.sourceUrl && <a href={deal.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">View offer in card portal →</a>}
-        {deal.locations[0] && <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(deal.locations[0].address)}`} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">Directions to first location →</a>}
-        <Btn variant="soft" onClick={() => actions.toggleUsed(deal.id)}>{used ? "✓ Used — undo" : "Mark as used"}</Btn>
+
+      {/* Confirmation warning before un-marking */}
+      {showConfirm && (
+        <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm">
+          <p className="font-semibold text-destructive">Unmark this deal?</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Are you sure you want to reset this deal back to unused?
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={confirmReset}
+              className="rounded-full bg-destructive px-3.5 py-1 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90"
+            >
+              Yes, reset to unused
+            </button>
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="rounded-full bg-secondary px-3 py-1 text-xs font-medium ring-1 ring-border hover:bg-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Actions row */}
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <button
+          onClick={handleAction}
+          className={`inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold transition-all ${
+            isFullyUsed
+              ? "bg-secondary text-foreground ring-1 ring-border hover:bg-destructive/10 hover:text-destructive"
+              : "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:scale-[1.02]"
+          }`}
+        >
+          {isFullyUsed ? (
+            <>
+              <span>✓ Used</span>
+              <span className="text-xs text-muted-foreground">(Tap to reset)</span>
+            </>
+          ) : count > 0 ? (
+            <>
+              <span>Punch next use</span>
+              {isNoLimit ? (
+                <span className="text-xs opacity-90">(Used {count}x)</span>
+              ) : (
+                <span className="text-xs opacity-90">({count + 1}/{total})</span>
+              )}
+            </>
+          ) : (
+            <>
+              <span>Mark as used</span>
+              {!isNoLimit && total && total > 1 && <span className="text-xs opacity-90">(1/{total})</span>}
+            </>
+          )}
+        </button>
+
+        {deal.sourceUrl && (
+          <a
+            href={deal.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border hover:bg-glass"
+          >
+            Portal offer &rarr;
+          </a>
+        )}
+        {deal.locations[0] && (
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(deal.locations[0].address)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border hover:bg-glass"
+          >
+            Directions &rarr;
+          </a>
+        )}
       </div>
+      <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="starving_student" itemId={deal.id} itemLabel={`${deal.company}: ${deal.item}`} /></div>
     </Modal>
   );
 }

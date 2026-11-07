@@ -32,6 +32,7 @@ export type SSDeal = {
   y: number;
   sourceUrl: string;
   capturedAt: string;
+  totalUses?: number | null;
   locations: { address: string; city: string; lat: number; lng: number }[];
 };
 
@@ -47,6 +48,7 @@ export type FoodEvent = {
   start: string;
   end: string;
   building: string;
+  buildingId?: string;
   room: string;
   details: string;
   x: number;

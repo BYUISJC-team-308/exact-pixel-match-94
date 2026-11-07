@@ -17,9 +17,9 @@ export type RecentMapSearch = {
   searchedAt: string;
 };
 
-type State = { savedDeals: string[]; savedEvents: string[]; usedSS: string[]; recentMapSearches: RecentMapSearch[]; user: User | null };
+type State = { savedDeals: string[]; savedEvents: string[]; usedSS: string[]; ssUsedCounts?: Record<string, number>; recentMapSearches: RecentMapSearch[]; preferredCampus: string; user: User | null };
 const KEY = "studeats-state";
-const empty: State = { savedDeals: [], savedEvents: [], usedSS: [], recentMapSearches: [], user: null };
+const empty: State = { savedDeals: [], savedEvents: [], usedSS: [], ssUsedCounts: {}, recentMapSearches: [], preferredCampus: "byu-provo", user: null };
 let state: State = empty;
 let loaded = false;
 const listeners = new Set<() => void>();
@@ -38,7 +38,13 @@ function load() {
         );
       }
       if (!Array.isArray(parsed.recentMapSearches)) parsed.recentMapSearches = [];
-      state = { ...empty, ...parsed };
+      const counts = parsed.ssUsedCounts || {};
+      if (Array.isArray(parsed.usedSS)) {
+        parsed.usedSS.forEach((id: string) => {
+          if (!counts[id]) counts[id] = 1;
+        });
+      }
+      state = { ...empty, ...parsed, ssUsedCounts: counts };
     } else {
       state = { ...empty, savedDeals: [] };
     }
@@ -74,6 +80,7 @@ export function nextRecentMapSearches(current: RecentMapSearch[], query: string,
 }
 
 export const actions = {
+  setPreferredCampus: (preferredCampus: string) => set({ preferredCampus }),
   addRecentMapSearch: (query: string, view: RecentMapSearch["view"]) => {
     const next = nextRecentMapSearches(state.recentMapSearches, query, view);
     if (next !== state.recentMapSearches) set({ recentMapSearches: next });
@@ -93,12 +100,43 @@ export const actions = {
     }
     set({ savedEvents: toggle(state.savedEvents, id) });
   },
-  toggleUsed: (id: string) => {
-    const isAdding = !state.usedSS.includes(id);
-    if (isAdding) {
-      void logActivityEvent("deal_redeemed", { dealId: id });
+  toggleUsed: (id: string, maxUses?: number | null) => {
+    const counts = { ...(state.ssUsedCounts || {}) };
+    const current = counts[id] || 0;
+    const isNoLimit = maxUses === null;
+    const limit = isNoLimit ? Infinity : (maxUses ?? 1);
+
+    if (current >= limit) {
+      delete counts[id];
+      const nextUsedSS = state.usedSS.filter((x) => x !== id);
+      set({ usedSS: nextUsedSS, ssUsedCounts: counts });
+    } else {
+      const nextCount = current + 1;
+      counts[id] = nextCount;
+      const nextUsedSS = state.usedSS.includes(id) ? state.usedSS : [...state.usedSS, id];
+      void logActivityEvent("deal_redeemed", { dealId: id, timesUsed: nextCount });
+      set({ usedSS: nextUsedSS, ssUsedCounts: counts });
     }
-    set({ usedSS: toggle(state.usedSS, id) });
+  },
+  decrementUsed: (id: string) => {
+    const counts = { ...(state.ssUsedCounts || {}) };
+    const current = counts[id] || 0;
+    if (current <= 1) {
+      delete counts[id];
+      const nextUsedSS = state.usedSS.filter((x) => x !== id);
+      set({ usedSS: nextUsedSS, ssUsedCounts: counts });
+    } else {
+      counts[id] = current - 1;
+      set({ ssUsedCounts: counts });
+    }
+  },
+  resetUsed: (id: string) => {
+    const counts = { ...(state.ssUsedCounts || {}) };
+    delete counts[id];
+    set({ usedSS: state.usedSS.filter((x) => x !== id), ssUsedCounts: counts });
+  },
+  resetAllUsedSS: () => {
+    set({ usedSS: [], ssUsedCounts: {} });
   },
   setUser: (user: User | null) => {
     if (user && !state.user) {
