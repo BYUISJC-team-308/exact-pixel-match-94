@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { Deal } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
 import { DealDetail, FilterChips, PageHeader, SearchInput, chipTone, Btn, CompanyLogo } from "@/components/ui-bits";
-import { useDealsQuery } from "@/lib/deals";
+import { useDealsQuery, getDealScore } from "@/lib/deals";
 import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 export const Route = createFileRoute("/discounts")({
@@ -25,7 +25,7 @@ function Discounts() {
   const { savedDeals } = useStore();
   const [cat, setCat] = useState<Cat>("All");
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState<"default" | "company">("default");
+  const [sort, setSort] = useState<"best" | "company">("best");
   const [open, setOpen] = useState<Deal | null>(null);
 
   const { data: deals = [], isLoading, isError, refetch } = useDealsQuery();
@@ -42,16 +42,25 @@ function Discounts() {
     const catStr = d.categories ? d.categories.join(" ") : d.category;
     return !t || (d.title + d.company + d.description + catStr).toLowerCase().includes(t);
   });
-  if (sort === "company") list = [...list].sort((a, b) => a.company.localeCompare(b.company));
+  if (sort === "best") {
+    list = [...list].sort((a, b) => getDealScore(b) - getDealScore(a) || a.company.localeCompare(b.company));
+  } else if (sort === "company") {
+    list = [...list].sort((a, b) => a.company.localeCompare(b.company));
+  }
 
   return (
     <>
       <PageHeader eyebrow={`${deals.length} verified student discounts`} title="Discount Dashboard">
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput value={q} onChange={setQ} placeholder="Search company, deal, category" />
-          <select value={sort} onChange={(e) => setSort(e.target.value as "default")} className="h-10 rounded-full bg-secondary px-3 text-sm ring-1 ring-border">
-            <option value="default">Sort: featured</option>
-            <option value="company">Sort: company A–Z</option>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as "best" | "company")}
+            aria-label="Sort discounts"
+            className="h-10 rounded-full bg-secondary px-3 text-sm ring-1 ring-border font-medium cursor-pointer"
+          >
+            <option value="best">Sort: Best deals</option>
+            <option value="company">Sort: Alphabetical (A–Z)</option>
           </select>
         </div>
       </PageHeader>

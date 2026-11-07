@@ -57,6 +57,53 @@ export function deduplicateDeals<T extends { company?: string; url?: string | nu
   return result;
 }
 
+export function getDealScore(d: { type?: string; value?: string; title?: string }): number {
+  const val = (d.value || "").toLowerCase();
+  const type = (d.type || "").toLowerCase();
+  const title = (d.title || "").toLowerCase();
+  const combined = `${val} ${title}`;
+
+  const isFree =
+    type === "free" ||
+    val === "free" ||
+    val.includes("100% free") ||
+    val.includes("free pro") ||
+    val.includes("free credit") ||
+    val.includes("months free") ||
+    val.includes("year free") ||
+    val.includes("free software") ||
+    title.includes("free edition") ||
+    title.includes("free trial") ||
+    title.includes("free subscription");
+
+  if (isFree && !val.includes("free shipping") && !val.includes("free delivery")) {
+    const dollarMatch = combined.match(/\$(\d+)/);
+    const dollar = dollarMatch ? parseInt(dollarMatch[1], 10) : 100;
+    return 1000 + Math.min(dollar, 500);
+  }
+
+  const pctMatch = val.match(/(\d+)\s*%/);
+  if (pctMatch) {
+    const pct = parseInt(pctMatch[1], 10);
+    return 400 + pct;
+  }
+
+  const fixedMatch = val.match(/\$(\d+)\s*off/);
+  if (fixedMatch) {
+    const amt = parseInt(fixedMatch[1], 10);
+    return 200 + amt;
+  }
+
+  if (val.includes("cash back")) {
+    const cbMatch = val.match(/([\d.]+)\s*%/);
+    const cb = cbMatch ? parseFloat(cbMatch[1]) : 2;
+    return 50 + cb;
+  }
+
+  return 100;
+}
+
+
 
 export function normalizeDeal(row: DbDeal): Deal {
   const rawTitle = row.title || "Student Discount";

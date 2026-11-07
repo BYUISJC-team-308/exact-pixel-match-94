@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deduplicateDeals, isCanadianOnlyDeal } from "@/lib/deals";
+import { deduplicateDeals, isCanadianOnlyDeal, getDealScore } from "@/lib/deals";
 
 describe("deals deduplication", () => {
   it("deduplicates deals with the same ID.me offer ID", () => {
@@ -73,5 +73,21 @@ describe("deals deduplication", () => {
     expect(isCanadianOnlyDeal({ title: "10% off for Canadian Students", description: "Only in Canada" })).toBe(true);
     expect(isCanadianOnlyDeal({ title: "10% off for U.S. and Canadian Students", description: "" })).toBe(false);
     expect(isCanadianOnlyDeal({ title: "10% off", description: "Available across Utah and US" })).toBe(false);
+  });
+
+  it("scores free software and tools higher than standard percent off", () => {
+    const freeDeal = { title: "Figma Professional Plan", value: "Free Professional Tier", type: "Free" };
+    const pctDeal = { title: "Shoe Discount", value: "20% off", type: "Percent off" };
+    const cbDeal = { title: "Travel Cash Back", value: "2.0% cash back", type: "Percent off" };
+
+    expect(getDealScore(freeDeal)).toBeGreaterThan(getDealScore(pctDeal));
+    expect(getDealScore(pctDeal)).toBeGreaterThan(getDealScore(cbDeal));
+  });
+
+  it("ranks higher dollar free software above lower dollar software", () => {
+    const tableau = { title: "Tableau for Students", value: "100% Free ($840/yr value)", type: "Free" };
+    const domain = { title: "Namecheap Free Domain", value: "Free Domain ($25 value)", type: "Free" };
+
+    expect(getDealScore(tableau)).toBeGreaterThan(getDealScore(domain));
   });
 });

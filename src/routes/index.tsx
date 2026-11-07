@@ -5,7 +5,7 @@ import { type Deal } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { DealDetail, EventDetail, chipTone, CompanyLogo } from "@/components/ui-bits";
 import { useFoodEventsQuery, type NormalizedFoodEvent, getLocalDateString } from "@/lib/food-events";
-import { useDealsQuery } from "@/lib/deals";
+import { useDealsQuery, getDealScore } from "@/lib/deals";
 import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 export const Route = createFileRoute("/")({
@@ -37,9 +37,9 @@ export function Index() {
   // User's saved deals for My Hub
   const hubDeals = deals.filter((d) => savedDeals.includes(d.id));
 
-  // Pick top featured deals (prioritizing AI, curated tech perks, and local BYU/Provo favorites)
-  const featuredDeals = deals
-    .filter((d) => ["AI", "Tech", "Food"].includes(d.category) && (d.isNew || d.type === "Free" || d.value.includes("%")))
+  // Top picks: Highest-value student perks & AI deals
+  const featuredDeals = [...deals]
+    .sort((a, b) => getDealScore(b) - getDealScore(a) || a.company.localeCompare(b.company))
     .slice(0, 6);
 
   return (
