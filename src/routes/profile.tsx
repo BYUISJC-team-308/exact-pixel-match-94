@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AccountForm } from "@/components/AccountForm";
 import { Btn, PageHeader } from "@/components/ui-bits";
-import { actions, useStore } from "@/lib/store";
+import { useStore } from "@/lib/store";
+import { signOut, updateProfile } from "@/lib/auth";
 import { AnalyticsDrawerModal } from "@/components/AnalyticsDrawerModal";
 
 export const Route = createFileRoute("/profile")({
@@ -18,9 +19,13 @@ export const Route = createFileRoute("/profile")({
 });
 
 function Profile() {
-  const { user } = useStore();
+  const { user, authReady } = useStore();
   const [saved, setSaved] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+
+  if (!authReady) {
+    return <p className="py-20 text-center text-muted-foreground">Loading…</p>;
+  }
 
   if (!user) {
     return (
@@ -33,6 +38,12 @@ function Profile() {
             className="inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
           >
             Create account
+          </Link>
+          <Link
+            to="/signin"
+            className="inline-flex rounded-full bg-secondary px-4 py-2.5 text-sm font-medium ring-1 ring-border hover:bg-glass"
+          >
+            Sign in
           </Link>
           <button
             onClick={() => setAnalyticsOpen(true)}
@@ -65,7 +76,7 @@ function Profile() {
           >
             ← Home
           </Link>
-          <Btn variant="soft" onClick={() => actions.setUser(null)}>
+          <Btn variant="soft" onClick={() => void signOut()}>
             Sign out
           </Btn>
         </div>
@@ -75,9 +86,12 @@ function Profile() {
       <AccountForm
         initial={user}
         submitLabel="Save changes"
-        onSubmit={(u) => {
-          actions.setUser(u);
+        onSubmit={async (u) => {
+          setSaved(false);
+          const err = await updateProfile(u);
+          if (err) return err;
           setSaved(true);
+          return null;
         }}
       />
 

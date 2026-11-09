@@ -46,8 +46,14 @@ export async function logActivityEvent(
   eventType: ActivityEventType | string,
   metadata: Record<string, unknown> = {}
 ) {
-  const device_id = getOrCreateDeviceId();
+    const device_id = getOrCreateDeviceId();
+  let user_id: string | null = null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    user_id = data.session?.user.id ?? null;
+  } catch {}
   const event: ActivityEvent = {
+    user_id,
     device_id,
     event_type: eventType,
     metadata,
@@ -90,7 +96,7 @@ export function computeOkrMetrics(events: ActivityEvent[]): TeamOkrMetrics {
 
   events.forEach((ev) => {
     eventsByType[ev.event_type] = (eventsByType[ev.event_type] || 0) + 1;
-    const uid = (ev.metadata?.username as string) || ev.device_id;
+    const uid = (ev.metadata?.["username"] as string) || ev.device_id;
     const time = new Date(ev.created_at || "").getTime();
 
     if (!userFirstSeen[uid] || time < userFirstSeen[uid]) {

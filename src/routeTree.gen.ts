@@ -16,6 +16,7 @@ import { Route as DiscountsRouteImport } from './routes/discounts'
 import { Route as FreeFoodRouteImport } from './routes/free-food'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as SigninRouteImport } from './routes/signin'
 import { Route as StarvingStudentRouteImport } from './routes/starving-student'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,6 +54,11 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SigninRoute = SigninRouteImport.update({
+  id: '/signin',
+  path: '/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StarvingStudentRoute = StarvingStudentRouteImport.update({
   id: '/starving-student',
   path: '/starving-student',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/free-food': typeof FreeFoodRoute
   '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
+  '/signin': typeof SigninRoute
   '/starving-student': typeof StarvingStudentRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/free-food': typeof FreeFoodRoute
   '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
+  '/signin': typeof SigninRoute
   '/starving-student': typeof StarvingStudentRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/free-food': typeof FreeFoodRoute
   '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
+  '/signin': typeof SigninRoute
   '/starving-student': typeof StarvingStudentRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/free-food'
     | '/map'
     | '/profile'
+    | '/signin'
     | '/starving-student'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/free-food'
     | '/map'
     | '/profile'
+    | '/signin'
     | '/starving-student'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/free-food'
     | '/map'
     | '/profile'
+    | '/signin'
     | '/starving-student'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   FreeFoodRoute: typeof FreeFoodRoute
   MapRoute: typeof MapRoute
   ProfileRoute: typeof ProfileRoute
+  SigninRoute: typeof SigninRoute
   StarvingStudentRoute: typeof StarvingStudentRoute
 }
 
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/signin': {
+      id: '/signin'
+      path: '/signin'
+      fullPath: '/signin'
+      preLoaderRoute: typeof SigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/starving-student': {
       id: '/starving-student'
       path: '/starving-student'
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   FreeFoodRoute: FreeFoodRoute,
   MapRoute: MapRoute,
   ProfileRoute: ProfileRoute,
+  SigninRoute: SigninRoute,
   StarvingStudentRoute: StarvingStudentRoute,
 }
 export const routeTree = rootRouteImport

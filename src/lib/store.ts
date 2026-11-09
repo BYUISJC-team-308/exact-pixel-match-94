@@ -3,7 +3,7 @@ import { logActivityEvent } from "@/lib/analytics";
 
 export type User = {
   username: string;
-  password: string;
+  password?: string;
   name: string;
   email: string;
   school: string;
@@ -11,9 +11,15 @@ export type User = {
   avatar?: string;
 };
 
-type State = { savedDeals: string[]; savedEvents: string[]; usedSS: string[]; user: User | null };
+type State = {
+  savedDeals: string[];
+  savedEvents: string[];
+  usedSS: string[];
+  user: User | null;
+  authReady: boolean;
+};
 const KEY = "studeats-state";
-const empty: State = { savedDeals: [], savedEvents: [], usedSS: [], user: null };
+const empty: State = { savedDeals: [], savedEvents: [], usedSS: [], user: null, authReady: false };
 let state: State = empty;
 let loaded = false;
 const listeners = new Set<() => void>();
@@ -31,7 +37,9 @@ function load() {
           (id: string) => !["d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10"].includes(id)
         );
       }
-      state = { ...empty, ...parsed };
+      // User now comes from the Supabase session; never trust a locally saved one
+      state = { ...empty, ...parsed, user: null, authReady: false };
+      localStorage.setItem(KEY, JSON.stringify({ ...state, user: null, authReady: false }));
     } else {
       state = { ...empty, savedDeals: [] };
     }
@@ -43,7 +51,7 @@ function load() {
 
 function set(next: Partial<State>) {
   state = { ...state, ...next };
-  localStorage.setItem(KEY, JSON.stringify(state));
+  localStorage.setItem(KEY, JSON.stringify({ ...state, user: null, authReady: false }));
   listeners.forEach((l) => l());
 }
 
@@ -79,10 +87,6 @@ export const actions = {
     }
     set({ usedSS: toggle(state.usedSS, id) });
   },
-  setUser: (user: User | null) => {
-    if (user && !state.user) {
-      void logActivityEvent("signup", { username: user.username, email: user.email });
-    }
-    set({ user });
-  },
+  setUser: (user: User | null) => set({ user }),
+  setAuthReady: () => set({ authReady: true }),
 };

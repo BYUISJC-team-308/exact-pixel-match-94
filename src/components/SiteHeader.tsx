@@ -1,9 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { siteSections, ssDeals } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { useFoodEventsQuery } from "@/lib/food-events";
 import { useDealsQuery } from "@/lib/deals";
+import { initAuth } from "@/lib/auth";
 
 const nav = [
   { to: "/", label: "Home" },
@@ -19,6 +20,9 @@ export function SiteHeader() {
   const [q, setQ] = useState("");
   const [menu, setMenu] = useState(false);
   const navigate = useNavigate();
+  useEffect(() => {
+    initAuth();
+  }, []);
 
   const { data: foodEvents = [] } = useFoodEventsQuery();
   const { data: deals = [] } = useDealsQuery();
@@ -64,6 +68,14 @@ export function SiteHeader() {
               </div>
             )}
           </div>
+            {!user && (
+            <Link
+              to="/signin"
+              className="hidden rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border hover:bg-glass sm:inline-flex"
+            >
+              Sign in
+            </Link>
+          )}
           <Link to={user ? "/profile" : "/account"} aria-label="Profile" className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-secondary font-display font-semibold text-primary ring-1 ring-border">
             {user?.avatar ? <img src={user.avatar} alt="" className="size-full object-cover" /> : user ? user.name[0]?.toUpperCase() : "👤"}
           </Link>
