@@ -1,8 +1,20 @@
+export type DealCategory =
+  | "Food"
+  | "Tech"
+  | "AI"
+  | "Apparel"
+  | "Subscription"
+  | "Groceries"
+  | "Print"
+  | "Fitness"
+  | "Travel";
+
 export type Deal = {
   id: string;
   title: string;
   company: string;
-  category: "Food" | "Tech" | "AI" | "Subscription" | "Groceries" | "Print" | "Fitness" | "Travel";
+  category: DealCategory;
+  categories?: DealCategory[];
   type: "Percent off" | "Free" | "Fixed price";
   value: string;
   description: string;
@@ -10,6 +22,10 @@ export type Deal = {
   duration: string;
   url: string;
   isNew?: boolean;
+  address?: string;
+  city?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 // Real deals are fetched dynamically from Supabase database (deals table)
@@ -28,6 +44,7 @@ export type SSDeal = {
   y: number;
   sourceUrl: string;
   capturedAt: string;
+  totalUses?: number | null;
   locations: { address: string; city: string; lat: number; lng: number }[];
 };
 
@@ -43,10 +60,15 @@ export type FoodEvent = {
   start: string;
   end: string;
   building: string;
+  buildingId?: string;
   room: string;
   details: string;
   x: number;
   y: number;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  locationNote?: string;
 };
 
 // Real food events are loaded live from Supabase (food_events table)

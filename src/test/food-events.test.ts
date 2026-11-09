@@ -5,6 +5,7 @@ import {
   getLocalDateString,
   type DbFoodEvent,
 } from "@/lib/food-events";
+import { resolveBuilding, extractRoom } from "../../scripts/scrapers/byu-building-resolver.js";
 
 describe("Food Events Logic & Categorization", () => {
   it("correctly identifies BYU on-campus buildings", () => {
@@ -12,6 +13,8 @@ describe("Food Events Logic & Categorization", () => {
     expect(detectLocationCategory("Wilkinson Student Center")).toBe("on_campus");
     expect(detectLocationCategory("HBLL Library Quad")).toBe("on_campus");
     expect(detectLocationCategory("Crabtree Building")).toBe("on_campus");
+    expect(detectLocationCategory("ARTS (Arts Building)")).toBe("on_campus");
+    expect(detectLocationCategory("JFSB (Joseph F. Smith Building)")).toBe("on_campus");
   });
 
   it("correctly identifies off-campus Utah County locations", () => {
@@ -43,5 +46,27 @@ describe("Food Events Logic & Categorization", () => {
     expect(normalized.start).toBe("12:30 PM");
     expect(normalized.end).toBe("1:30 PM");
     expect(normalized.formattedTime).toBe("12:30 PM – 1:30 PM");
+  });
+
+  it("resolves BYU campus buildings to accurate coordinates and codes", () => {
+    const wsc = resolveBuilding("Wilkinson Student Center - Garden Court");
+    expect(wsc.building_id).toBe("WSC");
+    expect(wsc.latitude).toBeCloseTo(40.2485, 2);
+    expect(wsc.longitude).toBeCloseTo(-111.6473, 2);
+
+    const tmcb = resolveBuilding("TMCB 1170");
+    expect(tmcb.building_id).toBe("TMCB");
+    expect(tmcb.latitude).toBeCloseTo(40.2494, 2);
+    expect(tmcb.room).toBe("1170");
+
+    const jfsb = resolveBuilding("Education in Zion Gallery - JFSB");
+    expect(jfsb.building_id).toBe("JFSB");
+    expect(jfsb.room).toBe("Gallery");
+  });
+
+  it("extracts room names correctly from varied location formats", () => {
+    expect(extractRoom("TMCB 1170")).toBe("1170");
+    expect(extractRoom("Room 3380 WSC")).toBe("Room 3380");
+    expect(extractRoom("Wilkinson Student Center - Varsity Theatre")).toBe("Varsity Theatre");
   });
 });
