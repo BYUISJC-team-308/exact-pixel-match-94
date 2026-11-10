@@ -14,6 +14,7 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as DiscountsRouteImport } from './routes/discounts'
 import { Route as FreeFoodRouteImport } from './routes/free-food'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SigninRouteImport } from './routes/signin'
@@ -44,6 +45,11 @@ const FreeFoodRoute = FreeFoodRouteImport.update({
   path: '/free-food',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MapRoute = MapRouteImport.update({
   id: '/map',
   path: '/map',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof CalendarRoute
   '/discounts': typeof DiscountsRoute
   '/free-food': typeof FreeFoodRoute
+  '/help': typeof HelpRoute
   '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/discounts': typeof DiscountsRoute
   '/free-food': typeof FreeFoodRoute
+  '/help': typeof HelpRoute
   '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/discounts': typeof DiscountsRoute
   '/free-food': typeof FreeFoodRoute
+  '/help': typeof HelpRoute
   '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/discounts'
     | '/free-food'
+    | '/help'
     | '/map'
     | '/profile'
     | '/signin'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/discounts'
     | '/free-food'
+    | '/help'
     | '/map'
     | '/profile'
     | '/signin'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/discounts'
     | '/free-food'
+    | '/help'
     | '/map'
     | '/profile'
     | '/signin'
@@ -141,6 +153,7 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   DiscountsRoute: typeof DiscountsRoute
   FreeFoodRoute: typeof FreeFoodRoute
+  HelpRoute: typeof HelpRoute
   MapRoute: typeof MapRoute
   ProfileRoute: typeof ProfileRoute
   SigninRoute: typeof SigninRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FreeFoodRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/map': {
       id: '/map'
       path: '/map'
@@ -221,6 +241,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   DiscountsRoute: DiscountsRoute,
   FreeFoodRoute: FreeFoodRoute,
+  HelpRoute: HelpRoute,
   MapRoute: MapRoute,
   ProfileRoute: ProfileRoute,
   SigninRoute: SigninRoute,
