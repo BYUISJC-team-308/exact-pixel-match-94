@@ -1,479 +1,369 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import {
+  ArrowRight,
+  Bookmark,
+  CalendarDays,
+  CreditCard,
+  MapPin,
+  Tag,
+  Utensils,
+} from "lucide-react";
 import hero from "@/assets/hero.jpg";
-import { type Deal } from "@/lib/data";
+import type { Deal } from "@/lib/data";
 import { useStore } from "@/lib/store";
-import { DealDetail, EventDetail, chipTone, CompanyLogo } from "@/components/ui-bits";
-import { useFoodEventsQuery, type NormalizedFoodEvent, getLocalDateString } from "@/lib/food-events";
-import { useDealsQuery, getDealScore } from "@/lib/deals";
-import { getCompanyCatalogEntry } from "@/lib/company-catalog";
+import { DealDetail, EventDetail } from "@/components/ui-bits";
+import { useFoodEventsQuery, type NormalizedFoodEvent } from "@/lib/food-events";
+import { useDealsQuery } from "@/lib/deals";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Studeats — Campus deals, all in one place" },
-      { name: "description", content: "Student discounts, Starving Student Card deals and free campus food in one place." },
-      { property: "og:title", content: "Studeats — Campus deals, all in one place" },
-      { property: "og:description", content: "Discounts, free food, and local student perks all in one place." },
+      { title: "Studeats — Student deals & free food" },
+      {
+        name: "description",
+        content:
+          "Find student discounts, Starving Student Card offers, and campus free-food events.",
+      },
+      { property: "og:title", content: "Studeats — Student deals & free food" },
+      { property: "og:description", content: "Three ways to save. One place to start." },
     ],
   }),
   component: Index,
 });
 
+const focus =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4";
+const paths = [
+  {
+    to: "/discounts",
+    title: "Student discounts",
+    detail: "Online & local offers. Student eligibility varies.",
+    icon: Tag,
+    tone: "bg-primary/10 text-primary",
+  },
+  {
+    to: "/starving-student",
+    title: "Starving Student Card",
+    detail: "Cardholder offers. An active card may be required.",
+    icon: CreditCard,
+    tone: "bg-accent/10 text-foreground",
+  },
+  {
+    to: "/free-food",
+    title: "Free food events",
+    detail: "Find the food, time, building, and room.",
+    icon: Utensils,
+    tone: "bg-gold/15 text-foreground",
+  },
+] as const;
+
 export function Index() {
-  const { savedDeals } = useStore();
+  const { savedDeals, savedEvents, user } = useStore();
   const [deal, setDeal] = useState<Deal | null>(null);
-  const [ev, setEv] = useState<NormalizedFoodEvent | null>(null);
-
-  const { data: foodEvents = [] } = useFoodEventsQuery();
-  const { data: deals = [] } = useDealsQuery();
-
-  // Strict check for events happening today (local timezone YYYY-MM-DD match)
-  const todayStr = getLocalDateString(new Date());
-  const today = foodEvents.filter((e) => {
-    return e.isToday || (e as any).event_date === todayStr;
-  });
-
-  // User's saved deals for My Hub
-  const hubDeals = deals.filter((d) => savedDeals.includes(d.id));
-
-  // Top picks: Highest-value student perks & AI deals
-  const featuredDeals = [...deals]
-    .sort((a, b) => getDealScore(b) - getDealScore(a) || a.company.localeCompare(b.company))
-    .slice(0, 6);
+  const [event, setEvent] = useState<NormalizedFoodEvent | null>(null);
+  const [showAllSaved, setShowAllSaved] = useState(false);
+  const dealsQuery = useDealsQuery();
+  const eventsQuery = useFoodEventsQuery();
+  const deals = dealsQuery.data ?? [];
+  const events = eventsQuery.data ?? [];
+  const today = events.filter((item) => item.isToday);
+  const savedCount = savedDeals.length + savedEvents.length;
+  const saved = [
+    ...deals
+      .filter((item) => savedDeals.includes(item.id))
+      .map((item) => ({
+        key: `deal-${item.id}`,
+        title: item.company,
+        detail: item.value,
+        kind: "Discount",
+        open: () => setDeal(item),
+      })),
+    ...events
+      .filter((item) => savedEvents.includes(item.id))
+      .map((item) => ({
+        key: `event-${item.id}`,
+        title: item.title,
+        detail: `${item.formattedDate} · ${item.start}`,
+        kind: "Event",
+        open: () => setEvent(item),
+      })),
+  ];
+  const hubLoading =
+    (savedDeals.length > 0 && dealsQuery.isPending) ||
+    (savedEvents.length > 0 && eventsQuery.isPending);
+  const hubError =
+    (savedDeals.length > 0 && dealsQuery.isError) ||
+    (savedEvents.length > 0 && eventsQuery.isError);
+  const reloadSaved = () => {
+    void dealsQuery.refetch();
+    void eventsQuery.refetch();
+  };
 
   return (
-    <>
-      {/* 1. Hero Section */}
-      <section className="grid items-center gap-10 py-10 lg:grid-cols-2 lg:py-16">
-        <div className="rise">
-          <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-primary ring-1 ring-border">
-            <span className="size-2 rounded-full bg-primary animate-pulse" />
-            <span>Verified student discounts & campus perks</span>
-          </div>
-
-          <h1 className="mt-5 max-w-[18ch] text-balance font-display text-5xl font-semibold leading-[1.05] tracking-tight xl:text-6xl">
-            Campus deals, all in one place.
-          </h1>
-
-          <p className="mt-5 max-w-[48ch] text-base text-muted-foreground leading-relaxed">
-            Verified student discounts, free campus food drops, and local Provo dining deals — all updated daily so you never pay full price again.
+    <div className="mx-auto max-w-5xl pb-8">
+      <section
+        className="grid items-center gap-6 pb-5 pt-7 sm:py-10 lg:grid-cols-[1fr_320px]"
+        aria-labelledby="home-title"
+      >
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            For your student budget
           </p>
-
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Link
-              to="/discounts"
-              className="inline-flex items-center gap-1 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+          <h1
+            id="home-title"
+            className="mt-2 font-display text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl"
+          >
+            Spend less.
+            <br className="sm:hidden" /> Do more.
+          </h1>
+          <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Student discounts, card offers, and campus free food. Pick your next find.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+            <a
+              href="#my-hub"
+              className={`inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 font-semibold text-primary-foreground ${focus}`}
             >
-              Browse 100+ deals →
-            </Link>
-            <Link
-              to="/free-food"
-              className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2.5 text-sm font-medium ring-1 ring-border hover:bg-glass transition-colors"
-            >
-              <span>🍕</span>
-              <span>Find free food</span>
-            </Link>
+              <Bookmark className="size-4" aria-hidden="true" />
+              My Hub
+              {savedCount > 0 && (
+                <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs">{savedCount}</span>
+              )}
+            </a>
             <Link
               to="/map"
-              className="inline-flex items-center rounded-full bg-secondary px-4 py-2.5 text-sm font-medium ring-1 ring-border hover:bg-glass transition-colors"
+              className={`inline-flex min-h-11 items-center gap-2 rounded-full px-3 font-medium text-primary ${focus}`}
             >
-              Campus map
+              <MapPin className="size-4" aria-hidden="true" />
+              Explore the map
+              <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
           </div>
-
-          <div className="mt-8 flex items-center gap-6 text-xs text-muted-foreground">
-            <div><strong className="font-semibold text-foreground">{deals.length > 0 ? `${deals.length}+` : "100+"}</strong> Active Deals</div>
-            <div className="size-1 rounded-full bg-muted-foreground/40" />
-            <div><strong className="font-semibold text-foreground">Scraped Daily</strong> at 3 AM</div>
-            <div className="size-1 rounded-full bg-muted-foreground/40" />
-            <div><strong className="font-semibold text-foreground">BYU & Provo</strong> Verified</div>
-          </div>
         </div>
+        <img
+          src={hero}
+          alt="BYU campus in autumn"
+          width={1280}
+          height={853}
+          className="hidden h-48 w-full rounded-3xl object-cover lg:block"
+        />
+      </section>
 
-        {/* Real BYU Campus Photo Hero */}
-        <div className="relative">
-          <div className="glass rounded-[20px] p-3 shadow-float overflow-hidden">
-            <img
-              src={hero}
-              alt="Brigham Young University campus quad in autumn, Provo Utah"
-              width={1280}
-              height={853}
-              className="aspect-[4/3] w-full rounded-[14px] object-cover transition-transform duration-500 hover:scale-[1.02]"
-              loading="eager"
-            />
-          </div>
-
-          {/* Location pill */}
-          <div className="absolute left-6 bottom-6 rounded-full bg-background/80 px-3 py-1 text-xs font-medium backdrop-blur-md shadow-sm ring-1 ring-border">
-            📍 Brigham Young University · Provo, UT
-          </div>
-
-          {/* Today badge over hero image if events exist */}
-          {today[0] && (
-            <div className="absolute -right-2 top-4 w-52 rotate-[3deg] rounded-xl bg-popover/95 p-3.5 shadow-note backdrop-blur-md ring-1 ring-border">
-              <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-semibold text-gold">
-                Happening Today
+      <section aria-labelledby="discover-title">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 id="discover-title" className="font-sans text-sm font-semibold">
+            Three ways to save
+          </h2>
+          <Link
+            to="/help"
+            className={`inline-flex min-h-11 items-center rounded text-xs font-medium text-primary underline underline-offset-4 ${focus}`}
+          >
+            How it works
+          </Link>
+        </div>
+        <div className="grid gap-2.5 sm:grid-cols-3">
+          {paths.map(({ to, title, detail, icon: Icon, tone }) => (
+            <Link
+              key={to}
+              to={to}
+              className={`group flex min-w-0 items-center gap-3 rounded-2xl border border-white/80 bg-white/75 p-3.5 shadow-sm transition-colors hover:bg-white sm:flex-col sm:items-start sm:p-5 ${focus}`}
+            >
+              <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${tone}`}>
+                <Icon className="size-5" aria-hidden="true" />
               </span>
-              <p className="mt-1.5 text-xs font-semibold leading-tight line-clamp-1">{today[0].title}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{today[0].building} · {today[0].start}</p>
-              <button
-                onClick={() => setEv(today[0])}
-                className="mt-2 text-[11px] font-medium text-primary hover:underline"
-              >
-                View event details →
-              </button>
-            </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-sans text-sm font-semibold">{title}</h3>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{detail}</p>
+              </div>
+              <ArrowRight className="size-4 shrink-0 text-primary sm:mt-2" aria-hidden="true" />
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section
+        id="my-hub"
+        aria-labelledby="hub-title"
+        className="mt-6 scroll-mt-24 rounded-3xl border border-white/80 bg-white/75 p-4 shadow-sm sm:p-6"
+      >
+        <div className="flex items-center gap-3">
+          <Bookmark className="size-5 text-primary" aria-hidden="true" />
+          <h2 id="hub-title" className="text-xl font-semibold">
+            My Hub
+          </h2>
+          {savedCount > 0 && (
+            <span className="ml-auto text-xs text-muted-foreground">{savedCount} saved</span>
           )}
         </div>
-      </section>
-
-      {/* 2. How StudEats Works (Near the Top, with direct page links) */}
-      <section className="py-8 border-y border-border/50">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <span className="text-xs font-semibold text-primary uppercase tracking-wider">Fast & Free</span>
-            <h2 className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight">How StudEats Works</h2>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-xs text-muted-foreground mr-1">Direct links:</span>
-            <Link
-              to="/discounts"
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
-            >
-              🏷️ Student Deals
-            </Link>
-            <Link
-              to="/starving-student"
-              className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
-            >
-              💳 Starving Student Card
-            </Link>
-            <Link
-              to="/free-food"
-              className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1.5 text-xs font-medium text-gold hover:bg-gold/25 transition-colors"
-            >
-              🍕 Free Food Page
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <Link
-            to="/discounts"
-            className="glass group p-5 transition-transform hover:-translate-y-1 block text-left"
-          >
-            <div className="flex items-center justify-between">
-              <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-xl text-primary group-hover:scale-110 transition-transform">
-                🏷️
-              </span>
-              <span className="text-xs font-medium text-primary group-hover:underline">Open Deals →</span>
-            </div>
-            <h3 className="mt-3.5 font-semibold text-base">1. Automated Daily Scraper</h3>
-            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-              Every morning at 3 AM, our automated scraper harvests verified student deals from ID.me, developer tools, and Provo campus eateries.
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          {user
+            ? "Your saved discounts and events, close at hand."
+            : "Browse freely. Keep your favorite discounts and events here."}{" "}
+          Saved items currently stay on this browser.
+        </p>
+        {hubLoading ? (
+          <p role="status" className="py-5 text-sm text-muted-foreground">
+            Loading your saved items…
+          </p>
+        ) : hubError ? (
+          <div role="alert" className="mt-4 rounded-xl bg-secondary p-4">
+            <p className="text-sm">
+              Some saved items couldn’t load. Your selections haven’t been removed.
             </p>
-          </Link>
-
-          <Link
-            to="/free-food"
-            className="glass group p-5 transition-transform hover:-translate-y-1 block text-left"
-          >
-            <div className="flex items-center justify-between">
-              <span className="grid size-11 place-items-center rounded-xl bg-gold/15 text-xl text-gold group-hover:scale-110 transition-transform">
-                🍕
-              </span>
-              <span className="text-xs font-medium text-gold group-hover:underline">Find Food →</span>
-            </div>
-            <h3 className="mt-3.5 font-semibold text-base">2. Campus Free Food Drops</h3>
-            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-              Never miss club pizza, bagel bars, and department donut socials happening today in buildings across the BYU campus.
-            </p>
-          </Link>
-
-          <Link
-            to="/starving-student"
-            className="glass group p-5 transition-transform hover:-translate-y-1 block text-left"
-          >
-            <div className="flex items-center justify-between">
-              <span className="grid size-11 place-items-center rounded-xl bg-accent/10 text-xl text-accent group-hover:scale-110 transition-transform">
-                💳
-              </span>
-              <span className="text-xs font-medium text-accent group-hover:underline">Card Hub →</span>
-            </div>
-            <h3 className="mt-3.5 font-semibold text-base">3. Starving Student Card</h3>
-            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-              Browse card discounts, track which free meals and coupons you've redeemed, and claim savings across Utah County.
-            </p>
-          </Link>
-        </div>
-      </section>
-
-      {/* 3. Today on Campus Section */}
-      <section className="py-8">
-        <div className="glass rounded-[20px] p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="size-2.5 rounded-full bg-gold animate-ping" />
-                <h2 className="text-xl font-semibold tracking-tight">Today on Campus</h2>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <Link to="/calendar" className="font-medium text-primary hover:underline">
-                View weekly calendar →
-              </Link>
-            </div>
+            <button
+              type="button"
+              onClick={reloadSaved}
+              className={`mt-2 min-h-11 rounded text-sm font-semibold text-primary underline ${focus}`}
+            >
+              Try saved items again
+            </button>
           </div>
-
-          <div className="mt-5">
-            {today.length === 0 ? (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl bg-secondary/50 p-4 ring-1 ring-border">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-10 place-items-center rounded-lg bg-muted text-xl">📅</span>
-                  <div>
-                    <h3 className="text-sm font-semibold">No free food events scheduled for today</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Check upcoming campus events on the calendar or browse active discounts below.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Link
-                    to="/calendar"
-                    className="rounded-full bg-secondary px-3 py-1.5 text-xs font-medium ring-1 ring-border hover:bg-glass"
+        ) : saved.length > 0 ? (
+          <>
+            <ul className="mt-3 divide-y divide-border">
+              {(showAllSaved ? saved : saved.slice(0, 3)).map((item) => (
+                <li key={item.key}>
+                  <button
+                    type="button"
+                    onClick={item.open}
+                    className={`flex min-h-16 w-full items-center gap-3 rounded-lg py-3 text-left ${focus}`}
                   >
-                    Open Calendar
-                  </Link>
-                  <Link
-                    to="/free-food"
-                    className="rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                  >
-                    All Free Food
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {today.map((e, i) => (
-                  <div
-                    key={e.id}
-                    onClick={() => setEv(e)}
-                    className="group cursor-pointer rounded-xl bg-secondary/50 p-4 ring-1 ring-border transition-all hover:bg-secondary hover:shadow-sm"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${chipTone(i)}`}>
-                        {e.start}
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+                        {item.kind}
                       </span>
-                      <span className="text-[11px] font-medium text-gold bg-gold/15 px-2 py-0.5 rounded-full">
-                        {e.food}
-                      </span>
+                      <h3 className="break-words font-sans text-sm font-semibold">{item.title}</h3>
+                      <p className="mt-0.5 break-words text-xs text-muted-foreground">
+                        {item.detail}
+                      </p>
                     </div>
-                    <h4 className="mt-2 text-sm font-semibold group-hover:text-primary transition-colors">
-                      {e.title}
-                    </h4>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      📍 {e.building}{e.room ? `, ${e.room}` : ""}
-                    </p>
-                    <span className="mt-3 inline-block text-xs font-medium text-primary">
-                      Details & map →
-                    </span>
-                  </div>
-                ))}
-              </div>
+                    <ArrowRight className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {saved.length > 3 && (
+              <button
+                type="button"
+                onClick={() => setShowAllSaved(!showAllSaved)}
+                aria-expanded={showAllSaved}
+                className={`mt-2 min-h-11 rounded text-sm font-semibold text-primary underline ${focus}`}
+              >
+                {showAllSaved ? "Show fewer saved items" : `Show all ${saved.length} saved items`}
+              </button>
             )}
-          </div>
-        </div>
-      </section>
-
-      {/* 4. My Hub Section (Saved Deals) */}
-      <section className="py-8">
-        <div className="flex items-end justify-between">
-          <div>
-            <span className="text-xs font-semibold text-primary uppercase tracking-wider">Personal Collection</span>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight">My Hub</h2>
-          </div>
-          {hubDeals.length > 0 && (
-            <Link to="/discounts" className="text-xs font-medium text-primary hover:underline">
-              {hubDeals.length} saved {hubDeals.length === 1 ? "deal" : "deals"} · Browse more →
-            </Link>
-          )}
-        </div>
-
-        {hubDeals.length === 0 ? (
-          <div className="glass mt-4 rounded-2xl p-8 text-center border-dashed border-2 border-border/80">
-            <span className="text-3xl">⭐</span>
-            <h3 className="mt-2 text-base font-semibold">Your Hub is empty</h3>
-            <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-              Save your favorite discounts for quick access whenever you need them.
-            </p>
-            <Link
-              to="/discounts"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+          </>
+        ) : savedCount > 0 ? (
+          <div className="mt-4 text-sm">
+            <p>We couldn’t find these saved items in the current catalog.</p>
+            <button
+              type="button"
+              onClick={reloadSaved}
+              className={`mt-2 min-h-11 rounded font-semibold text-primary underline ${focus}`}
             >
-              <span>Click here to save favorites →</span>
-            </Link>
+              Try saved items again
+            </button>
           </div>
         ) : (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {hubDeals.map((d, i) => (
-              <div
-                key={d.id}
-                className="glass group relative flex flex-col justify-between overflow-hidden p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-float border border-border/70 hover:border-border"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {(d.categories && d.categories.length > 0 ? d.categories : [d.category]).map((cName, cIdx) => (
-                        <span key={cName} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(cIdx)}`}>
-                          {cName}
-                        </span>
-                      ))}
-                    </div>
-                    <span className="text-xs font-bold text-accent">
-                      {d.value}
-                    </span>
-                  </div>
-
-                  <button onClick={() => setDeal(d)} className="mt-3.5 block w-full text-left focus:outline-none">
-                    <div className="flex items-center gap-3">
-                      <CompanyLogo company={d.company} url={d.url} size={42} />
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-lg font-bold tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
-                          {d.company}
-                        </h4>
-                        <p className="text-xs text-muted-foreground truncate font-medium">
-                          {getCompanyCatalogEntry(d.company)?.tagline || `${d.category} · Verified Discount`}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-2.5 flex items-center">
-                      <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-1 text-xs font-bold text-accent ring-1 ring-accent/30">
-                        🏷️ {d.value}
-                      </span>
-                    </div>
-
-                    <p className="mt-2 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                      {d.description}
-                    </p>
-                  </button>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/50">
-                  <button
-                    onClick={() => setDeal(d)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                  >
-                    View deal details →
-                  </button>
-                  <Link to="/discounts" className="text-xs text-muted-foreground hover:text-foreground">
-                    Manage in Dashboard
-                  </Link>
-                </div>
-              </div>
-            ))}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-primary/5 p-4">
+            <div>
+              <h3 className="font-sans text-sm font-semibold">Your next good find belongs here.</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Tap the save icon on a discount or event.
+              </p>
+            </div>
+            <Link
+              to="/discounts"
+              className={`inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground ${focus}`}
+            >
+              Find a deal
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
           </div>
         )}
       </section>
 
-      {/* 5. Verified Discounts (Popular Student Perks & AI Tools) */}
-      <section className="pt-10 pb-16 sm:pb-20">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <span className="text-xs font-semibold text-primary uppercase tracking-wider">Top Picks</span>
-            <h2 className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight">Verified Discounts</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">Popular Student Perks & AI Tools</p>
-          </div>
-          <Link to="/discounts" className="text-sm font-medium text-primary hover:underline">
-            View all {deals.length > 0 ? `${deals.length} deals` : "deals"} →
-          </Link>
-        </div>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredDeals.map((d, i) => (
-            <div
-              key={d.id}
-              className="glass group relative flex flex-col justify-between overflow-hidden p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-float border border-border/70 hover:border-border"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {(d.categories && d.categories.length > 0 ? d.categories : [d.category]).map((cName, cIdx) => (
-                        <span key={cName} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(cIdx)}`}>
-                          {cName}
-                        </span>
-                      ))}
-                    </div>
-                    <span className="text-xs font-bold text-accent">
-                      {d.value}
-                    </span>
-                  </div>
-
-                <button onClick={() => setDeal(d)} className="mt-3.5 block w-full text-left focus:outline-none">
-                  <div className="flex items-center gap-3">
-                    <CompanyLogo company={d.company} url={d.url} size={44} />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-xl font-bold tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
-                        {d.company}
-                      </h3>
-                      <p className="text-xs text-muted-foreground truncate font-medium">
-                        {getCompanyCatalogEntry(d.company)?.tagline || `${d.category} · Verified Discount`}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex items-center">
-                    <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-1 text-sm font-bold text-accent ring-1 ring-accent/30">
-                      🏷️ {d.value}
-                    </span>
-                  </div>
-
-                  <p className="mt-2.5 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                    {d.description}
-                  </p>
-                </button>
-              </div>
-
-              <div className="mt-5 flex items-center justify-between pt-3 border-t border-border/50">
-                <button
-                  onClick={() => setDeal(d)}
-                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors"
-                >
-                  View perk →
-                </button>
-                {d.url && (
-                  <a
-                    href={d.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    Direct link ↗
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Obvious Explore More Button at the bottom */}
-        <div className="mt-10 flex justify-center">
+      <section
+        aria-labelledby="today-title"
+        className="mt-6 rounded-3xl border border-white/70 bg-white/45 p-4 sm:p-6"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="today-title" className="flex items-center gap-2 text-xl font-semibold">
+            <CalendarDays className="size-5 text-primary" aria-hidden="true" />
+            Today on campus
+          </h2>
           <Link
-            to="/discounts"
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground shadow-md hover:bg-primary/90 hover:scale-[1.02] transition-all"
+            to="/calendar"
+            className={`inline-flex min-h-11 items-center gap-1 rounded text-xs font-semibold text-primary ${focus}`}
           >
-            <span>Explore all {deals.length > 0 ? `${deals.length}+` : "100+"} student discounts</span>
-            <span className="text-lg">→</span>
+            Calendar
+            <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
         </div>
+        {eventsQuery.isPending ? (
+          <p role="status" className="mt-3 text-sm text-muted-foreground">
+            Checking today’s events…
+          </p>
+        ) : eventsQuery.isError ? (
+          <div role="alert">
+            <p className="mt-3 text-sm">Today’s events couldn’t load.</p>
+            <button
+              type="button"
+              onClick={() => void eventsQuery.refetch()}
+              className={`min-h-11 rounded text-sm font-semibold text-primary underline ${focus}`}
+            >
+              Retry events
+            </button>
+          </div>
+        ) : today.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Nothing listed for today.{" "}
+            <Link to="/calendar" className={`rounded font-medium text-primary underline ${focus}`}>
+              See what’s coming up.
+            </Link>
+          </p>
+        ) : (
+          <>
+            <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+              {today.slice(0, 2).map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => setEvent(item)}
+                    className={`flex h-full w-full items-start gap-3 rounded-2xl bg-white/80 p-3 text-left ${focus}`}
+                  >
+                    <span className="mt-0.5 shrink-0 rounded-lg bg-gold/15 px-2 py-1 text-xs font-semibold">
+                      {item.start}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="break-words font-sans text-sm font-semibold">{item.title}</h3>
+                      <p className="mt-1 break-words text-xs text-muted-foreground">{item.food}</p>
+                      <p className="mt-1 break-words text-xs text-muted-foreground">
+                        {item.building}
+                        {item.room ? ` · ${item.room}` : ""}
+                      </p>
+                      <span className="mt-2 inline-block text-xs font-semibold text-primary">
+                        View event →
+                      </span>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {today.length > 2 && (
+              <Link
+                to="/free-food"
+                className={`mt-2 inline-flex min-h-11 items-center rounded text-xs font-semibold text-primary underline ${focus}`}
+              >
+                See all {today.length} events today
+              </Link>
+            )}
+          </>
+        )}
       </section>
-
       <DealDetail deal={deal} onClose={() => setDeal(null)} />
-      <EventDetail event={ev} onClose={() => setEv(null)} />
-    </>
+      <EventDetail event={event} onClose={() => setEvent(null)} />
+    </div>
   );
 }

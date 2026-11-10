@@ -1,4 +1,15 @@
 Read Me
+# Homepage behavioral requirements (P26)
+
+- Complete: mobile homepage explains student discounts, cardholder offers, and free-food events with three direct links.
+- Complete: a prominent My Hub shortcut reaches a compact preview of existing saved discounts and events; lists expand on request.
+- Complete: long instructions live at `/help`; the homepage no longer includes the Verified Discounts section or static freshness/count claims.
+- Complete: Today on Campus shows at most two events with access to the full calendar/list.
+- Complete: query loading, failure/retry, empty, and unavailable-saved-item states are distinguished.
+- Complete: the mobile header uses a collapsible search control to leave room for navigation on small phones.
+- Not complete in P26: account-backed saved-item synchronization (P03/P04), a separate My Hub destination (P27), and shared copy review (P28).
+- Verification: `npm run test -- src/test/homepage.test.tsx`, production build, and browser checks at phone/desktop widths. A live deployment still needs verification before Product Owner acceptance.
+
 # BYU Student Discounts and Free Food
 ## App Summary
 BYU students can have trouble finding discounts that apply to them because offers are spread across different providers and sources. They may also miss free food events when event dates and locations are hard to keep track of. This app gives BYU students one place to find relevant discounts and campus food offerings. The Discount Dashboard lets students browse, search, filter, and save discounts. The Starving Student Card Hub lists card deals and helps students track which ones they have used, while the Free Food Near Me page and Calendar show upcoming food events. An interactive map shows where discounts and food offerings are located, and “Your Hub” brings saved discounts and events together.
