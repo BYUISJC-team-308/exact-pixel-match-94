@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type { SSDeal } from "@/lib/data";
 
@@ -17,13 +18,11 @@ type OfferRow = {
   total_uses?: number | null;
 };
 
-export async function fetchStarvingStudentOffers(): Promise<SSDeal[]> {
-  const { data, error } = await supabase
-    .from("ss_deals")
-    .select("id,source_key,category,company,item,deal_type,value,details,source_url,captured_at,locations,total_uses")
-    .order("company", { ascending: true });
-  if (error) throw error;
-  return ((data ?? []) as OfferRow[]).map((offer) => ({
+const offerColumns =
+  "id,source_key,category,company,item,deal_type,value,details,source_url,captured_at,locations,total_uses";
+
+function normalizeOffer(offer: OfferRow): SSDeal {
+  return {
     id: offer.id,
     company: offer.company,
     item: offer.item,
@@ -38,7 +37,36 @@ export async function fetchStarvingStudentOffers(): Promise<SSDeal[]> {
     capturedAt: offer.captured_at ?? "",
     locations: offer.locations ?? [],
     totalUses: offer.total_uses !== undefined ? offer.total_uses : 1,
-  }));
+  };
+}
+
+export async function fetchStarvingStudentOffers(): Promise<SSDeal[]> {
+  const { data, error } = await supabase
+    .from("ss_deals")
+    .select(offerColumns)
+    .order("company", { ascending: true });
+  if (error) throw error;
+  return ((data ?? []) as OfferRow[]).map(normalizeOffer);
+}
+
+// The homepage needs one real example, not the whole card catalog.
+export async function fetchHomepageCardOffers(): Promise<SSDeal[]> {
+  const { data, error } = await supabase
+    .from("ss_deals")
+    .select(offerColumns)
+    .order("company", { ascending: true })
+    .order("id", { ascending: true })
+    .limit(1);
+  if (error) throw error;
+  return ((data ?? []) as OfferRow[]).map(normalizeOffer);
+}
+
+export function useHomepageCardOffersQuery() {
+  return useQuery({
+    queryKey: ["homepage-card-offers"],
+    queryFn: fetchHomepageCardOffers,
+    staleTime: 300_000,
+  });
 }
 
 export const getStarvingStudentOffers = createServerFn({ method: "GET" }).handler(

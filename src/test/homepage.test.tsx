@@ -3,7 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import { Index } from "@/routes/index";
 
-const mocks = vi.hoisted(() => ({ store: vi.fn(), deals: vi.fn(), events: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  store: vi.fn(),
+  deals: vi.fn(),
+  events: vi.fn(),
+  cards: vi.fn(),
+}));
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: unknown) => options,
   Link: ({ to, children, ...props }: { to: string; children: ReactNode; className?: string }) => (
@@ -15,11 +20,14 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("@/lib/store", () => ({ useStore: mocks.store }));
 vi.mock("@/lib/deals", () => ({ useDealsQuery: mocks.deals }));
 vi.mock("@/lib/food-events", () => ({ useFoodEventsQuery: mocks.events }));
+vi.mock("@/lib/starving-student", () => ({ useHomepageCardOffersQuery: mocks.cards }));
 vi.mock("@/components/ui-bits", () => ({
   DealDetail: ({ deal }: { deal: { company: string } | null }) =>
     deal ? <div role="dialog">{deal.company} details</div> : null,
   EventDetail: ({ event }: { event: { title: string } | null }) =>
     event ? <div role="dialog">{event.title} details</div> : null,
+  SSDetail: ({ deal }: { deal: { company: string } | null }) =>
+    deal ? <div role="dialog">{deal.company} card details</div> : null,
 }));
 
 const query = (data: unknown[] = []) => ({
@@ -43,6 +51,7 @@ beforeEach(() => {
   mocks.store.mockReturnValue({ savedDeals: [], savedEvents: [], user: null });
   mocks.deals.mockReturnValue(query());
   mocks.events.mockReturnValue(query());
+  mocks.cards.mockReturnValue(query());
 });
 afterEach(cleanup);
 
@@ -62,7 +71,8 @@ describe("Homepage discovery and saved-item journeys", () => {
       "href",
       "/free-food",
     );
-    expect(discovery.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/help");
+    expect(discovery.getAllByRole("link")).toHaveLength(3);
+    expect(screen.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/help");
     expect(screen.getByRole("link", { name: "My Hub" })).toHaveAttribute("href", "#my-hub");
     expect(screen.getByText(/Saved items currently stay on this browser/)).toBeInTheDocument();
     expect(screen.queryByText("Verified Discounts")).not.toBeInTheDocument();
@@ -121,5 +131,40 @@ describe("Homepage discovery and saved-item journeys", () => {
     render(<Index />);
     expect(screen.getByText(/couldn’t find these saved items/)).toBeInTheDocument();
     expect(screen.queryByText("Your next good find belongs here.")).not.toBeInTheDocument();
+  });
+
+  it("opens real discount and card examples without changing the discovery destinations", () => {
+    mocks.deals.mockReturnValue(
+      query([{ id: "d1", company: "Merchant", title: "Student offer", value: "10% off" }]),
+    );
+    mocks.cards.mockReturnValue(
+      query([{ id: "s1", company: "Card Merchant", item: "Buy one, get one" }]),
+    );
+    render(<Index />);
+    fireEvent.click(
+      within(screen.getByRole("region", { name: "Student discounts" })).getByRole("button", {
+        name: /Merchant/,
+      }),
+    );
+    expect(screen.getByText("Merchant details")).toBeInTheDocument();
+    fireEvent.click(
+      within(screen.getByRole("region", { name: "Card offers" })).getByRole("button", {
+        name: /Card Merchant/,
+      }),
+    );
+    expect(screen.getByText("Card Merchant card details")).toBeInTheDocument();
+  });
+
+  it("shows independent preview failures and retries without disabling the three main paths", () => {
+    const retryCards = vi.fn();
+    mocks.cards.mockReturnValue({ ...query(), isError: true, refetch: retryCards });
+    mocks.deals.mockReturnValue({ ...query(), isPending: true });
+    render(<Index />);
+    expect(screen.getByText("Loading a discount…")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry card offers" }));
+    expect(retryCards).toHaveBeenCalledOnce();
+    expect(
+      within(screen.getByRole("region", { name: "Three ways to save" })).getAllByRole("link"),
+    ).toHaveLength(3);
   });
 });

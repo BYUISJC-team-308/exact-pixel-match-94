@@ -8,16 +8,20 @@ Read Me
 - Setup, exact event contract, ownership boundaries, test examples, and deployment status: [OKR dashboard handoff](docs/okr-dashboard.md).
 - Verify with `npm run test` and `npm run build`. SQL regression tests use an isolated local Postgres engine and never seed production analytics.
 
-# Homepage behavioral requirements (P26)
+# Homepage behavioral requirements (P26 + homepage reset)
 
 - Complete: mobile homepage explains student discounts, cardholder offers, and free-food events with three direct links.
+- Homepage reset: those three paths have equal prominence and equal card heights, distinct icon/color cues, and plain eligibility guidance. They stack on phones and sit side by side on wider screens.
+- Homepage reset: a shorter introduction and quieter page background replace the campus hero image. Map, Calendar, My Hub, and Help remain visible shortcuts.
+- Homepage reset: real catalog previews open the existing discount, card-offer, and event detail dialogs. The card preview requests only one offer; no additional schema or fabricated offers are introduced.
+- Homepage reset: an empty My Hub is a short explanation below the listings, while existing saved lists still expand, retry, and open details. Account-backed storage remains P03/P04 work.
 - Complete: a prominent My Hub shortcut reaches a compact preview of existing saved discounts and events; lists expand on request.
 - Complete: long instructions live at `/help`; the homepage no longer includes the Verified Discounts section or static freshness/count claims.
 - Complete: Today on Campus shows at most two events with access to the full calendar/list.
 - Complete: query loading, failure/retry, empty, and unavailable-saved-item states are distinguished.
 - Complete: the mobile header uses a collapsible search control to leave room for navigation on small phones.
 - Not complete in P26: account-backed saved-item synchronization (P03/P04), a separate My Hub destination (P27), and shared copy review (P28).
-- Verification: `npm run test -- src/test/homepage.test.tsx`, production build, and browser checks at phone/desktop widths. A live deployment still needs verification before Product Owner acceptance.
+- Verification: `npm run test`, production build, and browser checks at 320/390/430/768/1024/1280px. The homepage-reset design still needs review before merging and live verification before Product Owner acceptance.
 
 # BYU Student Discounts and Free Food
 ## App Summary

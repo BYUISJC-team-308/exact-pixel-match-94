@@ -156,7 +156,7 @@ export async function fetchDeals(): Promise<Deal[]> {
 
   if (error) {
     console.error("Error fetching deals from Supabase:", error);
-    return [];
+    throw error;
   }
 
   const rawDeals = ((data || []) as DbDeal[]).filter((d) => !isCanadianOnlyDeal(d));
