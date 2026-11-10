@@ -184,7 +184,7 @@ function FreeFood() {
                 >
                   <div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className="rounded-full bg-primary/15 px-2.5 py-0.5 font-mono text-xs font-semibold text-primary">
                           {e.formattedDate} {e.start}
                         </span>
@@ -219,7 +219,7 @@ function FreeFood() {
                     </button>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-3">
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-3">
                     <span className="font-mono text-xs text-muted-foreground">
                       {e.formattedTime}
                     </span>

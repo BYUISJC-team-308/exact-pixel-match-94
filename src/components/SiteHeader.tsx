@@ -60,7 +60,7 @@ export function SiteHeader() {
           </span>
           <span className="font-display text-lg font-semibold tracking-tight">Studeats</span>
         </Link>
-        <nav className="ml-3 hidden items-center gap-1 lg:flex">
+        <nav className="ml-3 hidden items-center gap-1 xl:flex">
           {nav.map((n) => (
             <Link
               key={n.to}
@@ -163,7 +163,7 @@ export function SiteHeader() {
               setMenu(!menu);
               setSearchOpen(false);
             }}
-            className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary ring-1 ring-border lg:hidden"
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary ring-1 ring-border xl:hidden"
             aria-label="Menu"
             aria-expanded={menu}
           >
@@ -172,7 +172,7 @@ export function SiteHeader() {
         </div>
       </div>
       {menu && (
-        <nav className="flex flex-wrap gap-1 px-6 pb-3 lg:hidden">
+        <nav className="flex max-h-[60dvh] flex-wrap gap-1 overflow-y-auto px-4 pb-3 sm:px-6 xl:hidden">
           {nav.map((n) => (
             <Link
               key={n.to}

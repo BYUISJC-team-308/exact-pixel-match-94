@@ -86,10 +86,14 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
     if (!container.current) return;
     let cancelled = false;
     let map: import("maplibre-gl").Map | undefined;
-    let mobileCard: HTMLDivElement | undefined;
+    let activePopup: import("maplibre-gl").Popup | undefined;
     let recenterButton: HTMLButtonElement | undefined;
+    const resizeObserver = new ResizeObserver(() => {
+      map?.resize();
+      if (window.matchMedia("(max-width: 1279px)").matches) activePopup?.remove();
+    });
+    resizeObserver.observe(container.current);
     const byId = new Map(places.map((place) => [place.id, place]));
-    const isMobileMap = () => window.matchMedia("(max-width: 640px)").matches;
 
     void import("maplibre-gl").then(({ GeolocateControl, LngLatBounds, Map: MapLibreMap, NavigationControl, Popup, setWorkerUrl }) => {
       if (cancelled || !container.current) return;
@@ -131,8 +135,8 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
       }
       const showPlacePopup = (place: MapPlace, coordinates: [number, number]) => {
         if (!map) return;
-        mobileCard?.remove();
-        mobileCard = undefined;
+        // Use the page's scrollable details sheet instead of overlapping popups on phones/tablets.
+        if (window.matchMedia("(max-width: 1279px)").matches) return;
         const content = document.createElement("div");
         content.className = "map-place-card text-foreground";
 
@@ -171,7 +175,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
         const items = document.createElement("div");
         items.className = "mt-3 space-y-2";
         const totalItems = place.cardOffers.length + place.deals.length + place.events.length;
-        const previewLimit = isMobileMap() ? 3 : 2;
+        const previewLimit = 2;
         let previewCount = 0;
         const appendPreview = (item: HTMLElement) => {
           if (previewCount >= previewLimit) return;
@@ -243,32 +247,8 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
         }
 
         content.append(eyebrow, title, items, directions);
-        if (isMobileMap() && container.current) {
-          mobileCard = document.createElement("div");
-          mobileCard.className = `absolute inset-x-3 bottom-3 z-10 max-h-[76%] overflow-hidden rounded-[1.4rem] border bg-popover p-4 pt-6 pr-11 shadow-float ${view === "campus" ? "border-[#224f75]/25" : "border-border"}`;
-          mobileCard.setAttribute("role", "dialog");
-          mobileCard.setAttribute("aria-label", `${place.title} map details`);
-
-          const close = document.createElement("button");
-          close.type = "button";
-          close.className = "absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-muted text-base font-semibold text-foreground";
-          close.setAttribute("aria-label", "Close map details");
-          close.textContent = "×";
-          close.addEventListener("click", () => {
-            mobileCard?.remove();
-            mobileCard = undefined;
-          });
-
-          const handle = document.createElement("div");
-          handle.className = "absolute left-1/2 top-2 h-1 w-11 -translate-x-1/2 rounded-full bg-muted-foreground/25";
-
-          items.className = "mt-2.5 max-h-48 space-y-2 overflow-y-auto overscroll-contain pr-1";
-          mobileCard.append(handle, content, close);
-          container.current.append(mobileCard);
-          mobileCard.scrollIntoView({ behavior: "smooth", block: "center" });
-          return;
-        }
-        new Popup({ closeButton: true, closeOnClick: true, offset: 14, maxWidth: "290px" })
+        activePopup?.remove();
+        activePopup = new Popup({ closeButton: true, closeOnClick: true, offset: 14, maxWidth: "290px" })
           .setLngLat(coordinates)
           .setDOMContent(content)
           .addTo(map);
@@ -341,7 +321,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
                 map?.setFeatureState({ source: "buildings", id: place.id }, { selected: true });
                 map?.easeTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), 16.2), pitch: 52, bearing: -18, duration: 750 });
                 void logActivityEvent("map_pin_selected", { placeId: place.id, kind: place.kind, view });
-                if (!isMobileMap()) onSelectRef.current(place);
+                onSelectRef.current(place);
                 showPlacePopup(place, [place.lng, place.lat]);
               }
             });
@@ -393,7 +373,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
           if (place) {
             if (view === "campus") map?.easeTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), 16.2), pitch: 52, bearing: -18, duration: 750 });
             void logActivityEvent("map_pin_selected", { placeId: place.id, kind: place.kind, view });
-            if (!isMobileMap()) onSelectRef.current(place);
+            onSelectRef.current(place);
             showPlacePopup(place, [place.lng, place.lat]);
           }
         });
@@ -411,8 +391,8 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
         }
       });
     });
-    return () => { cancelled = true; mobileCard?.remove(); recenterButton?.remove(); map?.remove(); };
+    return () => { cancelled = true; resizeObserver.disconnect(); recenterButton?.remove(); map?.remove(); };
   }, [places, view, campus, showInactiveBuildings, focusPlaceId]);
 
-  return <div ref={container} className="relative h-[62dvh] min-h-[500px] w-full overflow-hidden rounded-[1.6rem] sm:h-[640px] xl:h-[calc(100vh-2rem)] xl:max-h-[820px]" aria-label={view === "campus" ? `${campus?.shortName || "College"} campus events map` : "Area discounts and free food map"} />;
+  return <div ref={container} className="relative h-[60svh] min-h-[280px] max-h-[640px] w-full overflow-hidden rounded-[1.6rem] sm:h-[640px] xl:h-[calc(100dvh-6rem)] xl:max-h-[820px]" aria-label={view === "campus" ? `${campus?.shortName || "College"} campus events map` : "Area discounts and free food map"} />;
 }

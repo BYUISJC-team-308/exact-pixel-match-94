@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Link } from "@tanstack/react-router";
 import type { Deal, FoodEvent, SSDeal } from "@/lib/data";
 import { eventDate } from "@/lib/data";
@@ -342,20 +343,34 @@ export function CompanyLogo({
   );
 }
 
-export function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
+export function Modal({ open, onClose, children, title = "Details" }: { open: boolean; onClose: () => void; children: ReactNode; title?: string }) {
+  const returnFocus = useRef<HTMLElement | null>(null);
+  const [visibleViewport, setVisibleViewport] = useState<{ height: number; top: number } | null>(null);
   useEffect(() => {
-    const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [onClose]);
-  if (!open) return null;
+    const viewport = window.visualViewport;
+    if (!open || !viewport) return;
+    const update = () => setVisibleViewport({ height: viewport.height, top: viewport.offsetTop });
+    update();
+    viewport.addEventListener("resize", update);
+    viewport.addEventListener("scroll", update);
+    return () => {
+      viewport.removeEventListener("resize", update);
+      viewport.removeEventListener("scroll", update);
+    };
+  }, [open]);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/30 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="rise relative w-full max-w-md rounded-2xl bg-popover p-6 shadow-float" onClick={(e) => e.stopPropagation()} role="dialog">
-        <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 grid size-8 place-items-center rounded-full bg-muted text-muted-foreground hover:text-foreground">✕</button>
-        {children}
-      </div>
-    </div>
+    <Dialog.Root open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-foreground/30 backdrop-blur-sm" />
+        <Dialog.Content style={visibleViewport ? { top: visibleViewport.top + visibleViewport.height / 2, maxHeight: Math.max(0, visibleViewport.height - 24) } : undefined} aria-modal="true" onOpenAutoFocus={() => { returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; }} onCloseAutoFocus={(event) => { event.preventDefault(); returnFocus.current?.focus(); }} aria-describedby={undefined} className="app-dialog fixed inset-x-3 top-1/2 z-50 mx-auto flex max-h-[calc(100dvh-1.5rem)] w-auto max-w-md -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-popover shadow-float sm:inset-x-4">
+          <Dialog.Title className="sr-only">{title}</Dialog.Title>
+          <div className="flex shrink-0 justify-end border-b border-border px-3 py-2">
+            <Dialog.Close aria-label="Close" className="grid size-11 place-items-center rounded-full bg-muted text-muted-foreground hover:text-foreground">✕</Dialog.Close>
+          </div>
+          <div className="min-h-0 overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6">{children}</div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
@@ -363,7 +378,7 @@ export function Btn({ variant = "primary", className = "", ...p }: React.ButtonH
   const v = variant === "primary"
     ? "bg-primary text-primary-foreground hover:bg-primary/90"
     : "bg-secondary text-secondary-foreground ring-1 ring-border hover:bg-glass";
-  return <button {...p} className={`inline-flex items-center justify-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${v} ${className}`} />;
+  return <button {...p} className={`inline-flex min-h-11 items-center justify-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${v} ${className}`} />;
 }
 
 export const chipTone = (i: number) => ["bg-primary/10 text-primary", "bg-accent/10 text-accent", "bg-gold/15 text-gold"][i % 3];
@@ -373,7 +388,7 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
   if (!deal) return null;
   const saved = savedDeals.includes(deal.id);
   return (
-    <Modal open onClose={onClose}>
+    <Modal open onClose={onClose} title={`${deal.company} discount details`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <CompanyLogo company={deal.company} url={deal.url} size={48} />
@@ -421,10 +436,10 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
   if (!event) return null;
   const saved = savedEvents.includes(event.id);
   return (
-    <Modal open onClose={onClose}>
+    <Modal open onClose={onClose} title={event.title}>
       <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">Free food · {event.food}</span>
       <h3 className="mt-3 text-2xl font-semibold">{event.title}</h3>
-      <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <div><dt className="font-semibold">When</dt><dd className="text-muted-foreground">{eventDate(event).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}, {event.start}–{event.end}</dd></div>
         <div><dt className="font-semibold">Hosted by</dt><dd className="text-muted-foreground">{event.host}</dd></div>
         <div><dt className="font-semibold">Where</dt><dd className="text-muted-foreground">{event.building}</dd></div>
@@ -464,7 +479,7 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
   };
 
   return (
-    <Modal open onClose={onClose}>
+    <Modal open onClose={onClose} title={`${deal.company} offer details`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${deal.type === "Free" ? "bg-gold/15 text-gold" : "bg-accent/10 text-accent"}`}>
           Starving Student Card &middot; {deal.category}
@@ -597,10 +612,10 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
 
 export function PageHeader({ eyebrow, title, children }: { eyebrow: string; title: string; children?: ReactNode }) {
   return (
-    <div className="rise flex flex-wrap items-end justify-between gap-4 py-10">
-      <div>
+    <div className="rise flex min-w-0 flex-col gap-4 py-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:py-10">
+      <div className="min-w-0">
         <span className="inline-flex rounded-full bg-secondary px-3 py-1 text-xs font-medium text-primary ring-1 ring-border">{eyebrow}</span>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-5xl">{title}</h1>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">{title}</h1>
       </div>
       {children}
     </div>
@@ -609,9 +624,9 @@ export function PageHeader({ eyebrow, title, children }: { eyebrow: string; titl
 
 export function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
-    <div className="flex h-10 w-full items-center gap-2 rounded-full bg-secondary px-4 ring-1 ring-border md:w-72">
+    <div className="flex h-11 w-full min-w-0 items-center gap-2 rounded-full bg-secondary px-4 ring-1 ring-border md:w-72">
       <span className="text-muted-foreground">⌕</span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
+      <input type="search" aria-label={placeholder} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full min-w-0 bg-transparent text-base outline-none placeholder:text-muted-foreground sm:text-sm" />
     </div>
   );
 }

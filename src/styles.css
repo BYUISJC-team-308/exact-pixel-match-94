@@ -63,12 +63,40 @@
 
 @layer base {
   * { border-color: var(--color-border); }
+  html { scroll-padding-top: 6rem; }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    overflow-wrap: anywhere;
   }
   h1, h2, h3 { font-family: var(--font-display); }
+}
+
+/* Let content shrink and wrap instead of hiding horizontal overflow. */
+.app-main {
+  padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
+}
+header { padding-top: env(safe-area-inset-top); }
+header > div { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
+footer { padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
+:where(.flex, .grid) > * { min-width: 0; }
+:where(input, select, textarea) { min-width: 0; max-width: 100%; }
+:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+.maplibregl-ctrl-group button { width: 44px; height: 44px; }
+@media (min-width: 640px) {
+  .app-main { padding-inline: max(1.5rem, env(safe-area-inset-left)) max(1.5rem, env(safe-area-inset-right)); }
+}
+@media (max-width: 767px) {
+  :where(main, header, footer, [role="dialog"]) button,
+  :where(main, header, footer, [role="dialog"]) a[class*="rounded"] { min-height: 44px; }
+  :where(main, header, footer, [role="dialog"]) button:not(.calendar-day) { min-width: 44px; }
+  :where(main, header, [role="dialog"]) input:not([type="checkbox"]):not([type="radio"]),
+  :where(main, header, [role="dialog"]) select,
+  :where(main, header, [role="dialog"]) textarea { font-size: 16px; min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 
 @utility glass {

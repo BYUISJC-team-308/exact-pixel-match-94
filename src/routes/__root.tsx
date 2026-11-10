@@ -50,7 +50,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" },
       { title: "Studeats — Student discounts & free food" },
       { name: "description", content: "Student discounts, Starving Student Card deals and free campus food in one place." },
       { property: "og:type", content: "website" },
@@ -91,7 +91,7 @@ function RootComponent() {
         </div>
         <div className="relative">
           <SiteHeader />
-          <main className="mx-auto max-w-7xl px-6"><Outlet /></main>
+          <main id="main-content" className="app-main mx-auto w-full min-w-0 max-w-7xl"><Outlet /></main>
           <footer className="mx-auto mt-12 max-w-7xl border-t border-border/60 px-6 py-8">
             <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
               <p className="text-xs text-muted-foreground">Studeats &middot; Verified student discounts &amp; campus perks</p>
