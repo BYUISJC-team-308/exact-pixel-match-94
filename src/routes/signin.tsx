@@ -17,7 +17,7 @@ function SignInPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-6 pb-16">
+    <div className="mx-auto max-w-7xl pb-10 sm:pb-16">
       <div className="rise py-10 text-center">
         <span className="inline-flex rounded-full bg-secondary px-3 py-1 text-xs font-medium text-primary ring-1 ring-border">
           Welcome back

@@ -67,7 +67,7 @@ export function AccountForm({
 
   return (
     <form
-      className="glass grid gap-4 p-6 md:grid-cols-2"
+      className="glass grid gap-4 p-4 sm:p-6 md:grid-cols-2"
       onSubmit={async (e) => {
         e.preventDefault();
         const res = schema.safeParse(v);
@@ -83,13 +83,13 @@ export function AccountForm({
         if (typeof msg === "string") setFormErr(msg);
       }}
     >
-      <div className="flex items-center gap-4 md:col-span-2">
-        <div className="grid size-20 place-items-center overflow-hidden rounded-full bg-primary/10 font-display text-2xl text-primary">
+      <div className="flex flex-wrap items-center gap-4 md:col-span-2">
+        <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-full bg-primary/10 font-display text-2xl text-primary">
           {v.avatar ? <img src={v.avatar} alt="Profile" className="size-full object-cover" /> : (v.name?.[0] ?? "?")}
         </div>
-        <label className="cursor-pointer rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">
+        <label className="cursor-pointer rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary">
           Upload photo (optional)
-          <input type="file" accept="image/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+          <input type="file" accept="image/*" className="sr-only" onChange={(e) => onFile(e.target.files?.[0])} />
         </label>
       </div>
       {visible.map((f) => (
@@ -121,6 +121,7 @@ export function AccountForm({
               id={f.key}
               name={f.key}
               type={f.type ?? "text"}
+              autoComplete={f.key === "password" ? "new-password" : f.key === "phone" ? "tel" : f.key}
               value={String(v[f.key] ?? "")}
               onChange={(e) => setV({ ...v, [f.key]: e.target.value })}
               disabled={editing && f.key === "email"}

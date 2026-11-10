@@ -13,7 +13,7 @@ export function SignInForm({
 
   return (
     <form
-      className="glass mx-auto grid max-w-md gap-4 p-6"
+      className="glass mx-auto grid max-w-md gap-4 p-4 sm:p-6"
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);
@@ -23,12 +23,12 @@ export function SignInForm({
     >
       <label className="block text-sm">
         <span className="font-medium">Email</span>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+        <input type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)}
           className="mt-1 h-11 w-full rounded-lg bg-glass/80 px-3 ring-1 ring-border outline-none focus:ring-2 focus:ring-ring" />
       </label>
       <label className="block text-sm">
         <span className="font-medium">Password</span>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+        <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)}
           className="mt-1 h-11 w-full rounded-lg bg-glass/80 px-3 ring-1 ring-border outline-none focus:ring-2 focus:ring-ring" />
       </label>
       {err && <span className="text-xs text-destructive">{err}</span>}

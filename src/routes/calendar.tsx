@@ -26,7 +26,7 @@ export const Route = createFileRoute("/calendar")({
   component: Calendar,
 });
 
-function Calendar() {
+export function Calendar() {
   const { savedEvents } = useStore();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -39,7 +39,7 @@ function Calendar() {
 
   // User-chosen settings: Recurring specials toggle & mobile view mode
   const [showRecurringDeals, setShowRecurringDeals] = useState(true);
-  const [mobileTab, setMobileTab] = useState<"grid" | "agenda">("grid");
+  const [mobileTab, setMobileTab] = useState<"grid" | "agenda">("agenda");
 
   // Live Supabase query
   const { data: foodEvents = [], isLoading } = useFoodEventsQuery();
@@ -145,6 +145,7 @@ function Calendar() {
         <div className="flex lg:hidden rounded-full bg-secondary p-1 ring-1 ring-border">
           <button
             onClick={() => setMobileTab("grid")}
+            aria-pressed={mobileTab === "grid"}
             className={`rounded-full px-4 py-1 text-xs font-semibold transition-all ${
               mobileTab === "grid"
                 ? "bg-primary text-primary-foreground shadow-sm"
@@ -155,6 +156,7 @@ function Calendar() {
           </button>
           <button
             onClick={() => setMobileTab("agenda")}
+            aria-pressed={mobileTab === "agenda"}
             className={`rounded-full px-4 py-1 text-xs font-semibold transition-all ${
               mobileTab === "agenda"
                 ? "bg-primary text-primary-foreground shadow-sm"
@@ -170,7 +172,7 @@ function Calendar() {
       <div className="mt-4 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         {/* Left Column: Interactive Month Grid */}
         <div
-          className={`glass p-5 ${
+          className={`glass min-w-0 p-2 sm:p-5 ${
             mobileTab === "agenda" ? "hidden lg:block" : "block"
           }`}
         >
@@ -179,7 +181,7 @@ function Calendar() {
             <Btn variant="soft" onClick={handlePrevMonth} aria-label="Previous month">
               ←
             </Btn>
-            <h2 className="text-xl font-bold tracking-tight">
+            <h2 className="text-center text-base font-bold tracking-tight sm:text-xl" aria-live="polite">
               {currentMonth.toLocaleDateString(undefined, {
                 month: "long",
                 year: "numeric",
@@ -200,13 +202,13 @@ function Calendar() {
           </div>
 
           {/* Days Grid */}
-          <div className="mt-1 grid grid-cols-7 gap-1.5">
+          <div className="mt-1 grid grid-cols-7 gap-1 sm:gap-1.5">
             {calendarDays.map((date, idx) => {
               if (!date) {
                 return (
                   <div
                     key={`empty-${idx}`}
-                    className="min-h-20 rounded-lg bg-glass/20 opacity-30"
+                    className="min-h-14 rounded-lg bg-glass/20 opacity-30 sm:min-h-20"
                   />
                 );
               }
@@ -219,11 +221,13 @@ function Calendar() {
               return (
                 <button
                   key={date.toISOString()}
+                  aria-label={`${date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}: ${events.length} food events, ${specials.length} specials`}
+                  aria-pressed={isSelected}
                   onClick={() => {
                     setSelectedDate(date);
                     setMobileTab("agenda"); // Auto-navigate to agenda on mobile when tapped
                   }}
-                  className={`group relative flex min-h-20 flex-col items-start rounded-lg p-1.5 text-left text-sm transition-all ${
+                  className={`calendar-day group relative flex min-h-14 min-w-0 flex-col items-center rounded-lg p-1 text-left text-sm transition-all sm:min-h-20 sm:items-start sm:p-1.5 ${
                     isSelected
                       ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary"
                       : "bg-glass/50 hover:bg-glass"
@@ -240,7 +244,8 @@ function Calendar() {
                   </span>
 
                   {/* Badges for food events */}
-                  <div className="mt-1 w-full space-y-0.5 overflow-hidden">
+                  <span className="mt-1 text-[10px] sm:hidden" aria-hidden="true">{events.length + specials.length > 0 ? events.length + specials.length : ""}</span>
+                  <div className="mt-1 hidden w-full space-y-0.5 overflow-hidden sm:block">
                     {events.slice(0, 2).map((ev) => (
                       <span
                         key={ev.id}
@@ -287,11 +292,12 @@ function Calendar() {
               );
             })}
           </div>
+          <p className="mt-3 text-xs text-muted-foreground sm:hidden">Numbers show events and specials. Tap a date for its agenda.</p>
         </div>
 
         {/* Right Column: Selected Day Agenda & Calendar Sync (Option 1) */}
         <div
-          className={`glass p-5 ${
+          className={`glass min-w-0 p-4 sm:p-5 ${
             mobileTab === "grid" ? "hidden lg:block" : "block"
           }`}
         >

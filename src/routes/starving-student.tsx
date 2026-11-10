@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { SSDeal } from "@/lib/data";
 import { getStarvingStudentOffers } from "@/lib/starving-student";
 import { actions, useStore } from "@/lib/store";
-import { CompanyLogo, FilterChips, PageHeader, SSDetail, SearchInput } from "@/components/ui-bits";
+import { CompanyLogo, FilterChips, Modal, PageHeader, SSDetail, SearchInput } from "@/components/ui-bits";
 
 export const Route = createFileRoute("/starving-student")({
   loader: () => getStarvingStudentOffers(),
@@ -252,14 +252,14 @@ function SSHub() {
         {/* Row 1: Deal Type & Card Status & Layout View Toggle */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">Type:</span>
               <FilterChips options={discountTypes} value={typeFilter} onChange={setTypeFilter} />
             </div>
 
             <div className="h-4 w-px bg-border hidden sm:block" />
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">Status:</span>
               <FilterChips options={statusFilters} value={statusFilter} onChange={setStatusFilter} />
             </div>
@@ -298,7 +298,7 @@ function SSHub() {
 
         {/* Row 2: Category & Sort */}
         <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-border/40">
-          <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+          <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
             <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">Category:</span>
             <FilterChips options={cats} value={cat} onChange={setCat} />
           </div>
@@ -323,8 +323,7 @@ function SSHub() {
 
       {/* Confirmation Modal when unmarking a single deal */}
       {confirmDeal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm rounded-2xl bg-popover p-6 shadow-float ring-1 ring-border">
+        <Modal open onClose={() => setConfirmDeal(null)} title="Reset deal to unused?">
             <span className="grid size-10 place-items-center rounded-xl bg-destructive/10 text-xl text-destructive mb-3">⚠️</span>
             <h3 className="text-lg font-semibold text-foreground">Reset deal to unused?</h3>
             <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
@@ -346,14 +345,12 @@ function SSHub() {
                 Yes, unmark
               </button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Confirmation Modal when resetting ALL deals */}
       {confirmResetAll && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm rounded-2xl bg-popover p-6 shadow-float ring-1 ring-border">
+        <Modal open onClose={() => setConfirmResetAll(false)} title="Reset all used deals?">
             <span className="grid size-10 place-items-center rounded-xl bg-destructive/10 text-xl text-destructive mb-3">🔄</span>
             <h3 className="text-lg font-semibold text-foreground">Reset all used deals?</h3>
             <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
@@ -375,8 +372,7 @@ function SSHub() {
                 Yes, reset all
               </button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* 2. Deals List / Grid Output */}

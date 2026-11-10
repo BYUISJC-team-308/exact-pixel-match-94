@@ -76,7 +76,7 @@ export function SubmitFoodEventModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={onClose} title="Post a free food event">
       <div className="space-y-4">
         <div>
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
@@ -90,11 +90,12 @@ export function SubmitFoodEventModal({
 
         <form onSubmit={handleSubmit} className="space-y-3 text-sm">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground">
+            <label htmlFor="event-title" className="block text-xs font-medium text-muted-foreground">
               Event Title *
             </label>
             <input
               type="text"
+              id="event-title"
               required
               placeholder="e.g. CS Dept Pizza Social"
               value={title}
@@ -111,13 +112,14 @@ export function SubmitFoodEventModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">
+              <label htmlFor="event-host" className="block text-xs font-medium text-muted-foreground">
                 Host / Organization
               </label>
               <input
                 type="text"
+                id="event-host"
                 placeholder="e.g. BYU ACM / BYU Math"
                 value={host}
                 onChange={(e) => setHost(e.target.value)}
@@ -125,11 +127,12 @@ export function SubmitFoodEventModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">
+              <label htmlFor="event-food" className="block text-xs font-medium text-muted-foreground">
                 Food Offered *
               </label>
               <input
                 type="text"
+                id="event-food"
                 required
                 placeholder="e.g. Pizza & Sodas"
                 value={food}
@@ -140,19 +143,20 @@ export function SubmitFoodEventModal({
           </div>
 
           {locationType === "campus" && <div>
-            <label className="block text-xs font-medium text-muted-foreground">College campus</label>
-            <select value={campusId || campuses[0]?.id || ""} onChange={(event) => { setCampusId(event.target.value); setBuilding(""); }} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary">
+            <label htmlFor="event-campus" className="block text-xs font-medium text-muted-foreground">College campus</label>
+            <select id="event-campus" value={campusId || campuses[0]?.id || ""} onChange={(event) => { setCampusId(event.target.value); setBuilding(""); }} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary">
               {campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}
             </select>
           </div>}
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">
+              <label htmlFor="event-date" className="block text-xs font-medium text-muted-foreground">
                 Date *
               </label>
               <input
                 type="date"
+                id="event-date"
                 required
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
@@ -160,22 +164,24 @@ export function SubmitFoodEventModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">
+              <label htmlFor="event-start" className="block text-xs font-medium text-muted-foreground">
                 Start Time
               </label>
               <input
                 type="time"
+                id="event-start"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">
+              <label htmlFor="event-end" className="block text-xs font-medium text-muted-foreground">
                 End Time
               </label>
               <input
                 type="time"
+                id="event-end"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none focus:ring-2 focus:ring-primary"
@@ -183,13 +189,14 @@ export function SubmitFoodEventModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">
+              <label htmlFor="event-building" className="block text-xs font-medium text-muted-foreground">
                 Building / Venue *
               </label>
               <input
                 type="text"
+                id="event-building"
                 required
                 list={locationType === "campus" ? "byu-map-buildings" : undefined}
                 placeholder={locationType === "campus" ? "e.g. TNRB (Tanner Building)" : "e.g. Downtown Provo Library"}
@@ -205,11 +212,12 @@ export function SubmitFoodEventModal({
               <p className="mt-1 text-xs text-muted-foreground">{locationType === "campus" ? "Choose a suggested BYU building to show this event on the campus map." : "Name the venue; its address will place it on the area map."}</p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground">
+              <label htmlFor="event-room" className="block text-xs font-medium text-muted-foreground">
                 Room #
               </label>
               <input
                 type="text"
+                id="event-room"
                 placeholder="e.g. Rm 1170"
                 value={room}
                 onChange={(e) => setRoom(e.target.value)}
@@ -219,16 +227,17 @@ export function SubmitFoodEventModal({
           </div>
 
           {locationType === "off_campus" && <div>
-            <label className="block text-xs font-medium text-muted-foreground">Street address *</label>
-            <input type="text" required placeholder="e.g. 550 N University Ave, Provo, UT" value={address} onChange={(e) => setAddress(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary" />
+            <label htmlFor="event-address" className="block text-xs font-medium text-muted-foreground">Street address *</label>
+            <input id="event-address" autoComplete="street-address" type="text" required placeholder="e.g. 550 N University Ave, Provo, UT" value={address} onChange={(e) => setAddress(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary" />
             <p className="mt-1 text-xs text-muted-foreground">We verify this address and place the event pin automatically.</p>
           </div>}
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground">
+            <label htmlFor="event-details" className="block text-xs font-medium text-muted-foreground">
               Additional Details
             </label>
             <textarea
+              id="event-details"
               rows={2}
               placeholder="e.g. First-come first-served while supplies last."
               value={details}

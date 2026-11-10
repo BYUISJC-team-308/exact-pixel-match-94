@@ -109,7 +109,6 @@ function MapPage() {
   const [showMapOptions, setShowMapOptions] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
-  const [sheetTouchStart, setSheetTouchStart] = useState<number | null>(null);
   const { recentMapSearches, preferredCampus } = useStore();
   const [campusSlug, setCampusSlug] = useState(() => campuses.some((campus) => campus.slug === preferredCampus) ? preferredCampus : campuses[0]?.slug || "byu-provo");
   useEffect(() => { void logActivityEvent("map_opened"); }, []);
@@ -169,7 +168,7 @@ function MapPage() {
       </div>
       {view === "area" ? (
         <div className="mt-4 space-y-3 rounded-2xl border border-border/70 bg-background/80 p-3 shadow-sm backdrop-blur">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1" aria-label="Map filters">
+          <div className="flex flex-wrap items-center gap-2 pb-1" aria-label="Map filters">
             {([["all", "Everything"], ["card", "Card deals"], ["event", "Free food"], ["discount", "Discounts"]] as const).map(([value, label]) => (
               <button key={value} type="button" onClick={() => changeFilter(value)} aria-pressed={filter === value}
                 className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-all ${filter === value ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary text-secondary-foreground"}`}>{label}</button>
@@ -192,8 +191,8 @@ function MapPage() {
         </div>
       ) : (
         <section className="mt-4 overflow-hidden rounded-[1.5rem] border border-white/60 bg-gradient-to-br from-[#f8f4e8] via-white to-[#e4edf3] p-3 shadow-lg sm:p-4" aria-label="Campus day controls">
-          <div className="mb-3 flex items-end gap-3 rounded-2xl bg-white/85 p-3 shadow-sm backdrop-blur">
-            <label className="min-w-[220px] flex-1 text-xs font-semibold text-[#082e4f]">Choose your campus
+          <div className="mb-3 flex flex-col gap-3 rounded-2xl bg-white/85 p-3 shadow-sm backdrop-blur sm:flex-row sm:items-end">
+            <label className="w-full min-w-0 flex-1 text-xs font-semibold text-[#082e4f]">Choose your campus
               <select value={campusSlug} onChange={(event) => { setCampusSlug(event.target.value); actions.setPreferredCampus(event.target.value); setSelected(null); setFocusPlaceId(null); setQuery(""); }} className="mt-1 block w-full rounded-lg border border-[#224f75]/20 bg-white px-3 py-2 text-sm font-semibold">
                 {campuses.map((campus) => <option key={campus.id} value={campus.slug}>{campus.name} · {campus.city}</option>)}
               </select>
@@ -261,9 +260,9 @@ function MapPage() {
           <MapCanvas key={`${view}-${campusSlug}`} places={matchingPlaces} view={view} campus={selectedCampus} showInactiveBuildings={showInactiveBuildings} focusPlaceId={focusPlaceId} onSelect={choosePlace} onOpenOffer={setOpenOffer} onOpenEvent={setOpenEvent} onOpenDeal={setOpenDeal} onUserLocation={setUserLocation} />
           <button type="button" onClick={() => { setMobileSheetOpen(true); setMobileSheetExpanded(false); }} className="absolute bottom-4 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-semibold text-background shadow-xl xl:hidden"><List className="size-4" />{selected ? "View details" : `${matchingPlaces.length} places`}</button>
         </div>
-        <aside id="map-place-details" onTouchStart={(event) => setSheetTouchStart(event.touches[0]?.clientY ?? null)} onTouchEnd={(event) => { if (sheetTouchStart === null) return; const delta = sheetTouchStart - (event.changedTouches[0]?.clientY ?? sheetTouchStart); if (delta > 45) setMobileSheetExpanded(true); if (delta < -45) { if (mobileSheetExpanded) setMobileSheetExpanded(false); else setMobileSheetOpen(false); } setSheetTouchStart(null); }} className={`${mobileSheetOpen ? `fixed inset-x-0 bottom-0 z-40 block rounded-t-[1.75rem] transition-[max-height] duration-300 ${mobileSheetExpanded ? "max-h-[94dvh]" : "max-h-[62dvh]"}` : "hidden"} glass scroll-mt-24 overflow-y-auto border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl xl:sticky xl:top-4 xl:block xl:max-h-[calc(100vh-2rem)] xl:rounded-[1.6rem] xl:border xl:shadow-lg`} aria-live="polite">
+        <aside id="map-place-details" className={`${mobileSheetOpen ? `fixed inset-x-0 bottom-0 z-40 block rounded-t-[1.75rem] transition-[max-height] duration-300 ${mobileSheetExpanded ? "max-h-[90dvh]" : "max-h-[62dvh]"}` : "hidden"} glass scroll-mt-24 overflow-y-auto overscroll-contain border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl xl:sticky xl:top-4 xl:block xl:max-h-[calc(100dvh-6rem)] xl:rounded-[1.6rem] xl:border xl:shadow-lg`} aria-label="Map locations and details" aria-live="polite">
           <div className="sticky -top-4 z-10 -mx-4 -mt-4 mb-3 flex items-center justify-between border-b border-border/70 bg-background/95 px-4 pb-3 pt-2 backdrop-blur xl:hidden">
-            <button type="button" onClick={() => setMobileSheetExpanded((expanded) => !expanded)} className="mx-auto flex h-8 w-20 items-start justify-center pt-1" aria-label={mobileSheetExpanded ? "Collapse results" : "Expand results"}><span className="h-1 w-12 rounded-full bg-muted-foreground/25" /></button>
+            <button type="button" aria-expanded={mobileSheetExpanded} onClick={() => setMobileSheetExpanded((expanded) => !expanded)} className="mx-auto flex h-11 w-20 items-start justify-center pt-2" aria-label={mobileSheetExpanded ? "Collapse results" : "Expand results"}><span className="h-1 w-12 rounded-full bg-muted-foreground/25" /></button>
             <button type="button" onClick={() => setMobileSheetOpen(false)} className="absolute right-3 top-2 grid size-9 place-items-center rounded-full bg-muted" aria-label="Close results"><X className="size-4" /></button>
           </div>
           {selected ? (
