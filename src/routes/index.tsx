@@ -10,12 +10,11 @@ import {
   Utensils,
   CircleHelp,
 } from "lucide-react";
-import type { Deal, SSDeal } from "@/lib/data";
+import type { Deal } from "@/lib/data";
 import { useStore } from "@/lib/store";
-import { DealDetail, EventDetail, SSDetail } from "@/components/ui-bits";
+import { DealDetail, EventDetail } from "@/components/ui-bits";
 import { useFoodEventsQuery, type NormalizedFoodEvent } from "@/lib/food-events";
 import { useDealsQuery } from "@/lib/deals";
-import { useHomepageCardOffersQuery } from "@/lib/starving-student";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -69,14 +68,12 @@ const paths = [
 ] as const;
 
 export function Index() {
-  const { savedDeals, savedEvents } = useStore();
+  const { savedDeals, savedEvents, user, authReady } = useStore();
   const [deal, setDeal] = useState<Deal | null>(null);
   const [event, setEvent] = useState<NormalizedFoodEvent | null>(null);
   const [showAllSaved, setShowAllSaved] = useState(false);
   const dealsQuery = useDealsQuery();
   const eventsQuery = useFoodEventsQuery();
-  const cardQuery = useHomepageCardOffersQuery();
-  const [cardOffer, setCardOffer] = useState<SSDeal | null>(null);
   const deals = dealsQuery.data ?? [];
   const events = eventsQuery.data ?? [];
   const today = events.filter((item) => item.isToday);
@@ -112,21 +109,15 @@ export function Index() {
     void eventsQuery.refetch();
   };
 
-  const discountExample = deals[0];
-  const cardExample = cardQuery.data?.[0];
-
   return (
     <div className="relative -mx-4 rounded-b-[2rem] bg-[#f7f8f4] px-4 py-6 sm:-mx-6 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl">
         <header className="mb-5 sm:mb-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Choose your way to save
-          </p>
           <h1
             id="home-title"
-            className="mt-2 max-w-3xl text-3xl font-semibold leading-[1.12] tracking-tight sm:text-5xl"
+            className="max-w-3xl text-3xl font-semibold leading-[1.12] tracking-tight sm:text-5xl"
           >
-            Discounts, card offers &amp; free food.
+            Discounts, Card offers, and Free Food
           </h1>
         </header>
         <section aria-labelledby="discover-title">
@@ -163,162 +154,58 @@ export function Index() {
         </section>
         <nav
           aria-label="Homepage shortcuts"
-          className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border pb-4 text-xs font-semibold text-primary sm:gap-x-5"
+          className="mt-5 grid grid-cols-2 gap-2 border-b border-border pb-5 sm:grid-cols-4"
         >
-          <Link
-            to="/map"
-            className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg ${focus}`}
-          >
-            <MapPin className="size-4" aria-hidden="true" />
-            Map
-          </Link>
-          <Link
-            to="/calendar"
-            className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg ${focus}`}
-          >
-            <CalendarDays className="size-4" aria-hidden="true" />
-            Calendar
-          </Link>
-          <a
-            href="#my-hub"
-            className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg ${focus}`}
-          >
-            <Bookmark className="size-4" aria-hidden="true" />
-            My Hub
-            {savedCount > 0 && (
-              <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px]">
-                {savedCount}
-              </span>
-            )}
-          </a>
-          <Link
-            to="/help"
-            className={`ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-lg ${focus}`}
-          >
-            <CircleHelp className="size-4" aria-hidden="true" />
-            How it works
-          </Link>
+          {[
+            {
+              to: "/map",
+              title: "Map",
+              description: "Find deals and food near you.",
+              icon: MapPin,
+            },
+            {
+              to: "/calendar",
+              title: "Calendar",
+              description: "Plan around upcoming events.",
+              icon: CalendarDays,
+            },
+            {
+              to: "#my-hub",
+              title: "My Hub",
+              description: "See the discounts and events you saved.",
+              icon: Bookmark,
+            },
+            {
+              to: "/help",
+              title: "How it works",
+              description: "Learn how to find and use offers.",
+              icon: CircleHelp,
+            },
+          ].map(({ to, title, description, icon: Icon }) => {
+            const content = (
+              <>
+                <span className="flex items-center gap-2 text-sm font-semibold text-primary">
+                  <Icon className="size-4 shrink-0" aria-hidden="true" />
+                  {title}
+                </span>
+                <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                  {description}
+                </span>
+              </>
+            );
+            const className = `min-w-0 rounded-2xl bg-white p-3 hover:shadow-sm ${focus}`;
+            return to === "#my-hub" ? (
+              <a key={to} href={to} aria-label={title} className={className}>
+                {content}
+              </a>
+            ) : (
+              <Link key={to} to={to} aria-label={title} className={className}>
+                {content}
+              </Link>
+            );
+          })}
         </nav>
-
-        <div className="mb-3 mt-6 flex flex-wrap items-baseline justify-between gap-1">
-          <h2 className="text-xl font-semibold sm:text-2xl">A look at the listings</h2>
-          <p className="text-xs text-muted-foreground">
-            Open a listing for its details and requirements.
-          </p>
-        </div>
-        <div className="grid items-start gap-3 lg:grid-cols-3">
-          <section
-            aria-labelledby="discount-preview"
-            className="rounded-3xl border border-border bg-white p-4 sm:p-5"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <h2 id="discount-preview" className="text-lg font-semibold">
-                Student discounts
-              </h2>
-              <Tag className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            </div>
-            {dealsQuery.isPending ? (
-              <p role="status" className="py-4 text-sm text-muted-foreground">
-                Loading a discount…
-              </p>
-            ) : dealsQuery.isError ? (
-              <div role="alert">
-                <p className="mt-3 text-sm">Discounts couldn’t load.</p>
-                <button
-                  onClick={() => void dealsQuery.refetch()}
-                  className={`min-h-11 rounded text-sm font-semibold text-primary underline ${focus}`}
-                >
-                  Retry discounts
-                </button>
-              </div>
-            ) : discountExample ? (
-              <button
-                type="button"
-                onClick={() => setDeal(discountExample)}
-                className={`mt-3 w-full rounded-2xl bg-[#f5f7f3] p-4 text-left ${focus}`}
-              >
-                <span className="text-xs font-semibold text-primary">
-                  {discountExample.company}
-                </span>
-                <h3 className="mt-1 font-sans text-base font-bold leading-snug">
-                  {discountExample.value}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {discountExample.title}
-                </p>
-                <span className="mt-3 inline-flex min-h-6 items-center gap-1 text-xs font-semibold text-primary">
-                  View discount
-                  <ArrowRight className="size-3" aria-hidden="true" />
-                </span>
-              </button>
-            ) : (
-              <p className="py-4 text-sm text-muted-foreground">
-                No discounts are listed right now.
-              </p>
-            )}
-            <Link
-              to="/discounts"
-              className={`mt-2 inline-flex min-h-11 items-center gap-1 rounded text-xs font-semibold text-primary ${focus}`}
-            >
-              All student discounts
-              <ArrowRight className="size-3" aria-hidden="true" />
-            </Link>
-          </section>
-          <section
-            aria-labelledby="card-preview"
-            className="rounded-3xl border border-border bg-white p-4 sm:p-5"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <h2 id="card-preview" className="text-lg font-semibold">
-                Card offers
-              </h2>
-              <CreditCard className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            </div>
-            {cardQuery.isPending ? (
-              <p role="status" className="py-4 text-sm text-muted-foreground">
-                Loading a card offer…
-              </p>
-            ) : cardQuery.isError ? (
-              <div role="alert">
-                <p className="mt-3 text-sm">Card offers couldn’t load.</p>
-                <button
-                  onClick={() => void cardQuery.refetch()}
-                  className={`min-h-11 rounded text-sm font-semibold text-primary underline ${focus}`}
-                >
-                  Retry card offers
-                </button>
-              </div>
-            ) : cardExample ? (
-              <button
-                type="button"
-                onClick={() => setCardOffer(cardExample)}
-                className={`mt-3 w-full rounded-2xl bg-[#fbf5eb] p-4 text-left ${focus}`}
-              >
-                <span className="text-xs font-semibold text-[#70431c]">{cardExample.company}</span>
-                <h3 className="mt-1 font-sans text-base font-bold leading-snug">
-                  {cardExample.item}
-                </h3>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Check the official card terms before using an offer.
-                </p>
-                <span className="mt-3 inline-flex min-h-6 items-center gap-1 text-xs font-semibold text-primary">
-                  View card offer
-                  <ArrowRight className="size-3" aria-hidden="true" />
-                </span>
-              </button>
-            ) : (
-              <p className="py-4 text-sm text-muted-foreground">
-                No card offers are listed right now.
-              </p>
-            )}
-            <Link
-              to="/starving-student"
-              className={`mt-2 inline-flex min-h-11 items-center gap-1 rounded text-xs font-semibold text-primary ${focus}`}
-            >
-              All card offers
-              <ArrowRight className="size-3" aria-hidden="true" />
-            </Link>
-          </section>
+        <div className="mt-6 grid items-start gap-4 lg:grid-cols-2">
           <section
             aria-labelledby="today-title"
             className="rounded-3xl border border-border bg-white p-4 sm:p-5"
@@ -383,7 +270,7 @@ export function Index() {
                           </p>
                           <p className="mt-1 break-words text-xs text-muted-foreground">
                             {item.building}
-                            {item.room ? ` · ${item.room}` : ""}
+                            {item.room ? ` · Room ${item.room}` : ""}
                           </p>
                           <span className="mt-2 inline-block text-xs font-semibold text-primary">
                             View event →
@@ -404,98 +291,116 @@ export function Index() {
               </>
             )}
           </section>
-        </div>
-        <section
-          id="my-hub"
-          aria-labelledby="hub-title"
-          className="mt-6 scroll-mt-24 rounded-3xl border border-border bg-white p-4 shadow-sm sm:p-6"
-        >
-          <div className="flex items-center gap-3">
-            <Bookmark className="size-5 text-primary" aria-hidden="true" />
-            <h2 id="hub-title" className="text-xl font-semibold">
-              My Hub
-            </h2>
-            {savedCount > 0 && (
-              <span className="ml-auto text-xs text-muted-foreground">{savedCount} saved</span>
-            )}
-          </div>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Saved items currently stay on this browser.
-          </p>
-          {hubLoading ? (
-            <p role="status" className="py-5 text-sm text-muted-foreground">
-              Loading your saved items…
-            </p>
-          ) : hubError ? (
-            <div role="alert" className="mt-4 rounded-xl bg-secondary p-4">
-              <p className="text-sm">
-                Some saved items couldn’t load. Your selections haven’t been removed.
-              </p>
-              <button
-                type="button"
-                onClick={reloadSaved}
-                className={`mt-2 min-h-11 rounded text-sm font-semibold text-primary underline ${focus}`}
-              >
-                Try saved items again
-              </button>
+          <section
+            id="my-hub"
+            aria-labelledby="hub-title"
+            className="scroll-mt-24 rounded-3xl border border-border bg-white p-4 shadow-sm sm:p-6"
+          >
+            <div className="flex items-center gap-3">
+              <Bookmark className="size-5 text-primary" aria-hidden="true" />
+              <h2 id="hub-title" className="text-xl font-semibold">
+                My Hub
+              </h2>
+              {authReady && user && savedCount > 0 && (
+                <span className="ml-auto text-xs text-muted-foreground">{savedCount} saved</span>
+              )}
             </div>
-          ) : saved.length > 0 ? (
-            <>
-              <ul className="mt-3 divide-y divide-border">
-                {(showAllSaved ? saved : saved.slice(0, 3)).map((item) => (
-                  <li key={item.key}>
-                    <button
-                      type="button"
-                      onClick={item.open}
-                      className={`flex min-h-16 w-full items-center gap-3 rounded-lg py-3 text-left ${focus}`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-                          {item.kind}
-                        </span>
-                        <h3 className="break-words font-sans text-sm font-semibold">
-                          {item.title}
-                        </h3>
-                        <p className="mt-0.5 break-words text-xs text-muted-foreground">
-                          {item.detail}
-                        </p>
-                      </div>
-                      <ArrowRight className="size-4 shrink-0 text-primary" aria-hidden="true" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              {saved.length > 3 && (
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Saved items currently stay on this browser.
+            </p>
+            {!authReady ? (
+              <p role="status" className="py-5 text-sm text-muted-foreground">
+                Checking your account…
+              </p>
+            ) : !user ? (
+              <div className="mt-3">
+                <p className="text-sm text-muted-foreground">
+                  Sign in to see your saved discounts and events in My Hub.
+                </p>
+                <Link
+                  to="/signin"
+                  search={{ next: "hub" }}
+                  className={`mt-3 inline-flex min-h-11 items-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground ${focus}`}
+                >
+                  Sign in to My Hub
+                </Link>
+              </div>
+            ) : hubLoading ? (
+              <p role="status" className="py-5 text-sm text-muted-foreground">
+                Loading your saved items…
+              </p>
+            ) : hubError ? (
+              <div role="alert" className="mt-4 rounded-xl bg-secondary p-4">
+                <p className="text-sm">
+                  Some saved items couldn’t load. Your selections haven’t been removed.
+                </p>
                 <button
                   type="button"
-                  onClick={() => setShowAllSaved(!showAllSaved)}
-                  aria-expanded={showAllSaved}
+                  onClick={reloadSaved}
                   className={`mt-2 min-h-11 rounded text-sm font-semibold text-primary underline ${focus}`}
                 >
-                  {showAllSaved ? "Show fewer saved items" : `Show all ${saved.length} saved items`}
+                  Try saved items again
                 </button>
-              )}
-            </>
-          ) : savedCount > 0 ? (
-            <div className="mt-4 text-sm">
-              <p>We couldn’t find these saved items in the current catalog.</p>
-              <button
-                type="button"
-                onClick={reloadSaved}
-                className={`mt-2 min-h-11 rounded font-semibold text-primary underline ${focus}`}
-              >
-                Try saved items again
-              </button>
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-muted-foreground">
-              Tap the save icon on a discount or event to add it here.
-            </p>
-          )}
-        </section>
+              </div>
+            ) : saved.length > 0 ? (
+              <>
+                <ul className="mt-3 divide-y divide-border">
+                  {(showAllSaved ? saved : saved.slice(0, 3)).map((item) => (
+                    <li key={item.key}>
+                      <button
+                        type="button"
+                        onClick={item.open}
+                        className={`flex min-h-16 w-full items-center gap-3 rounded-lg py-3 text-left ${focus}`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+                            {item.kind}
+                          </span>
+                          <h3 className="break-words font-sans text-sm font-semibold">
+                            {item.title}
+                          </h3>
+                          <p className="mt-0.5 break-words text-xs text-muted-foreground">
+                            {item.detail}
+                          </p>
+                        </div>
+                        <ArrowRight className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {saved.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllSaved(!showAllSaved)}
+                    aria-expanded={showAllSaved}
+                    className={`mt-2 min-h-11 rounded text-sm font-semibold text-primary underline ${focus}`}
+                  >
+                    {showAllSaved
+                      ? "Show fewer saved items"
+                      : `Show all ${saved.length} saved items`}
+                  </button>
+                )}
+              </>
+            ) : savedCount > 0 ? (
+              <div className="mt-4 text-sm">
+                <p>We couldn’t find these saved items in the current catalog.</p>
+                <button
+                  type="button"
+                  onClick={reloadSaved}
+                  className={`mt-2 min-h-11 rounded font-semibold text-primary underline ${focus}`}
+                >
+                  Try saved items again
+                </button>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">
+                Tap the save icon on a discount or event to add it here.
+              </p>
+            )}
+          </section>
+        </div>
 
         <DealDetail deal={deal} onClose={() => setDeal(null)} />
-        <SSDetail deal={cardOffer} onClose={() => setCardOffer(null)} />
         <EventDetail event={event} onClose={() => setEvent(null)} />
       </div>
     </div>

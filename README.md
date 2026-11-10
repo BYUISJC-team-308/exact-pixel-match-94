@@ -13,8 +13,8 @@ Read Me
 - Complete: mobile homepage explains student discounts, cardholder offers, and free-food events with three direct links.
 - Homepage reset: those three paths have equal prominence and equal card heights, distinct icon/color cues, and plain eligibility guidance. They stack on phones and sit side by side on wider screens.
 - Homepage reset: a shorter introduction and quieter page background replace the campus hero image. Map, Calendar, My Hub, and Help remain visible shortcuts.
-- Homepage reset: real catalog previews open the existing discount, card-offer, and event detail dialogs. The card preview requests only one offer; no additional schema or fabricated offers are introduced.
-- Homepage reset: an empty My Hub is a short explanation below the listings, while existing saved lists still expand, retry, and open details. Account-backed storage remains P03/P04 work.
+- Homepage reset: discount and card-offer example panels are removed; Today on campus and My Hub remain. Shortcuts explain their destinations, and header navigation uses matching colored icons and an active-page ring.
+- Homepage reset: My Hub prompts guests to sign in and returns them to the hub after login. Signed-in saved lists still expand, retry, and open details. Saves currently remain browser-local; account-backed storage remains P03/P04 work.
 - Complete: a prominent My Hub shortcut reaches a compact preview of existing saved discounts and events; lists expand on request.
 - Complete: long instructions live at `/help`; the homepage no longer includes the Verified Discounts section or static freshness/count claims.
 - Complete: Today on Campus shows at most two events with access to the full calendar/list.

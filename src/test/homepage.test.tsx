@@ -7,12 +7,21 @@ const mocks = vi.hoisted(() => ({
   store: vi.fn(),
   deals: vi.fn(),
   events: vi.fn(),
-  cards: vi.fn(),
 }));
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: unknown) => options,
-  Link: ({ to, children, ...props }: { to: string; children: ReactNode; className?: string }) => (
-    <a href={to} {...props}>
+  Link: ({
+    to,
+    search,
+    children,
+    ...props
+  }: {
+    to: string;
+    search?: { next?: string };
+    children: ReactNode;
+    className?: string;
+  }) => (
+    <a href={search?.next ? `${to}?next=${search.next}` : to} {...props}>
       {children}
     </a>
   ),
@@ -20,7 +29,6 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("@/lib/store", () => ({ useStore: mocks.store }));
 vi.mock("@/lib/deals", () => ({ useDealsQuery: mocks.deals }));
 vi.mock("@/lib/food-events", () => ({ useFoodEventsQuery: mocks.events }));
-vi.mock("@/lib/starving-student", () => ({ useHomepageCardOffersQuery: mocks.cards }));
 vi.mock("@/components/ui-bits", () => ({
   DealDetail: ({ deal }: { deal: { company: string } | null }) =>
     deal ? <div role="dialog">{deal.company} details</div> : null,
@@ -48,10 +56,9 @@ const event = (id: string) => ({
 });
 
 beforeEach(() => {
-  mocks.store.mockReturnValue({ savedDeals: [], savedEvents: [], user: null });
+  mocks.store.mockReturnValue({ savedDeals: [], savedEvents: [], user: null, authReady: true });
   mocks.deals.mockReturnValue(query());
   mocks.events.mockReturnValue(query());
-  mocks.cards.mockReturnValue(query());
 });
 afterEach(cleanup);
 
@@ -83,6 +90,7 @@ describe("Homepage discovery and saved-item journeys", () => {
       savedDeals: ["d1", "d2", "d3"],
       savedEvents: ["e1"],
       user: { name: "Lot" },
+      authReady: true,
     });
     mocks.deals.mockReturnValue(
       query([1, 2, 3].map((n) => ({ id: `d${n}`, company: `Merchant ${n}`, value: "10% off" }))),
@@ -113,7 +121,12 @@ describe("Homepage discovery and saved-item journeys", () => {
   });
 
   it("distinguishes loading and failed saved data from an empty collection and offers retry", () => {
-    mocks.store.mockReturnValue({ savedDeals: [], savedEvents: ["e1"], user: null });
+    mocks.store.mockReturnValue({
+      savedDeals: [],
+      savedEvents: ["e1"],
+      user: { name: "Lot" },
+      authReady: true,
+    });
     mocks.events.mockReturnValue({ ...query(), isPending: true });
     const view = render(<Index />);
     expect(screen.getByText("Loading your saved items…")).toBeInTheDocument();
@@ -127,44 +140,44 @@ describe("Homepage discovery and saved-item journeys", () => {
   });
 
   it("does not silently erase references to catalog items that are unavailable", () => {
-    mocks.store.mockReturnValue({ savedDeals: ["missing"], savedEvents: [], user: null });
+    mocks.store.mockReturnValue({
+      savedDeals: ["missing"],
+      savedEvents: [],
+      user: { name: "Lot" },
+      authReady: true,
+    });
     render(<Index />);
     expect(screen.getByText(/couldn’t find these saved items/)).toBeInTheDocument();
     expect(screen.queryByText("Your next good find belongs here.")).not.toBeInTheDocument();
   });
 
-  it("opens real discount and card examples without changing the discovery destinations", () => {
+  it("asks guests to sign in without showing saved details or removing their selections", () => {
+    mocks.store.mockReturnValue({
+      savedDeals: ["d1"],
+      savedEvents: [],
+      user: null,
+      authReady: true,
+    });
     mocks.deals.mockReturnValue(
-      query([{ id: "d1", company: "Merchant", title: "Student offer", value: "10% off" }]),
-    );
-    mocks.cards.mockReturnValue(
-      query([{ id: "s1", company: "Card Merchant", item: "Buy one, get one" }]),
+      query([{ id: "d1", company: "Private saved merchant", value: "10% off" }]),
     );
     render(<Index />);
-    fireEvent.click(
-      within(screen.getByRole("region", { name: "Student discounts" })).getByRole("button", {
-        name: /Merchant/,
-      }),
+    expect(screen.getByRole("link", { name: "Sign in to My Hub" })).toHaveAttribute(
+      "href",
+      "/signin?next=hub",
     );
-    expect(screen.getByText("Merchant details")).toBeInTheDocument();
-    fireEvent.click(
-      within(screen.getByRole("region", { name: "Card offers" })).getByRole("button", {
-        name: /Card Merchant/,
-      }),
+    expect(screen.queryByText("Private saved merchant")).not.toBeInTheDocument();
+    expect(screen.queryByText(/1 saved/)).not.toBeInTheDocument();
+    expect(screen.queryByText("A look at the listings")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Discounts, Card offers, and Free Food",
     );
-    expect(screen.getByText("Card Merchant card details")).toBeInTheDocument();
   });
 
-  it("shows independent preview failures and retries without disabling the three main paths", () => {
-    const retryCards = vi.fn();
-    mocks.cards.mockReturnValue({ ...query(), isError: true, refetch: retryCards });
-    mocks.deals.mockReturnValue({ ...query(), isPending: true });
+  it("waits for the session before offering sign in or saved content", () => {
+    mocks.store.mockReturnValue({ savedDeals: [], savedEvents: [], user: null, authReady: false });
     render(<Index />);
-    expect(screen.getByText("Loading a discount…")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Retry card offers" }));
-    expect(retryCards).toHaveBeenCalledOnce();
-    expect(
-      within(screen.getByRole("region", { name: "Three ways to save" })).getAllByRole("link"),
-    ).toHaveLength(3);
+    expect(screen.getByText("Checking your account…")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in to My Hub" })).not.toBeInTheDocument();
   });
 });
