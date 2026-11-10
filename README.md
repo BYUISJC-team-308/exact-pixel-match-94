@@ -1,4 +1,13 @@
 Read Me
+# Team OKR dashboard (P07)
+
+- Open Profile → Team OKRs (or Team Analytics while signed out), then sign in with an approved dashboard account.
+- Production reads only the restricted `team_okr_snapshot` aggregate RPC. No raw activity is downloaded or merged with local backups, and demo buttons no longer create production activity.
+- All four KRs show their counting rules, sample sizes, targets, UTC signup period, calculation time, and data-readiness checks. The first-save timing target remains pending Product Owner agreement.
+- Missing P06 signup/session/success markers produce **Tracking incomplete**, not fabricated zero-percent results. Seven-day retention excludes users whose full 168-hour window is unfinished.
+- Setup, exact event contract, ownership boundaries, test examples, and deployment status: [OKR dashboard handoff](docs/okr-dashboard.md).
+- Verify with `npm run test` and `npm run build`. SQL regression tests use an isolated local Postgres engine and never seed production analytics.
+
 # Homepage behavioral requirements (P26)
 
 - Complete: mobile homepage explains student discounts, cardholder offers, and free-food events with three direct links.
