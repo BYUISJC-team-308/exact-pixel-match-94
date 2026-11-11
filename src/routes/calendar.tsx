@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { useRenderClock } from "@/hooks/use-render-clock";
+import { campusCalendarDate, DISPLAY_LOCALE } from "@/lib/campus-time";
 import { eventCountLabel, roomLabel } from "@/lib/student-copy";
 import { sameDay } from "@/lib/data";
 import { EventDetail, PageHeader, Btn } from "@/components/ui-bits";
@@ -23,13 +25,19 @@ export const Route = createFileRoute("/calendar")({
       },
     ],
   }),
-  component: Calendar,
+  loader: () => ({ renderedAt: Date.now() }),
+  component: CalendarPage,
 });
 
-export function Calendar() {
+function CalendarPage() {
+  const { renderedAt } = Route.useLoaderData();
+  return <Calendar renderedAt={renderedAt} />;
+}
+
+export function Calendar({ renderedAt }: { renderedAt: number }) {
   const { savedEvents } = useStore();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = useRenderClock(renderedAt);
+  const today = campusCalendarDate(new Date(now));
 
   const [currentMonth, setCurrentMonth] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -92,7 +100,7 @@ export function Calendar() {
   return (
     <>
       <PageHeader
-        eyebrow={`Today is ${today.toLocaleDateString(undefined, {
+        eyebrow={`Today is ${today.toLocaleDateString(DISPLAY_LOCALE, {
           weekday: "long",
           month: "long",
           day: "numeric",
@@ -184,7 +192,7 @@ export function Calendar() {
               className="text-center text-base font-bold tracking-tight sm:text-xl"
               aria-live="polite"
             >
-              {currentMonth.toLocaleDateString(undefined, {
+              {currentMonth.toLocaleDateString(DISPLAY_LOCALE, {
                 month: "long",
                 year: "numeric",
               })}
@@ -223,7 +231,7 @@ export function Calendar() {
               return (
                 <button
                   key={date.toISOString()}
-                  aria-label={`${date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}: ${eventCountLabel(events.length, isLoading, isError)}, ${specials.length} specials`}
+                  aria-label={`${date.toLocaleDateString(DISPLAY_LOCALE, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}: ${eventCountLabel(events.length, isLoading, isError)}, ${specials.length} specials`}
                   aria-pressed={isSelected}
                   onClick={() => {
                     setSelectedDate(date);
@@ -317,7 +325,7 @@ export function Calendar() {
                 Day Agenda
               </span>
               <h2 className="text-xl font-bold">
-                {selectedDate.toLocaleDateString(undefined, {
+                {selectedDate.toLocaleDateString(DISPLAY_LOCALE, {
                   weekday: "long",
                   month: "short",
                   day: "numeric",

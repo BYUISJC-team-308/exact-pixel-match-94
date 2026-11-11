@@ -151,7 +151,7 @@ it("does not turn food-list failures into a zero count or expose raw backend err
 });
 it("calendar failures do not claim an empty day, and retries remain available", () => {
   mocks.events.mockReturnValue({ data: [], isLoading: false, isError: true, refetch: mocks.retry });
-  render(<Calendar />);
+  render(<Calendar renderedAt={Date.now()} />);
   expect(screen.getByRole("alert")).toHaveTextContent("Food events couldn’t load");
   expect(screen.queryByText(/No events or specials are listed/)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));

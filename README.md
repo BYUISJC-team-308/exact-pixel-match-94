@@ -1,3 +1,7 @@
+## Hydration and campus date rendering (P32)
+
+Calendar and Map loaders serialize a render instant so SSR and initial browser markup match. Browser time is read after hydration; event dates/times use America/Denver and displayed labels use en-US. Keep browser-local/auth state behind the existing external-store server snapshot. Never suppress hydration warnings to hide a divergent first render. See [hydration regression evidence](docs/hydration-review.md) and `src/test/hydration.test.tsx` for the locale, midnight, event-boundary, and restored-state checks.
+
 Read Me
 # Student copy (P28)
 
