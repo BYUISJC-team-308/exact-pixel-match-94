@@ -1,4 +1,12 @@
 Read Me
+# Full card catalog performance (P33)
+
+- Card Hub keeps the entire catalog available to search, type/category/status filters, and sorting, but mounts 24 offers per page in list and grid views. Category counts describe all matches, and the range/page controls make remaining offers reachable.
+- Search criteria, view, sort, and page are URL state; criteria changes restart at page 1, details preserve the list, and reload/back can restore it. The existing punch store and detail dialog are reused.
+- Route data stays fresh for five minutes to avoid refetching on ordinary search/page changes. Supabase reads use stable ordered ranges so catalogs above its single-response cap are not truncated. A failed later batch is an error, not a partial catalog.
+- Loading and retry states do not invent a zero count. The sort label/control wrap deliberately on narrow phones. P30's punch feedback/reset changes remain with their existing owner.
+- Measurements, limitations, and regression evidence: [P33 performance review](docs/card-catalog-performance.md). Account-backed tracking is not part of this change.
+
 # Footer destinations (P34)
 
 - Shared footer links open `/about`, `/contact`, `/privacy`, and `/terms` without sign-in. Each page supports direct loads and links back home.
