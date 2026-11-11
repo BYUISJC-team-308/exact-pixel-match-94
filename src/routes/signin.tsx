@@ -3,16 +3,20 @@ import { SignInForm } from "@/components/SignInForm";
 import { signIn } from "@/lib/auth";
 
 export const Route = createFileRoute("/signin")({
+  validateSearch: (search: Record<string, unknown>): { next?: "hub" } =>
+    search["next"] === "hub" ? { next: "hub" } : {},
   component: SignInPage,
 });
 
 function SignInPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
 
   const handleSignIn = async (email: string, password: string): Promise<string | null> => {
     const err = await signIn(email, password);
     if (err) return err;
-    navigate({ to: "/profile" });
+    if (next === "hub") await navigate({ to: "/", hash: "my-hub" });
+    else await navigate({ to: "/profile" });
     return null;
   };
 

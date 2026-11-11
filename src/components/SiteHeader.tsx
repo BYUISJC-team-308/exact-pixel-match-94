@@ -5,16 +5,43 @@ import { useStore } from "@/lib/store";
 import { useFoodEventsQuery } from "@/lib/food-events";
 import { useDealsQuery } from "@/lib/deals";
 import { initAuth } from "@/lib/auth";
-import { Search, X } from "lucide-react";
+import { Search, X, House, Tag, CreditCard, Utensils, CalendarDays, MapPin } from "lucide-react";
 
 const nav = [
-  { to: "/", label: "Home" },
-  { to: "/discounts", label: "Discounts" },
-  { to: "/starving-student", label: "Starving Student" },
-  { to: "/free-food", label: "Free Food" },
-  { to: "/calendar", label: "Calendar" },
-  { to: "/map", label: "Map" },
+  { to: "/", label: "Home", icon: House, tone: "bg-[#e7eef8] text-[#294b78] border-[#c9d8ee]" },
+  {
+    to: "/discounts",
+    label: "Discounts",
+    icon: Tag,
+    tone: "bg-[#e4f1e9] text-[#174d3b] border-[#c9dfd1]",
+  },
+  {
+    to: "/starving-student",
+    label: "Starving Student",
+    icon: CreditCard,
+    tone: "bg-[#fff0db] text-[#70431c] border-[#eddbbf]",
+  },
+  {
+    to: "/free-food",
+    label: "Free Food",
+    icon: Utensils,
+    tone: "bg-[#edeafb] text-[#493b75] border-[#dad4ed]",
+  },
+  {
+    to: "/calendar",
+    label: "Calendar",
+    icon: CalendarDays,
+    tone: "bg-[#fbe7ec] text-[#843450] border-[#edcbd6]",
+  },
+  { to: "/map", label: "Map", icon: MapPin, tone: "bg-[#e0f2f3] text-[#205c64] border-[#bddfe2]" },
 ] as const;
+
+const navPill =
+  "inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
+const activePill = {
+  className: "ring-2 ring-primary ring-offset-2",
+  "aria-current": "page" as const,
+};
 
 export function SiteHeader() {
   const { user } = useStore();
@@ -66,9 +93,10 @@ export function SiteHeader() {
               key={n.to}
               to={n.to}
               activeOptions={{ exact: true }}
-              className="rounded-full px-3 py-1.5 text-sm font-medium text-foreground/70 hover:bg-glass/60"
-              activeProps={{ className: "bg-primary/10 !text-primary" }}
+              className={`${navPill} ${n.tone}`}
+              activeProps={activePill}
             >
+              <n.icon className="size-4 shrink-0" aria-hidden="true" />
               {n.label}
             </Link>
           ))}
@@ -172,14 +200,20 @@ export function SiteHeader() {
         </div>
       </div>
       {menu && (
-        <nav className="flex max-h-[60dvh] flex-wrap gap-1 overflow-y-auto px-4 pb-3 sm:px-6 xl:hidden">
+        <nav
+          aria-label="Main navigation"
+          className="flex max-h-[60dvh] flex-wrap gap-2 overflow-y-auto px-4 pb-3 pt-1 sm:px-6 xl:hidden"
+        >
           {nav.map((n) => (
             <Link
               key={n.to}
               to={n.to}
               onClick={() => setMenu(false)}
-              className="inline-flex min-h-11 items-center rounded-full bg-secondary px-3 py-1.5 text-sm"
+              className={`${navPill} ${n.tone}`}
+              activeOptions={{ exact: true }}
+              activeProps={activePill}
             >
+              <n.icon className="size-4 shrink-0" aria-hidden="true" />
               {n.label}
             </Link>
           ))}
