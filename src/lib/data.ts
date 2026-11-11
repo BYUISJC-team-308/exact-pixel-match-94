@@ -93,5 +93,5 @@ export const siteSections = [
   { to: "/calendar", label: "Calendar", desc: "Free food events by date" },
   { to: "/map", label: "Interactive Map", desc: "Discount and free food locations" },
   { to: "/profile", label: "Profile", desc: "Your account and info" },
-  { to: "/account", label: "Create Account", desc: "Sign up to save deals and events" },
+  { to: "/account", label: "Create Account", desc: "Create your student profile" },
 ] as const;

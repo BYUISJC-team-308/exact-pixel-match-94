@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { eventCountLabel, roomLabel } from "@/lib/student-copy";
 import { sameDay } from "@/lib/data";
 import { EventDetail, PageHeader, Btn } from "@/components/ui-bits";
 import { useStore, actions } from "@/lib/store";
@@ -13,8 +14,7 @@ export const Route = createFileRoute("/calendar")({
       { title: "Free Food & Deals Calendar — Studeats" },
       {
         name: "description",
-        content:
-          "Interactive calendar of BYU campus free food events and weekly Utah County student deals with one-click Google Calendar sync.",
+        content: "Browse listed food events by date and add an event to your calendar.",
       },
       { property: "og:title", content: "Free Food & Deals Calendar — Studeats" },
       {
@@ -32,7 +32,7 @@ export function Calendar() {
   today.setHours(0, 0, 0, 0);
 
   const [currentMonth, setCurrentMonth] = useState(
-    new Date(today.getFullYear(), today.getMonth(), 1)
+    new Date(today.getFullYear(), today.getMonth(), 1),
   );
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [openEvent, setOpenEvent] = useState<NormalizedFoodEvent | null>(null);
@@ -42,21 +42,28 @@ export function Calendar() {
   const [mobileTab, setMobileTab] = useState<"grid" | "agenda">("agenda");
 
   // Live Supabase query
-  const { data: foodEvents = [], isLoading } = useFoodEventsQuery();
+  const {
+    data: foodEvents = [],
+    isPending,
+    isLoading: initialFetchLoading,
+    isError,
+    refetch,
+  } = useFoodEventsQuery();
+  const isLoading = isPending ?? initialFetchLoading;
 
   // Calendar calculations
   const firstDayIndex = currentMonth.getDay();
   const daysInMonth = new Date(
     currentMonth.getFullYear(),
     currentMonth.getMonth() + 1,
-    0
+    0,
   ).getDate();
 
   const calendarDays = [
     ...Array(firstDayIndex).fill(null),
     ...Array.from(
       { length: daysInMonth },
-      (_, i) => new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i + 1)
+      (_, i) => new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i + 1),
     ),
   ];
 
@@ -67,20 +74,14 @@ export function Calendar() {
 
   // Selected day items
   const dayFoodEvents = getEventsForDay(selectedDate);
-  const dayRecurringSpecials = showRecurringDeals
-    ? getRecurringSpecialsForDate(selectedDate)
-    : [];
+  const dayRecurringSpecials = showRecurringDeals ? getRecurringSpecialsForDate(selectedDate) : [];
 
   const handlePrevMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
-    );
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
 
   const handleNextMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
-    );
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
   const handleTodayJump = () => {
@@ -128,9 +129,7 @@ export function Calendar() {
           >
             <span>🏷️</span>
             <span>Recurring Specials:</span>
-            <span className="font-bold underline">
-              {showRecurringDeals ? "ON" : "OFF"}
-            </span>
+            <span className="font-bold underline">{showRecurringDeals ? "ON" : "OFF"}</span>
           </button>
 
           <button
@@ -181,7 +180,10 @@ export function Calendar() {
             <Btn variant="soft" onClick={handlePrevMonth} aria-label="Previous month">
               ←
             </Btn>
-            <h2 className="text-center text-base font-bold tracking-tight sm:text-xl" aria-live="polite">
+            <h2
+              className="text-center text-base font-bold tracking-tight sm:text-xl"
+              aria-live="polite"
+            >
               {currentMonth.toLocaleDateString(undefined, {
                 month: "long",
                 year: "numeric",
@@ -221,7 +223,7 @@ export function Calendar() {
               return (
                 <button
                   key={date.toISOString()}
-                  aria-label={`${date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}: ${events.length} food events, ${specials.length} specials`}
+                  aria-label={`${date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}: ${eventCountLabel(events.length, isLoading, isError)}, ${specials.length} specials`}
                   aria-pressed={isSelected}
                   onClick={() => {
                     setSelectedDate(date);
@@ -235,16 +237,22 @@ export function Calendar() {
                 >
                   <span
                     className={`text-xs font-bold ${
-                      isToday && !isSelected
-                        ? "rounded-full bg-accent/20 px-1 text-accent"
-                        : ""
+                      isToday && !isSelected ? "rounded-full bg-accent/20 px-1 text-accent" : ""
                     }`}
                   >
                     {date.getDate()}
                   </span>
 
                   {/* Badges for food events */}
-                  <span className="mt-1 text-[10px] sm:hidden" aria-hidden="true">{events.length + specials.length > 0 ? events.length + specials.length : ""}</span>
+                  <span className="mt-1 text-[10px] sm:hidden" aria-hidden="true">
+                    {isLoading
+                      ? "…"
+                      : isError
+                        ? "!"
+                        : events.length + specials.length > 0
+                          ? events.length + specials.length
+                          : ""}
+                  </span>
                   <div className="mt-1 hidden w-full space-y-0.5 overflow-hidden sm:block">
                     {events.slice(0, 2).map((ev) => (
                       <span
@@ -292,7 +300,9 @@ export function Calendar() {
               );
             })}
           </div>
-          <p className="mt-3 text-xs text-muted-foreground sm:hidden">Numbers show events and specials. Tap a date for its agenda.</p>
+          <p className="mt-3 text-xs text-muted-foreground sm:hidden">
+            Numbers show events and specials. Tap a date for its agenda.
+          </p>
         </div>
 
         {/* Right Column: Selected Day Agenda & Calendar Sync (Option 1) */}
@@ -323,19 +333,31 @@ export function Calendar() {
 
           <div className="mt-4 space-y-4">
             {isLoading && (
-              <p className="text-xs text-muted-foreground animate-pulse">
-                Loading campus events...
-              </p>
+              <p className="text-xs text-muted-foreground animate-pulse">Loading food events…</p>
+            )}
+
+            {isError && (
+              <div role="alert" className="rounded-xl bg-secondary p-4">
+                <p className="text-sm">
+                  Food events couldn’t load. Check your connection and try again.
+                </p>
+                <Btn variant="soft" className="mt-2" onClick={() => void refetch()}>
+                  Try again
+                </Btn>
+              </div>
             )}
 
             {!isLoading &&
+              !isError &&
               dayFoodEvents.length === 0 &&
               dayRecurringSpecials.length === 0 && (
                 <div className="py-8 text-center text-muted-foreground">
                   <div className="text-2xl">🍃</div>
-                  <p className="mt-2 text-sm font-medium">No events or specials scheduled for this day.</p>
+                  <p className="mt-2 text-sm font-medium">
+                    No events or specials are listed for this day.
+                  </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Click another day on the calendar or toggle Recurring Specials on.
+                    Choose another date or turn on Recurring Specials.
                   </p>
                 </div>
               )}
@@ -380,11 +402,10 @@ export function Calendar() {
                   >
                     {ev.title}
                   </h3>
-                  <p className="mt-0.5 text-xs font-medium text-foreground">
-                    🍕 {ev.food}
-                  </p>
+                  <p className="mt-0.5 text-xs font-medium text-foreground">🍕 {ev.food}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    📍 {ev.building}{ev.room ? `, ${ev.room}` : ""} · {ev.host}
+                    📍 {ev.building}
+                    {ev.room ? ` · ${roomLabel(ev.room)}` : ""} · {ev.host}
                   </p>
 
                   {/* One-Click Google Calendar & .ics Actions (Question 1 Answer: Option 1) */}
@@ -395,7 +416,7 @@ export function Calendar() {
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold ring-1 ring-border hover:bg-primary hover:text-primary-foreground transition-colors"
                     >
-                      <span>📅</span> Add to Google Cal
+                      <span>📅</span> Add to Google Calendar
                     </a>
                     <button
                       onClick={() =>
@@ -412,7 +433,7 @@ export function Calendar() {
                       }
                       className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium ring-1 ring-border hover:bg-glass transition-colors"
                     >
-                      <span>📥</span> .ics
+                      <span>📥</span> Download calendar file
                     </button>
                     <button
                       onClick={() => setOpenEvent(ev)}
@@ -440,12 +461,8 @@ export function Calendar() {
                   </span>
                 </div>
 
-                <h3 className="mt-2 font-semibold text-base leading-snug">
-                  {sp.title}
-                </h3>
-                <p className="mt-0.5 text-xs font-bold text-accent">
-                  {sp.dealValue}
-                </p>
+                <h3 className="mt-2 font-semibold text-base leading-snug">{sp.title}</h3>
+                <p className="mt-0.5 text-xs font-bold text-accent">{sp.dealValue}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   🏢 {sp.company} · {sp.location}
                 </p>

@@ -1,4 +1,12 @@
 Read Me
+# Student copy (P28)
+
+- Counts distinguish loading, failed reads, and successful empty results on Discounts, Free Food, and Calendar. Retry actions remain visible.
+- Account/profile/help copy explains actual profile benefits and browser-local saved items; guest/member account labels match their destinations.
+- Room labels are consistent across Home, Calendar, List, Map, popups, and details. Missing organizer, food, and location fields are described as missing.
+- Unsupported verified/daily/lifetime/sync claims and generic business taglines are replaced with factual guidance. Offer eligibility/source terms and the AI automation remain intact.
+- Proposed wording, evidence, ownership boundaries, and Product Owner/new-tester acceptance checklist: [copy inventory](docs/student-copy-review.md).
+
 # Footer destinations (P34)
 
 - Shared footer links open `/about`, `/contact`, `/privacy`, and `/terms` without sign-in. Each page supports direct loads and links back home.

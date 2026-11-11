@@ -44,7 +44,7 @@ const activePill = {
 };
 
 export function SiteHeader() {
-  const { user } = useStore();
+  const { user, authReady } = useStore();
   const [q, setQ] = useState("");
   const [menu, setMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -165,7 +165,7 @@ export function SiteHeader() {
               </div>
             )}
           </div>
-          {!user && (
+          {authReady && !user && (
             <Link
               to="/signin"
               className="hidden rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border hover:bg-glass sm:inline-flex"
@@ -173,19 +173,29 @@ export function SiteHeader() {
               Sign in
             </Link>
           )}
-          <Link
-            to={user ? "/profile" : "/account"}
-            aria-label="Profile"
-            className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full bg-secondary font-display font-semibold text-primary ring-1 ring-border"
-          >
-            {user?.avatar ? (
-              <img src={user.avatar} alt="" className="size-full object-cover" />
-            ) : user ? (
-              user.name[0]?.toUpperCase()
-            ) : (
-              "👤"
-            )}
-          </Link>
+          {authReady ? (
+            <Link
+              to={user ? "/profile" : "/account"}
+              aria-label={user ? "Profile" : "Create account"}
+              className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full bg-secondary font-display font-semibold text-primary ring-1 ring-border"
+            >
+              {user?.avatar ? (
+                <img src={user.avatar} alt="" className="size-full object-cover" />
+              ) : user ? (
+                user.name[0]?.toUpperCase()
+              ) : (
+                "👤"
+              )}
+            </Link>
+          ) : (
+            <span
+              role="status"
+              aria-label="Checking your account"
+              className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary text-primary ring-1 ring-border"
+            >
+              <span aria-hidden="true">👤</span>
+            </span>
+          )}
           <button
             onClick={() => {
               setMenu(!menu);

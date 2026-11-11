@@ -1,3 +1,4 @@
+import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { BadgePercent, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Clock3, CreditCard, List, MapPin, Search, SlidersHorizontal, Sparkles, Utensils, X } from "lucide-react";
@@ -157,8 +158,8 @@ function MapPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Explore nearby" title="Find something worth the walk">
-        <p className="max-w-xl text-sm text-muted-foreground">Student deals, free food, and campus events—mapped in one place.</p>
+      <PageHeader eyebrow="Explore nearby" title="Find deals and food nearby">
+        <p className="max-w-xl text-sm text-muted-foreground">Choose a pin for offer details or an event’s time and location.</p>
       </PageHeader>
       <div className="mt-4 inline-flex rounded-2xl bg-secondary p-1 shadow-inner" role="tablist" aria-label="Map view">
         <button type="button" role="tab" aria-selected={view === "area"} onClick={() => changeView("area")}
@@ -175,7 +176,7 @@ function MapPage() {
             ))}
             <button type="button" onClick={() => setShowMapOptions((open) => !open)} aria-expanded={showMapOptions} className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-background px-3 py-2 text-xs font-semibold"><SlidersHorizontal className="size-3.5" />Filters<ChevronDown className={`size-3 transition-transform ${showMapOptions ? "rotate-180" : ""}`} /></button>
           </div>
-          <p className="text-xs text-muted-foreground"><strong className="text-foreground">{matchingPlaces.length} places</strong> on this map · {offers.length} offers available</p>
+          <p className="text-xs text-muted-foreground"><strong className="text-foreground">{matchingPlaces.length} places</strong> on this map · {offers.length} card offers listed</p>
           {showMapOptions && <div className="space-y-3 border-t border-border pt-3">
             <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground" aria-label="Map pin legend">
               <span className="inline-flex items-center gap-1.5"><span className="grid size-6 place-items-center rounded-full bg-primary text-primary-foreground"><CreditCard className="size-3.5" /></span>Card</span>
@@ -185,7 +186,7 @@ function MapPage() {
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="font-semibold text-muted-foreground">Distance</span>
               {([1, 5, 10, 25, "all"] as const).map((value) => <button key={value} type="button" disabled={!userLocation} onClick={() => setRadius(value)} className={`rounded-full px-3 py-1.5 disabled:opacity-40 ${radius === value ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>{value === "all" ? "Any" : `${value} mi`}</button>)}
-              {!userLocation && <span className="w-full text-muted-foreground">Tap the location control on the map to unlock distance filters.</span>}
+              {!userLocation && <span className="w-full text-muted-foreground">Use the map’s location button to filter by distance.</span>}
             </div>
           </div>}
         </div>
@@ -222,7 +223,7 @@ function MapPage() {
           <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-[#224f75]/15 pt-3">
             <label className="inline-flex items-center gap-2 text-xs font-semibold text-[#082e4f]"><input type="checkbox" checked={showInactiveBuildings} onChange={(event) => setShowInactiveBuildings(event.target.checked)} className="size-4 accent-[#082e4f]" />Show all campus buildings</label>
             {nextCampusEvent && <button type="button" onClick={() => { const place = buildings.find((building) => building.events.some((event) => event.id === nextCampusEvent.id)); if (place) { setSelected(place); setFocusPlaceId(place.id); } }} className="ml-auto rounded-xl bg-[#fff3cf] px-3 py-2 text-left text-xs text-[#082e4f] ring-1 ring-[#d99516]/30">
-              <strong>{eventCountdown(nextCampusEvent)}:</strong> {nextCampusEvent.food} at {nextCampusEvent.building}{nextCampusEvent.room ? ` · ${nextCampusEvent.room}` : ""}
+              <strong>{eventCountdown(nextCampusEvent)}:</strong> {nextCampusEvent.food} at {nextCampusEvent.building}{nextCampusEvent.room ? ` · ${roomLabel(nextCampusEvent.room)}` : ""}
             </button>}
             {!nextCampusEvent && <div className="ml-auto flex-1 rounded-2xl bg-white px-4 py-3 text-xs text-[#36566f] shadow-sm sm:flex-none"><strong className="block text-sm text-[#082e4f]">Nothing posted for this day</strong><span>Try another date or add a free-food event.</span> <Link to="/free-food" className="ml-1 font-semibold underline">View events</Link></div>}
           </div>
@@ -293,7 +294,7 @@ function MapPage() {
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${eventStatus(event).className}`}>{eventStatus(event).label}</span>
                     <strong className="mt-1 block text-sm">{event.title}</strong>
                     <span className="block text-xs text-muted-foreground">{event.food} · {event.formattedDate}, {event.formattedTime}</span>
-                    <span className="text-xs text-muted-foreground">{event.building}{event.room ? ` · ${event.room}` : ""}</span>
+                    <span className="text-xs text-muted-foreground">{event.building}{event.room ? ` · ${roomLabel(event.room)}` : ""}</span>
                   </button>
                 ))}
               </div>
@@ -314,8 +315,8 @@ function MapPage() {
                 <p><span className="mr-2 inline-block size-3 rounded-full bg-amber-500" />{view === "campus" ? selectedCampusEvents.length : mappedEvents} free food event{(view === "campus" ? selectedCampusEvents.length : mappedEvents) === 1 ? "" : "s"} at {view === "campus" ? buildings.filter((building) => building.events.length).length : campusEvents.length} campus building{(view === "campus" ? buildings.filter((building) => building.events.length).length : campusEvents.length) === 1 ? "" : "s"}</p>
                 {view === "campus" && <p><span className="mr-2 inline-block size-3 rounded-full border border-primary bg-white" />{campusBuildingRowsForSelection.length} named {selectedCampus?.shortName} buildings in Supabase</p>}
               </div>
-              {events.length > mappedEvents && <p className="mt-5 text-xs text-muted-foreground">{events.length - mappedEvents} upcoming event{events.length - mappedEvents === 1 ? " has" : "s have"} an unverified map location. <Link to="/free-food" className="underline">Browse all events</Link>.</p>}
-              {view === "area" && <p className="mt-5 text-xs text-muted-foreground">Other student discounts will appear as their locations are verified. <Link to="/discounts" className="underline">Browse all discounts</Link>.</p>}
+              {events.length > mappedEvents && <p className="mt-5 text-xs text-muted-foreground">{events.length - mappedEvents} upcoming event{events.length - mappedEvents === 1 ? " has" : "s have"} a location we can’t place on the map. <Link to="/free-food" className="underline">Browse all events</Link>.</p>}
+              {view === "area" && <p className="mt-5 text-xs text-muted-foreground">Discounts need a mapped location to appear here. <Link to="/discounts" className="underline">Browse all discounts</Link>.</p>}
               <h3 className="mt-6 text-sm font-semibold">Locations ({matchingPlaces.length})</h3>
               <div className="mt-2 space-y-2">
                 {matchingPlaces.slice(0, listLimit).map((place) => (
@@ -332,7 +333,7 @@ function MapPage() {
           )}
         </aside>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">Map data © OpenStreetMap contributors. Campus directories come from official university sources; pins identify buildings, not exact rooms. UVU coordinates appear only after verification because its official Concept3D location API is private.</p>
+      <p className="mt-3 text-xs text-muted-foreground">Map data © OpenStreetMap contributors. Campus directories come from official university sources; pins identify buildings, not exact rooms. Some UVU buildings do not have map pins yet. Use the official campus map when a location is missing.</p>
       <SSDetail deal={openOffer} onClose={() => setOpenOffer(null)} />
       <DealDetail deal={openDeal} onClose={() => setOpenDeal(null)} />
       <EventDetail event={openEvent} onClose={() => setOpenEvent(null)} />
