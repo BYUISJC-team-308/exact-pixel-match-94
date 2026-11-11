@@ -10,19 +10,28 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DiscountsRouteImport } from './routes/discounts'
 import { Route as FreeFoodRouteImport } from './routes/free-food'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as MapRouteImport } from './routes/map'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as StarvingStudentRouteImport } from './routes/starving-student'
+import { Route as TermsRouteImport } from './routes/terms'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountRoute = AccountRouteImport.update({
@@ -33,6 +42,11 @@ const AccountRoute = AccountRouteImport.update({
 const CalendarRoute = CalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiscountsRoute = DiscountsRouteImport.update({
@@ -55,6 +69,11 @@ const MapRoute = MapRouteImport.update({
   path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -70,94 +89,127 @@ const StarvingStudentRoute = StarvingStudentRouteImport.update({
   path: '/starving-student',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/calendar': typeof CalendarRoute
+  '/contact': typeof ContactRoute
   '/discounts': typeof DiscountsRoute
   '/free-food': typeof FreeFoodRoute
   '/help': typeof HelpRoute
   '/map': typeof MapRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
   '/starving-student': typeof StarvingStudentRoute
+  '/terms': typeof TermsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/calendar': typeof CalendarRoute
+  '/contact': typeof ContactRoute
   '/discounts': typeof DiscountsRoute
   '/free-food': typeof FreeFoodRoute
   '/help': typeof HelpRoute
   '/map': typeof MapRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
   '/starving-student': typeof StarvingStudentRoute
+  '/terms': typeof TermsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/account': typeof AccountRoute
   '/calendar': typeof CalendarRoute
+  '/contact': typeof ContactRoute
   '/discounts': typeof DiscountsRoute
   '/free-food': typeof FreeFoodRoute
   '/help': typeof HelpRoute
   '/map': typeof MapRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/signin': typeof SigninRoute
   '/starving-student': typeof StarvingStudentRoute
+  '/terms': typeof TermsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/account'
     | '/calendar'
+    | '/contact'
     | '/discounts'
     | '/free-food'
     | '/help'
     | '/map'
+    | '/privacy'
     | '/profile'
     | '/signin'
     | '/starving-student'
+    | '/terms'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/account'
     | '/calendar'
+    | '/contact'
     | '/discounts'
     | '/free-food'
     | '/help'
     | '/map'
+    | '/privacy'
     | '/profile'
     | '/signin'
     | '/starving-student'
+    | '/terms'
   id:
     | '__root__'
     | '/'
+    | '/about'
     | '/account'
     | '/calendar'
+    | '/contact'
     | '/discounts'
     | '/free-food'
     | '/help'
     | '/map'
+    | '/privacy'
     | '/profile'
     | '/signin'
     | '/starving-student'
+    | '/terms'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   AccountRoute: typeof AccountRoute
   CalendarRoute: typeof CalendarRoute
+  ContactRoute: typeof ContactRoute
   DiscountsRoute: typeof DiscountsRoute
   FreeFoodRoute: typeof FreeFoodRoute
   HelpRoute: typeof HelpRoute
   MapRoute: typeof MapRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   SigninRoute: typeof SigninRoute
   StarvingStudentRoute: typeof StarvingStudentRoute
+  TermsRoute: typeof TermsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -167,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account': {
@@ -181,6 +240,13 @@ declare module '@tanstack/react-router' {
       path: '/calendar'
       fullPath: '/calendar'
       preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/discounts': {
@@ -211,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -232,20 +305,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StarvingStudentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   AccountRoute: AccountRoute,
   CalendarRoute: CalendarRoute,
+  ContactRoute: ContactRoute,
   DiscountsRoute: DiscountsRoute,
   FreeFoodRoute: FreeFoodRoute,
   HelpRoute: HelpRoute,
   MapRoute: MapRoute,
+  PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   SigninRoute: SigninRoute,
   StarvingStudentRoute: StarvingStudentRoute,
+  TermsRoute: TermsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

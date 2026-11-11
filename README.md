@@ -1,4 +1,11 @@
 Read Me
+# Footer destinations (P34)
+
+- Shared footer links open `/about`, `/contact`, `/privacy`, and `/terms` without sign-in. Each page supports direct loads and links back home.
+- Contact uses the approved `lotstarr@gmail.com` email and separates private requests from the public GitHub issue tracker. Listing issues use the existing report flow.
+- Privacy describes the current Supabase account/profile behavior, browser-local saves and searches, activity metadata/local backup, location permission, and external services. Terms explain provider eligibility and the limits of personal tracking and map pins.
+- Product Owner factual review is pending before publishing. See [review checklist](docs/footer-review.md). Do not mark P34 accepted until that review and live URL checks are recorded.
+
 # Team OKR dashboard (P07)
 
 - Open Profile → Team OKRs (or Team Analytics while signed out), then sign in with an approved dashboard account.
