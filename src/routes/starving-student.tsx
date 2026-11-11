@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { SSDeal } from "@/lib/data";
 import { getStarvingStudentOffers } from "@/lib/starving-student";
 import { actions, useStore } from "@/lib/store";
@@ -21,6 +22,24 @@ import {
   type CardSearch,
   type SortOption,
 } from "@/lib/card-catalog";
+
+function PunchDots({ total, count }: { total: number; count: number }) {
+  if (total <= 1) return null;
+  return (
+    <div className="flex items-center gap-1" title={`${count} of ${total} punches used`}>
+      {Array.from({ length: total }).map((_, idx) => (
+        <span
+          key={idx}
+          className={`punch-slot size-[18px] text-[9px] font-bold ${
+            idx < count ? "punch-slot-filled" : "punch-slot-empty"
+          }`}
+        >
+          {idx < count ? "✓" : idx + 1}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/starving-student")({
   loader: () => getStarvingStudentOffers(),
@@ -124,9 +143,8 @@ export function CardHub({
   const resultsRef = useRef<HTMLHeadingElement>(null);
   const [open, setOpen] = useState<SSDeal | null>(null);
 
-  // Confirmation state for un-marking a deal or unmarking all
+  // Confirmation state for un-marking a deal
   const [confirmDeal, setConfirmDeal] = useState<SSDeal | null>(null);
-  const [confirmResetAll, setConfirmResetAll] = useState(false);
 
   // Animated deal IDs for punching or unpunching
   const [punchedId, setPunchedId] = useState<string | null>(null);
@@ -301,25 +319,52 @@ export function CardHub({
       return;
     }
 
+    // Mobile haptic vibration feedback
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try {
+        navigator.vibrate([25, 45, 25]);
+      } catch {}
+    }
+
     // Trigger punch animation and punch deal
     setPunchedId(deal.id);
     setTimeout(() => setPunchedId(null), 800);
     actions.toggleUsed(deal.id, deal.totalUses);
+
+    // Toast feedback
+    const nextCount = count + 1;
+    const isNowFullyUsed = !isNoLimit && total !== null && nextCount >= total;
+    if (isNowFullyUsed) {
+      toast.success(`🎉 All punches redeemed at ${deal.company}!`, {
+        description: `${deal.item} is now fully stamped.`,
+      });
+    } else if (total && total > 1) {
+      toast.success(`Punched at ${deal.company}!`, {
+        description: `${deal.item} (${nextCount}/${total} uses stamped).`,
+      });
+    } else {
+      toast.success(`Punched at ${deal.company}!`, {
+        description: `${deal.item} marked as used.`,
+      });
+    }
   };
 
   const handleConfirmReset = () => {
     if (confirmDeal) {
       const dealId = confirmDeal.id;
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try {
+          navigator.vibrate([30]);
+        } catch {}
+      }
       setUnpunchedId(dealId);
       setTimeout(() => setUnpunchedId(null), 800);
       actions.resetUsed(dealId);
+      toast.info(`Reset deal at ${confirmDeal.company}`, {
+        description: `${confirmDeal.item} is ready to punch again.`,
+      });
       setConfirmDeal(null);
     }
-  };
-
-  const handleResetAll = () => {
-    actions.resetAllUsedSS();
-    setConfirmResetAll(false);
   };
 
   return (
@@ -352,41 +397,27 @@ export function CardHub({
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-secondary/80 px-3.5 py-2 ring-1 ring-border text-center">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="min-w-[76px] shrink-0 rounded-xl bg-secondary/80 px-3.5 py-2 ring-1 ring-border text-center">
               <span className="block text-lg font-bold text-primary">{fullyUsedCount}</span>
-              <span className="text-[11px] font-medium text-muted-foreground">Claimed</span>
+              <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">Claimed</span>
             </div>
-            <div className="rounded-xl bg-secondary/80 px-3.5 py-2 ring-1 ring-border text-center">
-              <span className="block text-lg font-bold text-foreground">
-                {totalOffers - fullyUsedCount}
-              </span>
-              <span className="text-[11px] font-medium text-muted-foreground">Available</span>
+            <div className="min-w-[76px] shrink-0 rounded-xl bg-secondary/80 px-3.5 py-2 ring-1 ring-border text-center">
+              <span className="block text-lg font-bold text-foreground">{totalOffers - fullyUsedCount}</span>
+              <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">Available</span>
             </div>
-            <div className="rounded-xl bg-secondary/80 px-3.5 py-2 ring-1 ring-border text-center">
+            <div className="min-w-[76px] shrink-0 rounded-xl bg-secondary/80 px-3.5 py-2 ring-1 ring-border text-center">
               <span className="block text-lg font-bold text-accent">{totalOffers}</span>
-              <span className="text-[11px] font-medium text-muted-foreground">Total Deals</span>
+              <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">Total Deals</span>
             </div>
           </div>
         </div>
 
-        {/* Progress Bar & Testing Reset All Control */}
+        {/* Progress Bar (P30: testing reset-all button removed from public UI) */}
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs font-medium text-muted-foreground mb-1.5">
-            <div className="flex items-center gap-2">
-              <span>Punchcard Completion</span>
-              {totalClaimedPunches > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setConfirmResetAll(true)}
-                  className="rounded-full bg-secondary/90 px-2.5 py-0.5 text-[10px] font-medium text-destructive ring-1 ring-destructive/30 hover:bg-destructive/10 transition-colors"
-                  title="Testing control: reset all saved card punches"
-                >
-                  Reset all used deals
-                </button>
-              )}
-            </div>
-            <span>{totalOffers ? Math.round((fullyUsedCount / totalOffers) * 100) : 0}%</span>
+            <span>Punchcard Completion</span>
+            <span className="font-semibold text-foreground">{totalOffers ? Math.round((fullyUsedCount / totalOffers) * 100) : 0}%</span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-secondary ring-1 ring-border">
             <div
@@ -520,36 +551,6 @@ export function CardHub({
         </Modal>
       )}
 
-      {/* Confirmation Modal when resetting ALL deals */}
-      {confirmResetAll && (
-        <Modal open onClose={() => setConfirmResetAll(false)} title="Reset all used deals?">
-          <span className="grid size-10 place-items-center rounded-xl bg-destructive/10 text-xl text-destructive mb-3">
-            🔄
-          </span>
-          <h3 className="text-lg font-semibold text-foreground">Reset all used deals?</h3>
-          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-            This will clear all redeemed punches across the entire Starving Student Card Hub on this
-            device.
-          </p>
-          <div className="mt-5 flex items-center justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={() => setConfirmResetAll(false)}
-              className="rounded-full bg-secondary px-4 py-2 text-xs font-semibold ring-1 ring-border hover:bg-muted transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleResetAll}
-              className="rounded-full bg-destructive px-4 py-2 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90 transition-colors shadow-sm"
-            >
-              Yes, reset all
-            </button>
-          </div>
-        </Modal>
-      )}
-
       {/* 2. Deals List / Grid Output */}
       <div className="mt-8">
         <h2
@@ -605,13 +606,15 @@ export function CardHub({
                       <div
                         key={d.id}
                         data-offer-id={d.id}
-                        className={`glass group relative flex flex-col justify-between overflow-hidden p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-float border border-border/70 hover:border-border ${
-                          isFullyUsed ? "bg-muted/40 opacity-70" : ""
+                        className={`glass group relative flex flex-col justify-between overflow-hidden p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-float border ${
+                          isFullyUsed
+                            ? "bg-card/90 border-primary/30 shadow-xs"
+                            : "border-border/70 hover:border-border"
                         } ${isPunched ? "is-punched-card ring-2 ring-primary" : ""} ${isUnpunched ? "is-unpunched-card" : ""}`}
                       >
                         <div>
-                          {/* Top Bar: Value / Badge */}
-                          <div className="flex items-center justify-between gap-2">
+                          {/* Top Bar: Value / Badge / Punch Slots */}
+                          <div className="flex flex-wrap items-center justify-between gap-2">
                             <span
                               className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
                                 d.type === "Free"
@@ -622,22 +625,22 @@ export function CardHub({
                               {d.value}
                             </span>
 
-                            {isNoLimit ? (
+                            {isFullyUsed ? (
+                              <span className="stamp-badge">
+                                ✓ REDEEMED
+                              </span>
+                            ) : isNoLimit ? (
                               <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
                                 Unlimited
                               </span>
                             ) : total && total > 1 ? (
-                              <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
-                                {count > 0 ? `${count}/${total} Uses` : `${total} Uses`}
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <PunchDots total={total} count={count} />
+                                <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
+                                  {count > 0 ? `${count}/${total}` : `${total} Uses`}
+                                </span>
+                              </div>
                             ) : null}
-
-                            {isFullyUsed && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary animate-punch">
-                                <span>✓</span>
-                                <span>REDEEMED</span>
-                              </span>
-                            )}
                           </div>
 
                           {/* Company Logo + Name Header */}
@@ -661,9 +664,7 @@ export function CardHub({
                             </div>
 
                             {/* Offer Item Title */}
-                            <h4
-                              className={`mt-3 text-sm font-semibold leading-snug line-clamp-2 ${isFullyUsed ? "line-through text-muted-foreground" : "text-foreground/90"}`}
-                            >
+                            <h4 className="mt-3 text-sm font-semibold leading-snug line-clamp-2 text-foreground/90">
                               {d.item}
                             </h4>
 
@@ -701,13 +702,9 @@ export function CardHub({
                             ) : isNoLimit ? (
                               <span>{count > 0 ? `Record Use (${count} used)` : "Record Use"}</span>
                             ) : count > 0 ? (
-                              <span>
-                                {total && total > 1 ? `Mark Used (${count}/${total})` : "Mark Used"}
-                              </span>
+                              <span>{total && total > 1 ? `Punch #${count + 1} (${count}/${total})` : "Mark Used"}</span>
                             ) : (
-                              <span>
-                                {total && total > 1 ? `Mark Used (0/${total})` : "Mark Used"}
-                              </span>
+                              <span>{total && total > 1 ? `Punch (0/${total})` : "Mark Used"}</span>
                             )}
                           </button>
                         </div>
@@ -731,9 +728,7 @@ export function CardHub({
                         key={d.id}
                         data-offer-id={d.id}
                         className={`glass group relative flex flex-wrap items-center gap-3 p-4 sm:flex-nowrap sm:gap-4 transition-all duration-300 ${
-                          isFullyUsed
-                            ? "bg-muted/40 opacity-70"
-                            : "hover:-translate-y-0.5 hover:shadow-sm"
+                          isFullyUsed ? "bg-card/90 ring-1 ring-primary/20 shadow-xs" : "hover:-translate-y-0.5 hover:shadow-sm"
                         } ${isPunched ? "is-punched-card ring-2 ring-primary" : ""} ${isUnpunched ? "is-unpunched-card" : ""}`}
                       >
                         {/* Value Badge */}
@@ -752,30 +747,27 @@ export function CardHub({
                           aria-label={`View details for ${d.item} at ${d.company}`}
                         >
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3
-                              className={`text-base font-semibold sm:text-lg transition-colors ${isFullyUsed ? "line-through text-muted-foreground" : "text-foreground group-hover:text-primary"}`}
-                            >
+                            <h3 className="text-base font-semibold sm:text-lg text-foreground group-hover:text-primary transition-colors">
                               {d.item}
                             </h3>
 
-                            {/* Multi-use badge: shows count on card badge ONLY */}
-                            {isNoLimit ? (
+                            {/* Multi-use punch dots & badge */}
+                            {isFullyUsed ? (
+                              <span className="stamp-badge">
+                                ✓ REDEEMED
+                              </span>
+                            ) : isNoLimit ? (
                               <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
                                 Unlimited
                               </span>
                             ) : total && total > 1 ? (
-                              <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
-                                {count > 0 ? `${count}/${total} Uses` : `${total} Uses`}
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <PunchDots total={total} count={count} />
+                                <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
+                                  {count > 0 ? `${count}/${total} Uses` : `${total} Uses`}
+                                </span>
+                              </div>
                             ) : null}
-
-                            {/* Stamped punch badge if fully used */}
-                            {isFullyUsed && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary animate-punch">
-                                <span>✓</span>
-                                <span>REDEEMED</span>
-                              </span>
-                            )}
                           </div>
 
                           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
@@ -812,13 +804,9 @@ export function CardHub({
                             ) : isNoLimit ? (
                               <span>{count > 0 ? `Record Use (${count} used)` : "Record Use"}</span>
                             ) : count > 0 ? (
-                              <span>
-                                {total && total > 1 ? `Mark Used (${count}/${total})` : "Mark Used"}
-                              </span>
+                              <span>{total && total > 1 ? `Punch #${count + 1} (${count}/${total})` : "Mark Used"}</span>
                             ) : (
-                              <span>
-                                {total && total > 1 ? `Mark Used (0/${total})` : "Mark Used"}
-                              </span>
+                              <span>{total && total > 1 ? `Punch (0/${total})` : "Mark Used"}</span>
                             )}
                           </button>
                         </div>

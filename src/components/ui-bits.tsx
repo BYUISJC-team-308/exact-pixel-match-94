@@ -2,6 +2,7 @@ import { roomLabel } from "@/lib/student-copy";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 import type { Deal, FoodEvent, SSDeal } from "@/lib/data";
 import { eventDate } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
@@ -467,12 +468,40 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
     if (isFullyUsed) {
       setShowConfirm(true);
     } else {
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        try {
+          navigator.vibrate([25, 45, 25]);
+        } catch {}
+      }
       actions.toggleUsed(deal.id, deal.totalUses);
+      const nextCount = count + 1;
+      const isNowFull = !isNoLimit && total !== null && nextCount >= total;
+      if (isNowFull) {
+        toast.success(`🎉 All punches redeemed at ${deal.company}!`, {
+          description: `${deal.item} is now fully stamped.`,
+        });
+      } else if (total && total > 1) {
+        toast.success(`Punched at ${deal.company}!`, {
+          description: `${deal.item} (${nextCount}/${total} stamped).`,
+        });
+      } else {
+        toast.success(`Punched at ${deal.company}!`, {
+          description: `${deal.item} marked as used.`,
+        });
+      }
     }
   };
 
   const confirmReset = () => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try {
+        navigator.vibrate([30]);
+      } catch {}
+    }
     actions.resetUsed(deal.id);
+    toast.info(`Reset ${deal.company}`, {
+      description: `${deal.item} is now available to punch again.`,
+    });
     setShowConfirm(false);
   };
 
@@ -494,8 +523,8 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
       {/* Prominent Punchcard Status Banner in Modal */}
       <div className="mt-4 rounded-xl bg-secondary/80 p-3.5 ring-1 ring-border">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-base">{isFullyUsed ? "???" : "??"}</span>
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">{isFullyUsed ? "🎉" : "💳"}</span>
             <div>
               <p className="text-xs font-semibold">
                 {isNoLimit
@@ -510,11 +539,28 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
             </div>
           </div>
           {isFullyUsed && (
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
-              ✓ Redeemed
+            <span className="stamp-badge">
+              ✓ REDEEMED
             </span>
           )}
         </div>
+
+        {total && total > 1 && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 pt-2.5 border-t border-border/50">
+            <span className="text-[11px] font-semibold text-muted-foreground mr-1">Punches:</span>
+            {Array.from({ length: total }).map((_, idx) => (
+              <span
+                key={idx}
+                className={`punch-slot size-7 text-xs font-bold ${
+                  idx < count ? "punch-slot-filled" : "punch-slot-empty"
+                }`}
+                title={`Punch #${idx + 1}: ${idx < count ? "Claimed" : "Available"}`}
+              >
+                {idx < count ? "✓" : idx + 1}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {deal.details && <p className="mt-3 text-sm text-muted-foreground">{deal.details}</p>}

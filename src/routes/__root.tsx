@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -92,6 +93,7 @@ function RootComponent() {
         <div className="relative">
           <SiteHeader />
           <main id="main-content" className="app-main mx-auto w-full min-w-0 max-w-7xl"><Outlet /></main>
+          <Toaster richColors position="bottom-right" />
           <SiteFooter />
         </div>
       </div>
