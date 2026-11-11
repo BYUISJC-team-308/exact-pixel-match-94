@@ -36,8 +36,8 @@ function Help() {
           <h2 className="text-xl font-semibold">Starving Student Card</h2>
           <p className="mt-2 text-sm leading-relaxed">
             Browse cardholder offers and track your personal use. An active card may be required.
-            Confirm terms in the official card portal; our tracker does not redeem an offer with a
-            merchant.
+            Some card offers require a purchase. Confirm terms in the official card portal; our
+            tracker does not redeem an offer with a merchant.
           </p>
           <Link
             to="/starving-student"
@@ -72,6 +72,19 @@ function Help() {
           >
             Go to My Hub →
           </a>
+        </section>
+        <section className="rounded-2xl border border-border bg-white/60 p-5">
+          <h2 className="text-xl font-semibold">What an account does</h2>
+          <p className="mt-2 text-sm leading-relaxed">
+            Create an account to keep your name, school, and optional profile photo. Signing in does
+            not yet sync saved discounts, events, or card-use tracking between browsers.
+          </p>
+          <Link
+            to="/account"
+            className="mt-2 inline-flex min-h-11 items-center rounded text-sm font-semibold text-primary underline focus-visible:outline-2"
+          >
+            Create account →
+          </Link>
         </section>
       </div>
     </div>

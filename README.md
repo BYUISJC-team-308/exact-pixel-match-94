@@ -1,4 +1,16 @@
+## Hydration and campus date rendering (P32)
+
+Calendar and Map loaders serialize a render instant so SSR and initial browser markup match. Browser time is read after hydration; event dates/times use America/Denver and displayed labels use en-US. Keep browser-local/auth state behind the existing external-store server snapshot. Never suppress hydration warnings to hide a divergent first render. See [hydration regression evidence](docs/hydration-review.md) and `src/test/hydration.test.tsx` for the locale, midnight, event-boundary, and restored-state checks.
+
 Read Me
+# Student copy (P28)
+
+- Counts distinguish loading, failed reads, and successful empty results on Discounts, Free Food, and Calendar. Retry actions remain visible.
+- Account/profile/help copy explains actual profile benefits and browser-local saved items; guest/member account labels match their destinations.
+- Room labels are consistent across Home, Calendar, List, Map, popups, and details. Missing organizer, food, and location fields are described as missing.
+- Unsupported verified/daily/lifetime/sync claims and generic business taglines are replaced with factual guidance. Offer eligibility/source terms and the AI automation remain intact.
+- Proposed wording, evidence, ownership boundaries, and Product Owner/new-tester acceptance checklist: [copy inventory](docs/student-copy-review.md).
+
 # Full card catalog performance (P33)
 
 - Card Hub keeps the entire catalog available to search, type/category/status filters, and sorting, but mounts 24 offers per page in list and grid views. Category counts describe all matches, and the range/page controls make remaining offers reachable.

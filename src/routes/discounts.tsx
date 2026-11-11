@@ -1,24 +1,52 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import type { Deal } from "@/lib/data";
+import type { Deal, DealCategory } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
-import { DealDetail, FilterChips, PageHeader, SearchInput, chipTone, Btn, CompanyLogo } from "@/components/ui-bits";
+import {
+  DealDetail,
+  FilterChips,
+  PageHeader,
+  SearchInput,
+  chipTone,
+  Btn,
+  CompanyLogo,
+} from "@/components/ui-bits";
 import { useDealsQuery, getDealScore } from "@/lib/deals";
-import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 export const Route = createFileRoute("/discounts")({
   head: () => ({
     meta: [
       { title: "Discount Dashboard — Studeats" },
-      { name: "description", content: "Browse, search, filter and save student discounts on food, tech, AI tools and subscriptions." },
+      {
+        name: "description",
+        content:
+          "Browse, search, filter and save student discounts on food, tech, AI tools and subscriptions.",
+      },
       { property: "og:title", content: "Discount Dashboard — Studeats" },
-      { property: "og:description", content: "Every student discount, sortable and saveable." },
+      {
+        property: "og:description",
+        content: "Browse listed student discounts and check provider requirements.",
+      },
     ],
   }),
   component: Discounts,
 });
 
-const cats = ["All", "New", "Saved", "Apparel", "Tech", "Fitness", "Food", "AI", "Subscription", "Groceries", "Travel", "Free", "Percent off"] as const;
+const cats = [
+  "All",
+  "New",
+  "Saved",
+  "Apparel",
+  "Tech",
+  "Fitness",
+  "Food",
+  "AI",
+  "Subscription",
+  "Groceries",
+  "Travel",
+  "Free",
+  "Percent off",
+] as const;
 type Cat = (typeof cats)[number];
 
 function Discounts() {
@@ -28,7 +56,14 @@ function Discounts() {
   const [sort, setSort] = useState<"best" | "company">("best");
   const [open, setOpen] = useState<Deal | null>(null);
 
-  const { data: deals = [], isLoading, isError, refetch } = useDealsQuery();
+  const {
+    data: deals = [],
+    isPending,
+    isLoading: initialFetchLoading,
+    isError,
+    refetch,
+  } = useDealsQuery();
+  const isLoading = isPending ?? initialFetchLoading;
 
   const t = q.toLowerCase();
   let list = deals.filter((d) => {
@@ -36,21 +71,33 @@ function Discounts() {
     if (cat === "Saved" && !savedDeals.includes(d.id)) return false;
     if ((cat === "Free" || cat === "Percent off") && d.type !== cat) return false;
     if (!["All", "New", "Saved", "Free", "Percent off"].includes(cat)) {
-      const match = d.category === cat || (d.categories && d.categories.includes(cat as any));
+      const match =
+        d.category === cat || (d.categories && d.categories.includes(cat as DealCategory));
       if (!match) return false;
     }
     const catStr = d.categories ? d.categories.join(" ") : d.category;
     return !t || (d.title + d.company + d.description + catStr).toLowerCase().includes(t);
   });
   if (sort === "best") {
-    list = [...list].sort((a, b) => getDealScore(b) - getDealScore(a) || a.company.localeCompare(b.company));
+    list = [...list].sort(
+      (a, b) => getDealScore(b) - getDealScore(a) || a.company.localeCompare(b.company),
+    );
   } else if (sort === "company") {
     list = [...list].sort((a, b) => a.company.localeCompare(b.company));
   }
 
   return (
     <>
-      <PageHeader eyebrow={`${deals.length} verified student discounts`} title="Discount Dashboard">
+      <PageHeader
+        eyebrow={
+          isLoading
+            ? "Loading discounts…"
+            : isError
+              ? "Discounts couldn’t load"
+              : `${deals.length} student discounts`
+        }
+        title="Discount Dashboard"
+      >
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput value={q} onChange={setQ} placeholder="Search company, deal, category" />
           <select
@@ -90,9 +137,13 @@ function Discounts() {
       )}
 
       {isError && (
-        <div className="glass mt-8 p-8 text-center">
-          <p className="font-semibold text-destructive">Could not load discounts from database.</p>
-          <Btn variant="soft" onClick={() => refetch()} className="mt-4">Try again</Btn>
+        <div role="alert" className="glass mt-8 p-8 text-center">
+          <p className="font-semibold text-destructive">
+            Discounts couldn’t load. Check your connection and try again.
+          </p>
+          <Btn variant="soft" onClick={() => refetch()} className="mt-4">
+            Try again
+          </Btn>
         </div>
       )}
 
@@ -109,11 +160,16 @@ function Discounts() {
                   {/* Top Bar: Category Pills & Save Star */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      {(d.categories && d.categories.length > 0 ? d.categories : [d.category]).map((cName, cIdx) => (
-                        <span key={cName} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(cIdx)}`}>
-                          {cName}
-                        </span>
-                      ))}
+                      {(d.categories && d.categories.length > 0 ? d.categories : [d.category]).map(
+                        (cName, cIdx) => (
+                          <span
+                            key={cName}
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chipTone(cIdx)}`}
+                          >
+                            {cName}
+                          </span>
+                        ),
+                      )}
                       {d.isNew && (
                         <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                           New
@@ -135,7 +191,10 @@ function Discounts() {
                   </div>
 
                   {/* Main Card Content */}
-                  <button onClick={() => setOpen(d)} className="mt-3.5 block w-full text-left focus:outline-none">
+                  <button
+                    onClick={() => setOpen(d)}
+                    className="mt-3.5 block w-full text-left focus:outline-none"
+                  >
                     {/* 1. Company Name & Logo at the Top */}
                     <div className="flex items-center gap-3">
                       <CompanyLogo company={d.company} url={d.url} size={44} />
@@ -144,7 +203,7 @@ function Discounts() {
                           {d.company}
                         </h3>
                         <p className="text-xs text-muted-foreground truncate font-medium">
-                          {getCompanyCatalogEntry(d.company)?.tagline || `${d.category} · Verified Discount`}
+                          {d.category} · Check provider terms
                         </p>
                       </div>
                     </div>
@@ -190,18 +249,25 @@ function Discounts() {
             <div className="col-span-full glass p-10 text-center">
               <div className="text-3xl">🏷️</div>
               <h4 className="mt-3 text-lg font-semibold">
-                {q ? "No matching discounts found" : cat === "Saved" ? "No saved discounts yet" : "No discounts in this category yet"}
+                {q
+                  ? "No matching discounts found"
+                  : cat === "Saved"
+                    ? "No saved discounts yet"
+                    : "No discounts in this category yet"}
               </h4>
               <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-                {q 
-                  ? `We couldn't find any student perks matching "${q}". Try another search term or clear the filter.`
+                {q
+                  ? `No discounts match "${q}". Try a different search or clear the filters.`
                   : cat === "Saved"
-                  ? "Tap the star icon on any deal card to save your favorite student discounts here for quick access."
-                  : "Check back soon! Our automated scraper scans ID.me, tech platforms, and Provo campus favorites every morning."}
+                    ? "Tap a discount’s star to save it here on this browser."
+                    : "No discounts are listed here right now. Try another category or check the provider directly."}
               </p>
               {(q || cat !== "All") && (
                 <button
-                  onClick={() => { setQ(""); setCat("All"); }}
+                  onClick={() => {
+                    setQ("");
+                    setCat("All");
+                  }}
                   className="mt-4 inline-flex items-center rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20"
                 >
                   Reset filters

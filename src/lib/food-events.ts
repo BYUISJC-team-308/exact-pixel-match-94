@@ -1,3 +1,4 @@
+import { campusDateTime, campusCalendarDate, DISPLAY_LOCALE } from "@/lib/campus-time";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/lib/supabase";
@@ -36,10 +37,7 @@ export type NormalizedFoodEvent = FoodEvent & {
 };
 
 export function getLocalDateString(d = new Date()): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return campusDateTime(d).date;
 }
 
 // Detect BYU campus buildings vs off-campus Utah County venues
@@ -80,16 +78,16 @@ function formatTimeString(timeStr: string): string {
   return timeStr;
 }
 
-export function normalizeFoodEvent(row: DbFoodEvent): NormalizedFoodEvent {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+export function normalizeFoodEvent(row: DbFoodEvent, now = new Date()): NormalizedFoodEvent {
+  const today = campusCalendarDate(now);
 
   // Parse YYYY-MM-DD into a localized Date object
   const [year, month, day] = (row.event_date || "").split("-").map(Number);
-  const eventDateObj = year && month && day ? new Date(year, month - 1, day) : new Date();
+  const eventDateObj = year && month && day ? new Date(year, month - 1, day) : campusCalendarDate(now);
   eventDateObj.setHours(0, 0, 0, 0);
 
-  const diffTime = eventDateObj.getTime() - today.getTime();
+  const dayNumber = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffTime = dayNumber(eventDateObj) - dayNumber(today);
   const dayOffset = Math.round(diffTime / (1000 * 60 * 60 * 24));
   const isToday = dayOffset === 0;
   const isThisWeek = dayOffset >= 0 && dayOffset < 7;
@@ -101,12 +99,12 @@ export function normalizeFoodEvent(row: DbFoodEvent): NormalizedFoodEvent {
   return {
     id: row.id,
     title: row.title || "Free Food Event",
-    host: row.host || "Campus Host",
-    food: row.food || "Free Food",
+    host: row.host || "Organizer not provided",
+    food: row.food || "Food not specified",
     dayOffset,
     start: startFormatted || row.start_time || "12:00",
     end: endFormatted || row.end_time || "13:00",
-    building: row.building || "Campus",
+    building: row.building || "Location not provided",
     buildingId: row.building_id || undefined,
     room: row.room || "",
     details: row.details || "No extra details provided.",
@@ -120,7 +118,7 @@ export function normalizeFoodEvent(row: DbFoodEvent): NormalizedFoodEvent {
     isToday,
     isThisWeek,
     category,
-    formattedDate: eventDateObj.toLocaleDateString(undefined, {
+    formattedDate: eventDateObj.toLocaleDateString(DISPLAY_LOCALE, {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -140,7 +138,7 @@ export async function fetchFoodEvents(): Promise<NormalizedFoodEvent[]> {
     throw error;
   }
 
-  return (data || []).map(normalizeFoodEvent);
+  return (data || []).map((row) => normalizeFoodEvent(row));
 }
 
 export const getMapFoodEvents = createServerFn({ method: "GET" }).handler(async (): Promise<DbFoodEvent[]> => {

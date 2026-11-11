@@ -1,3 +1,4 @@
+import { roomLabel } from "@/lib/student-copy";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Link } from "@tanstack/react-router";
@@ -31,7 +32,6 @@ function ReportIssueButton({ itemType, itemId, itemLabel }: Pick<DataIssueInput,
   </>;
 }
 
-import { getCompanyCatalogEntry } from "@/lib/company-catalog";
 
 const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
   // Top tech, developer tools & streaming
@@ -394,9 +394,7 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
           <CompanyLogo company={deal.company} url={deal.url} size={48} />
           <div>
             <h3 className="text-2xl font-bold tracking-tight text-foreground">{deal.company}</h3>
-            {getCompanyCatalogEntry(deal.company)?.tagline && (
-              <p className="text-xs font-medium text-muted-foreground">{getCompanyCatalogEntry(deal.company)?.tagline}</p>
-            )}
+            <p className="text-xs font-medium text-muted-foreground">Check the provider’s eligibility and purchase requirements.</p>
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
               {(deal.categories && deal.categories.length > 0 ? deal.categories : [deal.category]).map((cName, cIdx) => (
                 <span key={cName} className={`rounded-full px-2 py-0.5 text-xs font-semibold ${chipTone(cIdx)}`}>
@@ -441,9 +439,9 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
       <h3 className="mt-3 text-2xl font-semibold">{event.title}</h3>
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <div><dt className="font-semibold">When</dt><dd className="text-muted-foreground">{eventDate(event).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}, {event.start}–{event.end}</dd></div>
-        <div><dt className="font-semibold">Hosted by</dt><dd className="text-muted-foreground">{event.host}</dd></div>
-        <div><dt className="font-semibold">Where</dt><dd className="text-muted-foreground">{event.building}</dd></div>
-        <div><dt className="font-semibold">Room</dt><dd className="text-muted-foreground">{event.room}</dd></div>
+        <div><dt className="font-semibold">Hosted by</dt><dd className="text-muted-foreground">{event.host || "Not provided"}</dd></div>
+        <div><dt className="font-semibold">Where</dt><dd className="text-muted-foreground">{event.building || "Not provided"}</dd></div>
+        <div><dt className="font-semibold">Room</dt><dd className="text-muted-foreground">{roomLabel(event.room) || "Not provided"}</dd></div>
       </dl>
       <p className="mt-4 text-sm text-muted-foreground">{event.details}</p>
       <div className="mt-6 flex flex-wrap gap-2">
@@ -521,7 +519,7 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
 
       {deal.details && <p className="mt-3 text-sm text-muted-foreground">{deal.details}</p>}
       <p className="mt-3 text-sm font-medium">
-        {deal.locations.length ? `Available at ${deal.locations.length} verified ${deal.locations.length === 1 ? "location" : "locations"}` : "Location not confirmed in the catalog"}
+        {deal.locations.length ? `Listed at ${deal.locations.length} ${deal.locations.length === 1 ? "location" : "locations"}` : "Location not confirmed in the catalog"}
       </p>
       <ul className="mt-2 max-h-36 space-y-1 overflow-auto text-sm text-muted-foreground">
         {deal.locations.map((location) => <li key={location.address}>{location.address}</li>)}

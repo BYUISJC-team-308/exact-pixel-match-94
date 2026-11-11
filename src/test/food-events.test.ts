@@ -8,6 +8,21 @@ import {
 import { resolveBuilding, extractRoom } from "../../scripts/scrapers/byu-building-resolver.js";
 
 describe("Food Events Logic & Categorization", () => {
+  it("labels missing listing information instead of inventing a host, food, or campus location", () => {
+    const event = normalizeFoodEvent({
+      id: "missing-copy",
+      title: "Student event",
+      host: "",
+      food: "",
+      building: "",
+      event_date: getLocalDateString(),
+      start_time: "12:30:00",
+      end_time: "13:30:00",
+    });
+    expect(event.host).toBe("Organizer not provided");
+    expect(event.food).toBe("Food not specified");
+    expect(event.building).toBe("Location not provided");
+  });
   it("correctly identifies BYU on-campus buildings", () => {
     expect(detectLocationCategory("TMCB 1170")).toBe("on_campus");
     expect(detectLocationCategory("Wilkinson Student Center")).toBe("on_campus");

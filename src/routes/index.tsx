@@ -1,3 +1,4 @@
+import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
@@ -270,7 +271,7 @@ export function Index() {
                           </p>
                           <p className="mt-1 break-words text-xs text-muted-foreground">
                             {item.building}
-                            {item.room ? ` · Room ${item.room}` : ""}
+                            {item.room ? ` · ${roomLabel(item.room)}` : ""}
                           </p>
                           <span className="mt-2 inline-block text-xs font-semibold text-primary">
                             View event →

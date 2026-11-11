@@ -1,3 +1,4 @@
+import { roomLabel } from "@/lib/student-copy";
 import { useEffect, useRef } from "react";
 import type { MapPlace } from "@/lib/map-places";
 import type { Deal, SSDeal } from "@/lib/data";
@@ -221,7 +222,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
           eventTitle.textContent = event.title;
           const eventMeta = document.createElement("span");
           eventMeta.className = "mt-1 block text-[11px] leading-snug text-muted-foreground";
-          eventMeta.textContent = `${event.food} · ${event.formattedDate}, ${event.formattedTime}${event.room ? ` · Room ${event.room}` : ""} · Open event details →`;
+          eventMeta.textContent = `${event.food} · ${event.formattedDate}, ${event.formattedTime}${event.room ? ` · ${roomLabel(event.room)}` : ""} · Open event details →`;
           eventButton.append(eventLabel, eventTitle, eventMeta);
           eventButton.addEventListener("click", () => onOpenEventRef.current(event));
           appendPreview(eventButton);
