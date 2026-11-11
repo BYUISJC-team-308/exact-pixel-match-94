@@ -35,23 +35,20 @@ export function PrivacyPage() {
         <p>
           You can remove saved items using their save controls and clear recent map searches in the
           map interface. Clearing this site’s browser storage removes browser-local selections,
-          activity backups, and sign-in storage; it does not delete your Supabase account, profile,
-          or records already sent to the database.
+          activity identifiers, and sign-in storage; it does not delete your Supabase account,
+          profile, or records already sent to the database.
         </p>
       </section>
       <section>
         <h2>Activity and project measurements</h2>
         <p>
-          The application records actions such as starting a session, signing up or in, saving an
-          item, and marking a card offer used. Activity includes a browser-generated device
-          identifier, action type, timestamp, related item information, and your account identifier
-          when available. Signup activity can include the username and email entered during
-          registration.
+          The application records account creation and signed-in visits and actions, including
+          saving an item and marking a card offer used. Records can include browser and visit
+          identifiers, action type, time, related item, and your account identifier.
         </p>
         <p>
-          The application keeps a local backup of up to 100 activity records and attempts to send
-          activity to Supabase. The team’s restricted OKR dashboard uses aggregate database
-          measurements. A failed analytics request does not mean that no local activity was stored.
+          Supabase stores these records, and the team’s restricted OKR dashboard shows aggregate
+          measurements. Saving an item and marking an offer used are still browser features.
         </p>
       </section>
       <section>

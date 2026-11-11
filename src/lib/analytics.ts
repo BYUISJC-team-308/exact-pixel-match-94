@@ -1,96 +1,93 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
-export type ActivityEventType =
-  | "session_start"
-  | "signup"
-  | "deal_saved"
-  | "deal_redeemed"
-  | "event_saved"
-  | "return_visit";
+const visitKey = "studeats-activity-visit";
+const deviceKey = "studeats-device-id";
+const visitTimeout = 30 * 60_000;
+const uuid = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
+type Visit = { id: string; lastActivity: number };
+let memoryVisit: Visit | undefined;
+let memoryDevice: string | undefined;
 
-export type ActivityEvent = {
-  id?: string;
-  user_id?: string | null;
-  device_id: string;
-  event_type: ActivityEventType | string;
-  metadata?: Record<string, unknown>;
-  created_at?: string;
-};
+function trackingEnabled() {
+  return typeof window !== "undefined" && window.location.hostname === "studeats.vercel.app";
+}
 
-const LOCAL_STORAGE_KEY = "studeats-activity-logs";
-
-export function getOrCreateDeviceId(): string {
-  if (typeof window === "undefined") return "server-device-id";
-  let id = localStorage.getItem("studeats-device-id");
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem("studeats-device-id", id);
+function visitId() {
+  const now = Date.now();
+  let current = memoryVisit;
+  try {
+    const stored = sessionStorage.getItem(visitKey);
+    if (stored) current = JSON.parse(stored);
+  } catch {
+    // Restricted storage still permits tracking for the current page.
+  }
+  const id =
+    current &&
+    uuid.test(current.id) &&
+    now >= current.lastActivity &&
+    now - current.lastActivity < visitTimeout
+      ? current.id
+      : crypto.randomUUID();
+  memoryVisit = { id, lastActivity: now };
+  try {
+    sessionStorage.setItem(visitKey, JSON.stringify(memoryVisit));
+  } catch {
+    // Use the in-memory visit.
   }
   return id;
 }
 
-// Log an analytics event to Supabase and fallback to localStorage
-export async function logActivityEvent(
-  eventType: ActivityEventType | string,
-  metadata: Record<string, unknown> = {}
-) {
-    const device_id = getOrCreateDeviceId();
-  let user_id: string | null = null;
+function deviceId() {
   try {
-    const { data } = await supabase.auth.getSession();
-    user_id = data.session?.user.id ?? null;
-  } catch {}
-  const event: ActivityEvent = {
-    user_id,
-    device_id,
-    event_type: eventType,
-    metadata,
-    created_at: new Date().toISOString(),
-  };
-
-  // Local backup in localStorage
-  if (typeof window !== "undefined") {
-    try {
-      const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-      const existing: ActivityEvent[] = raw ? JSON.parse(raw) : [];
-      existing.push(event);
-      // Keep last 100 events
-      if (existing.length > 100) existing.splice(0, existing.length - 100);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(existing));
-    } catch {
-      // Ignore storage errors
-    }
-  }
-
-  // Attempt Supabase insert
-  try {
-    const { error } = await supabase.from("user_activity_logs").insert([event]);
-    if (error) {
-      console.warn("Could not insert event into Supabase user_activity_logs (table may need creation):", error.message);
-    }
-  } catch (err) {
-    console.warn("Error logging activity event to Supabase:", err);
+    const stored = localStorage.getItem(deviceKey);
+    if (stored && uuid.test(stored)) return stored;
+    const id = (memoryDevice ??= crypto.randomUUID());
+    localStorage.setItem(deviceKey, id);
+    return id;
+  } catch {
+    return (memoryDevice ??= crypto.randomUUID());
   }
 }
 
-// Production OKR reads live in team-okr.ts and use the restricted aggregate RPC.
-// The P06 logger above is preserved for its owner to extend independently.
+export function signupActivityMetadata() {
+  return trackingEnabled()
+    ? { studeats_signup_visit: visitId(), studeats_signup_device: deviceId() }
+    : {};
+}
 
-export function useSimulateEventMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      eventType,
-      metadata = {},
-    }: {
-      eventType: ActivityEventType;
-      metadata?: Record<string, unknown>;
-    }) => {
-      await logActivityEvent(eventType, metadata);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["team_analytics_metrics"] });
-    },
-  });
+export function endActivityVisit() {
+  memoryVisit = undefined;
+  try {
+    sessionStorage.removeItem(visitKey);
+  } catch {
+    // Nothing persisted.
+  }
+}
+
+export async function logActivityEvent(
+  eventType: string,
+  metadata: Record<string, unknown> = {},
+  expectedAccount?: string,
+) {
+  if (!trackingEnabled()) return;
+  const visit = visitId();
+  const eventId = crypto.randomUUID();
+  try {
+    const { data } = await supabase.auth.getSession();
+    const account = data.session?.user.id;
+    if (!account || (expectedAccount && expectedAccount !== account)) return;
+    const item =
+      metadata["dealId"] ?? metadata["eventId"] ?? metadata["offerId"] ?? metadata["placeId"];
+    const { error } = await supabase.rpc("record_studeats_activity", {
+      p_event_id: eventId,
+      p_visit_id: visit,
+      p_device_id: deviceId(),
+      p_expected_user: account,
+      p_event_type: eventType,
+      p_item_id: typeof item === "string" ? item : null,
+    });
+    if (error) console.warn("Activity tracking failed:", error.code);
+  } catch {
+    console.warn("Activity tracking failed.");
+  }
 }

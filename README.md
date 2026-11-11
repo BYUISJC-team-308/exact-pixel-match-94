@@ -26,12 +26,18 @@ Read Me
 - Privacy describes the current Supabase account/profile behavior, browser-local saves and searches, activity metadata/local backup, location permission, and external services. Terms explain provider eligibility and the limits of personal tracking and map pins.
 - Product Owner factual review is pending before publishing. See [review checklist](docs/footer-review.md). Do not mark P34 accepted until that review and live URL checks are recorded.
 
+## Activity tracking and event exports
+
+- P06 records new signups at account creation and signed-in visits, saves, and reported uses in Supabase. Reloads in the same tab reuse a visit. A new tab, sign-out, or 30 minutes without tracked activity starts a new visit. Server timestamps and account identity come from the database. The activity function accepts browser reports of successful local saves and uses. Historical sessions are not backfilled.
+- Calendar links and downloaded calendar files convert Utah event times to UTC. Where an end time is missing or earlier than the start, the export uses a one-hour duration.
+- Campus date, filter, and selection updates refresh map markers without restarting the basemap tile loader. The optional 3D overlay requires a ready building tile source.
+
 # Team OKR dashboard (P07)
 
 - Open Profile → Team OKRs (or Team Analytics while signed out), then sign in with an approved dashboard account.
 - Production reads only the restricted `team_okr_snapshot` aggregate RPC. No raw activity is downloaded or merged with local backups, and demo buttons no longer create production activity.
-- All four KRs show their counting rules, sample sizes, targets, UTC signup period, calculation time, and data-readiness checks. The first-save timing target remains pending Product Owner agreement.
-- Missing P06 signup/session/success markers produce **Tracking incomplete**, not fabricated zero-percent results. Seven-day retention excludes users whose full 168-hour window is unfinished.
+- All four KRs show their counting rules, sample sizes, targets, UTC signup period, calculation time, and data-readiness checks. The Product Owner set the first-save mean target to under five minutes.
+- Older cohorts without recorded signup or session markers show **Tracking incomplete**, not fabricated zero-percent results. Seven-day retention excludes users whose full 168-hour window is unfinished.
 - Setup, exact event contract, ownership boundaries, test examples, and deployment status: [OKR dashboard handoff](docs/okr-dashboard.md).
 - Verify with `npm run test` and `npm run build`. SQL regression tests use an isolated local Postgres engine and never seed production analytics.
 

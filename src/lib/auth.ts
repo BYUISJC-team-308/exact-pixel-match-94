@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { actions, type User } from "@/lib/store";
-import { logActivityEvent } from "@/lib/analytics";
+import { endActivityVisit, logActivityEvent, signupActivityMetadata } from "@/lib/analytics";
 
 type ProfileRow = {
   username: string;
@@ -38,8 +38,15 @@ export function initAuth() {
   started = true;
   // Fires once on load with the saved session, then on every sign-in / sign-out.
   // Deferred so we never await Supabase calls inside the callback itself.
-  supabase.auth.onAuthStateChange((_event, session) => {
-    setTimeout(() => void syncUser(session?.user.id ?? null), 0);
+  supabase.auth.onAuthStateChange((event, session) => {
+    setTimeout(() => {
+      if (event === "SIGNED_OUT") endActivityVisit();
+      const account = session?.user.id;
+      if (account && (event === "INITIAL_SESSION" || event === "SIGNED_IN")) {
+        void logActivityEvent("session_start", {}, account);
+      }
+      void syncUser(account ?? null);
+    }, 0);
   });
 }
 
@@ -48,11 +55,16 @@ export async function signUp(u: User): Promise<{ error?: string; needsConfirm?: 
     email: u.email,
     password: u.password ?? "",
     options: {
-      data: { username: u.username, full_name: u.name, school: u.school, phone: u.phone ?? null },
+      data: {
+        username: u.username,
+        full_name: u.name,
+        school: u.school,
+        phone: u.phone ?? null,
+        ...signupActivityMetadata(),
+      },
     },
   });
   if (error) return { error: error.message };
-  void logActivityEvent("signup", { username: u.username, email: u.email });
   if (data.session && u.avatar) {
     await supabase.from("profiles").update({ avatar_url: u.avatar }).eq("id", data.session.user.id);
   }
@@ -62,7 +74,6 @@ export async function signUp(u: User): Promise<{ error?: string; needsConfirm?: 
 export async function signIn(email: string, password: string): Promise<string | null> {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return error.message;
-  void logActivityEvent("sign_in");
   return null;
 }
 
