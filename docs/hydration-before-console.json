@@ -1,0 +1,8 @@
+[
+  {
+    "level": "error",
+    "message": "Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.\n    at fa (https://studeats.vercel.app/assets/index-Q-hKjXcG.js:9:32137)\n    at pa (https://studeats.vercel.app/assets/index-Q-hKjXcG.js:9:33142)\n    at yl (https://studeats.vercel.app/assets/index-Q-hKjXcG.js:9:88574)\n    at ef (https://studeats.vercel.app/assets/index-Q-hKjXcG.js:9:128855)\n    at Zd (https://studeats.vercel.app/assets/index-Q-hKjXcG.js:9:128039)\n    at Xd (https://studeats.vercel.app/assets/index-Q-hKjXcG.js:9:127951)\n    at Yd (https://studeats.vercel.app/assets/index-Q-hKjXcG.js:9:127812)\n    at Fd (https://studeats.vercel.app/assets/index-Q-hKjXcG.js:9:123270)\n    at jf (https://studeats.vercel.app/assets/index-Q-hKjXcG.js:9:135941)\n    at MessagePort.ee (https://studeats.vercel.app/assets/index-Q-hKjXcG.js:2:2506)",
+    "timestamp": "2026-11-11T16:17:55.381Z",
+    "url": "https://studeats.vercel.app/assets/index-Q-hKjXcG.js"
+  }
+]

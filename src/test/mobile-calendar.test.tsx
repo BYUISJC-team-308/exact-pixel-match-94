@@ -29,7 +29,7 @@ afterEach(cleanup);
 
 describe("Mobile calendar journey", () => {
   it("starts with the day agenda and switches to a selected date's agenda from the month", () => {
-    render(<Calendar />);
+    render(<Calendar renderedAt={Date.now()} />);
     expect(screen.getByRole("button", { name: /Day Agenda/ })).toHaveAttribute(
       "aria-pressed",
       "true",

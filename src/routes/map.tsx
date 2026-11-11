@@ -1,3 +1,5 @@
+import { useRenderClock } from "@/hooks/use-render-clock";
+import { campusDateTime, DISPLAY_LOCALE, eventCountdown, isUpcomingEvent } from "@/lib/campus-time";
 import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
@@ -17,7 +19,7 @@ import { supabase } from "@/lib/supabase";
 export const Route = createFileRoute("/map")({
   loader: async () => {
     const [offers, eventRows, dealRows, campusBuildingRows, campuses] = await Promise.all([getStarvingStudentOffers(), getMapFoodEvents(), getMapDeals(), getMapCampusBuildings(), getMapCampuses()]);
-    return { offers, eventRows, dealRows, campusBuildingRows, campuses };
+    return { offers, eventRows, dealRows, campusBuildingRows, campuses, renderedAt: Date.now() };
   },
   head: () => ({
     meta: [
@@ -32,14 +34,6 @@ type View = "area" | "campus";
 type Filter = "all" | "card" | "event" | "discount";
 type Radius = 1 | 5 | 10 | 25 | "all";
 
-function denverDateString(date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(date);
-  const value = (type: string) => parts.find((part) => part.type === type)?.value ?? "00";
-  return `${value("year")}-${value("month")}-${value("day")}`;
-}
-
 function shiftDate(date: string, amount: number) {
   const [year, month, day] = date.split("-").map(Number);
   const shifted = new Date(year, month - 1, day + amount, 12);
@@ -48,7 +42,7 @@ function shiftDate(date: string, amount: number) {
 
 function friendlyMapDate(date: string) {
   const [year, month, day] = date.split("-").map(Number);
-  return new Date(year, month - 1, day, 12).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  return new Date(year, month - 1, day, 12).toLocaleDateString(DISPLAY_LOCALE, { weekday: "long", month: "long", day: "numeric" });
 }
 
 function distanceMiles(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
@@ -59,33 +53,8 @@ function distanceMiles(a: { lat: number; lng: number }, b: { lat: number; lng: n
   return 3958.8 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
-function isUpcomingEvent(row: { event_date: string; end_time: string }) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-  }).formatToParts(new Date());
-  const value = (type: string) => parts.find((part) => part.type === type)?.value ?? "00";
-  const today = `${value("year")}-${value("month")}-${value("day")}`;
-  const time = `${value("hour")}:${value("minute")}`;
-  return row.event_date > today || (row.event_date === today && row.end_time.slice(0, 5) >= time);
-}
-
-function eventCountdown(event: NormalizedFoodEvent) {
-  if (event.dayOffset > 1) return `In ${event.dayOffset} days`;
-  if (event.dayOffset === 1) return "Tomorrow";
-  const match = event.start.match(/(\d+):(\d+)\s*(AM|PM)/i);
-  if (!match) return "Today";
-  let hour = Number(match[1]) % 12;
-  if (match[3].toUpperCase() === "PM") hour += 12;
-  const target = new Date(); target.setHours(hour, Number(match[2]), 0, 0);
-  const minutes = Math.round((target.getTime() - Date.now()) / 60000);
-  if (minutes <= 0) return "Happening now";
-  if (minutes < 60) return `Starts in ${minutes} min`;
-  return `Starts in ${Math.floor(minutes / 60)}h ${minutes % 60}m`;
-}
-
-function eventStatus(event: NormalizedFoodEvent) {
-  const label = eventCountdown(event);
+function eventStatus(event: NormalizedFoodEvent, now: Date) {
+  const label = eventCountdown(event, now);
   if (label === "Happening now") return { label, className: "bg-emerald-100 text-emerald-800" };
   if (label.startsWith("Starts in") && !label.includes("h")) return { label, className: "bg-amber-100 text-amber-800" };
   return { label, className: "bg-sky-100 text-sky-800" };
@@ -93,7 +62,9 @@ function eventStatus(event: NormalizedFoodEvent) {
 
 function MapPage() {
   const router = useRouter();
-  const { offers, eventRows, dealRows, campusBuildingRows, campuses } = Route.useLoaderData();
+  const { offers, eventRows, dealRows, campusBuildingRows, campuses, renderedAt } = Route.useLoaderData();
+  const clock = useRenderClock(renderedAt);
+  const now = useMemo(() => new Date(clock), [clock]);
   const [view, setView] = useState<View>("area");
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -103,7 +74,7 @@ function MapPage() {
   const [openEvent, setOpenEvent] = useState<NormalizedFoodEvent | null>(null);
   const [openDeal, setOpenDeal] = useState<Deal | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [campusDate, setCampusDate] = useState(denverDateString);
+  const [campusDate, setCampusDate] = useState(() => campusDateTime(now).date);
   const [showInactiveBuildings, setShowInactiveBuildings] = useState(false);
   const [radius, setRadius] = useState<Radius>("all");
   const [focusPlaceId, setFocusPlaceId] = useState<string | null>(null);
@@ -124,12 +95,12 @@ function MapPage() {
     return () => { void supabase.removeChannel(channel); };
   }, [router]);
   useEffect(() => { setSelected(null); }, [campusDate]);
-  const events = useMemo(() => eventRows.filter(isUpcomingEvent).map(normalizeFoodEvent), [eventRows]);
+  const events = useMemo(() => eventRows.filter((row) => isUpcomingEvent(row, now)).map((row) => normalizeFoodEvent(row, now)), [eventRows, now]);
   const selectedCampus = campuses.find((campus) => campus.slug === campusSlug) || campuses[0];
   const campusBuildingRowsForSelection = useMemo(() => campusBuildingRows.filter((building) => !selectedCampus || building.campusId === selectedCampus.id || (selectedCampus.slug === "byu-provo" && !building.campusId)), [campusBuildingRows, selectedCampus]);
   const cards = useMemo(() => cardPlaces(offers), [offers]);
   const campusEvents = useMemo(() => eventPlaces(events, campusBuildingRows), [events, campusBuildingRows]);
-  const selectedCampusEvents = useMemo(() => eventRows.filter((row) => row.event_date === campusDate && (!selectedCampus || row.campus_id === selectedCampus.id || (selectedCampus.slug === "byu-provo" && !row.campus_id && Boolean(row.building_id)))).map(normalizeFoodEvent), [eventRows, campusDate, selectedCampus]);
+  const selectedCampusEvents = useMemo(() => eventRows.filter((row) => row.event_date === campusDate && (!selectedCampus || row.campus_id === selectedCampus.id || (selectedCampus.slug === "byu-provo" && !row.campus_id && Boolean(row.building_id)))).map((row) => normalizeFoodEvent(row, now)), [eventRows, campusDate, selectedCampus, now]);
   const buildings = useMemo(() => buildingPlaces(selectedCampusEvents, campusBuildingRowsForSelection), [selectedCampusEvents, campusBuildingRowsForSelection]);
   const discounts = useMemo(() => discountPlaces(dealRows.map(normalizeDeal)), [dealRows]);
   const places = useMemo(() => view === "campus" ? buildings : [
@@ -207,7 +178,7 @@ function MapPage() {
             </div>
             <div className="ml-auto flex items-center gap-1.5 rounded-2xl bg-white/75 p-1 shadow-sm">
               <button type="button" onClick={() => setCampusDate(shiftDate(campusDate, -1))} aria-label="Previous day" className="grid size-9 place-items-center rounded-full border border-[#224f75]/20 bg-white text-[#082e4f] shadow-sm"><ChevronLeft className="size-4" /></button>
-              <button type="button" onClick={() => setCampusDate(denverDateString())} className="rounded-full bg-[#082e4f] px-3 py-2 text-xs font-semibold text-white shadow-sm">Today</button>
+              <button type="button" onClick={() => setCampusDate(campusDateTime(now).date)} className="rounded-full bg-[#082e4f] px-3 py-2 text-xs font-semibold text-white shadow-sm">Today</button>
               <label className="relative grid size-9 cursor-pointer place-items-center rounded-full border border-[#224f75]/20 bg-white text-[#082e4f] shadow-sm" aria-label="Choose map date">
                 <CalendarDays className="size-4" />
                 <input type="date" value={campusDate} onChange={(event) => { setCampusDate(event.target.value); setSelected(null); }} className="absolute inset-0 cursor-pointer opacity-0" />
@@ -223,7 +194,7 @@ function MapPage() {
           <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-[#224f75]/15 pt-3">
             <label className="inline-flex items-center gap-2 text-xs font-semibold text-[#082e4f]"><input type="checkbox" checked={showInactiveBuildings} onChange={(event) => setShowInactiveBuildings(event.target.checked)} className="size-4 accent-[#082e4f]" />Show all campus buildings</label>
             {nextCampusEvent && <button type="button" onClick={() => { const place = buildings.find((building) => building.events.some((event) => event.id === nextCampusEvent.id)); if (place) { setSelected(place); setFocusPlaceId(place.id); } }} className="ml-auto rounded-xl bg-[#fff3cf] px-3 py-2 text-left text-xs text-[#082e4f] ring-1 ring-[#d99516]/30">
-              <strong>{eventCountdown(nextCampusEvent)}:</strong> {nextCampusEvent.food} at {nextCampusEvent.building}{nextCampusEvent.room ? ` · ${roomLabel(nextCampusEvent.room)}` : ""}
+              <strong>{eventCountdown(nextCampusEvent, now)}:</strong> {nextCampusEvent.food} at {nextCampusEvent.building}{nextCampusEvent.room ? ` · ${roomLabel(nextCampusEvent.room)}` : ""}
             </button>}
             {!nextCampusEvent && <div className="ml-auto flex-1 rounded-2xl bg-white px-4 py-3 text-xs text-[#36566f] shadow-sm sm:flex-none"><strong className="block text-sm text-[#082e4f]">Nothing posted for this day</strong><span>Try another date or add a free-food event.</span> <Link to="/free-food" className="ml-1 font-semibold underline">View events</Link></div>}
           </div>
@@ -291,7 +262,7 @@ function MapPage() {
                 ))}
                 {selected.events.map((event) => (
                   <button key={event.id} type="button" onClick={() => setOpenEvent(event)} className="w-full rounded-2xl border-l-4 border-amber-500 bg-secondary p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${eventStatus(event).className}`}>{eventStatus(event).label}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${eventStatus(event, now).className}`}>{eventStatus(event, now).label}</span>
                     <strong className="mt-1 block text-sm">{event.title}</strong>
                     <span className="block text-xs text-muted-foreground">{event.food} · {event.formattedDate}, {event.formattedTime}</span>
                     <span className="text-xs text-muted-foreground">{event.building}{event.room ? ` · ${roomLabel(event.room)}` : ""}</span>
