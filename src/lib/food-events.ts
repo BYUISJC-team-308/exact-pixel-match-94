@@ -1,0 +1,213 @@
+import { campusDateTime, campusCalendarDate, DISPLAY_LOCALE } from "@/lib/campus-time";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { createServerFn } from "@tanstack/react-start";
+import { supabase } from "@/lib/supabase";
+import type { FoodEvent } from "@/lib/data";
+import buildingRecords from "@/lib/byu-buildings.json";
+
+export type DbFoodEvent = {
+  id: string;
+  title: string;
+  host: string;
+  food: string;
+  event_date: string; // YYYY-MM-DD
+  start_time: string; // HH:mm:ss
+  end_time: string;   // HH:mm:ss
+  building: string;
+  building_id?: string | null;
+  campus_id?: string | null;
+  room?: string | null;
+  details?: string | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  location_note?: string | null;
+  created_at?: string;
+};
+
+export type FoodEventCategory = "all" | "on_campus" | "off_campus";
+
+export type NormalizedFoodEvent = FoodEvent & {
+  eventDateObj: Date;
+  isToday: boolean;
+  isThisWeek: boolean;
+  category: "on_campus" | "off_campus";
+  formattedDate: string;
+  formattedTime: string;
+};
+
+export function getLocalDateString(d = new Date()): string {
+  return campusDateTime(d).date;
+}
+
+// Detect BYU campus buildings vs off-campus Utah County venues
+export function detectLocationCategory(building: string): "on_campus" | "off_campus" {
+  const normalized = (building || "").trim().toLowerCase();
+  const matchesOfficialBuilding = buildingRecords.some((record) => {
+    const code = record.code.trim().toLowerCase();
+    const name = record.name.trim().toLowerCase();
+    const label = record.label?.trim().toLowerCase();
+    return Boolean(
+      (code && new RegExp(`(^|[^a-z0-9])${code}([^a-z0-9]|$)`).test(normalized)) ||
+      (name && normalized.includes(name)) ||
+      (label && normalized.includes(label)),
+    );
+  });
+  if (matchesOfficialBuilding) return "on_campus";
+
+  const campusKeywords = [
+    "byu", "wsc", "wilkinson", "jkb", "marb", "jsb", "esc", "hbll", "library",
+    "talmage", "tmb", "crabtree", "cb", "benson", "eyring", "hfac", "moa",
+    "richards", "rb", "smith fieldhouse", "sfh", "student union", "quad",
+    "brick oven", "creamery", "heritage", "helaman", "campus"
+  ];
+  const isCampus = campusKeywords.some((k) => normalized.includes(k));
+  return isCampus ? "on_campus" : "off_campus";
+}
+
+function formatTimeString(timeStr: string): string {
+  if (!timeStr) return "";
+  const parts = timeStr.split(":");
+  if (parts.length >= 2) {
+    const hours = parseInt(parts[0], 10);
+    const minutes = parts[1];
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const h12 = hours % 12 || 12;
+    return `${h12}:${minutes} ${ampm}`;
+  }
+  return timeStr;
+}
+
+export function normalizeFoodEvent(row: DbFoodEvent, now = new Date()): NormalizedFoodEvent {
+  const today = campusCalendarDate(now);
+
+  // Parse YYYY-MM-DD into a localized Date object
+  const [year, month, day] = (row.event_date || "").split("-").map(Number);
+  const eventDateObj = year && month && day ? new Date(year, month - 1, day) : campusCalendarDate(now);
+  eventDateObj.setHours(0, 0, 0, 0);
+
+  const dayNumber = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffTime = dayNumber(eventDateObj) - dayNumber(today);
+  const dayOffset = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  const isToday = dayOffset === 0;
+  const isThisWeek = dayOffset >= 0 && dayOffset < 7;
+  const category = detectLocationCategory(row.building);
+
+  const startFormatted = formatTimeString(row.start_time);
+  const endFormatted = formatTimeString(row.end_time);
+
+  return {
+    id: row.id,
+    title: row.title || "Free Food Event",
+    host: row.host || "Organizer not provided",
+    food: row.food || "Food not specified",
+    dayOffset,
+    start: startFormatted || row.start_time || "12:00",
+    end: endFormatted || row.end_time || "13:00",
+    building: row.building || "Location not provided",
+    buildingId: row.building_id || undefined,
+    room: row.room || "",
+    details: row.details || "No extra details provided.",
+    address: row.address || undefined,
+    latitude: Number.isFinite(Number(row.latitude)) ? Number(row.latitude) : undefined,
+    longitude: Number.isFinite(Number(row.longitude)) ? Number(row.longitude) : undefined,
+    locationNote: row.location_note || undefined,
+    x: 50,
+    y: 50,
+    eventDateObj,
+    isToday,
+    isThisWeek,
+    category,
+    formattedDate: eventDateObj.toLocaleDateString(DISPLAY_LOCALE, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    }),
+    formattedTime: startFormatted && endFormatted ? `${startFormatted} – ${endFormatted}` : startFormatted,
+  };
+}
+
+export async function fetchFoodEvents(): Promise<NormalizedFoodEvent[]> {
+  const { data, error } = await supabase
+    .from("food_events")
+    .select("*")
+    .order("event_date", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching food_events from Supabase:", error);
+    throw error;
+  }
+
+  return (data || []).map((row) => normalizeFoodEvent(row));
+}
+
+export const getMapFoodEvents = createServerFn({ method: "GET" }).handler(async (): Promise<DbFoodEvent[]> => {
+  const { data, error } = await supabase
+    .from("food_events")
+    .select("*")
+    .order("event_date", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as DbFoodEvent[];
+});
+
+export function useFoodEventsQuery() {
+  return useQuery({
+    queryKey: ["food_events"],
+    queryFn: fetchFoodEvents,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: true,
+  });
+}
+
+export type NewFoodEventInput = {
+  title: string;
+  host: string;
+  food: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  building: string;
+  building_id?: string;
+  campus_id?: string;
+  room?: string;
+  details?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  location_note?: string;
+};
+
+export async function geocodeEventAddress(address: string) {
+  const key = import.meta.env["VITE_MAPTILER_KEY"];
+  if (!key) throw new Error("Map geocoding is not configured.");
+  const response = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(address)}.json?key=${encodeURIComponent(key)}&country=us&limit=1`);
+  if (!response.ok) throw new Error("Could not verify that address.");
+  const result = await response.json() as { features?: Array<{ center?: [number, number] }> };
+  const center = result.features?.[0]?.center;
+  if (!center) throw new Error("No map location was found for that address.");
+  return { latitude: center[1], longitude: center[0] };
+}
+
+export async function insertFoodEvent(input: NewFoodEventInput) {
+  const { data, error } = await supabase
+    .from("food_events")
+    .insert([input])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to insert food event into Supabase:", error);
+    throw error;
+  }
+  return data;
+}
+
+export function useSubmitFoodEventMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: insertFoodEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["food_events"] });
+    },
+  });
+}

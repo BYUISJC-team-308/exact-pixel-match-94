@@ -1,0 +1,145 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-gold: var(--gold);
+  --color-glass: var(--glass);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.94 0.012 230);
+  --foreground: oklch(0.24 0.02 170);
+  --card: oklch(1 0 0 / 0.6);
+  --card-foreground: oklch(0.24 0.02 170);
+  --popover: oklch(0.99 0.004 230);
+  --popover-foreground: oklch(0.24 0.02 170);
+  --primary: oklch(0.42 0.08 172);
+  --primary-foreground: oklch(0.98 0.005 172);
+  --secondary: oklch(1 0 0 / 0.7);
+  --secondary-foreground: oklch(0.24 0.02 170);
+  --muted: oklch(0.9 0.01 230);
+  --muted-foreground: oklch(0.45 0.02 170);
+  --accent: oklch(0.67 0.17 42);
+  --accent-foreground: oklch(0.99 0 0);
+  --gold: oklch(0.7 0.14 75);
+  --glass: oklch(1 0 0);
+  --destructive: oklch(0.58 0.22 27);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.24 0.02 170 / 0.1);
+  --input: oklch(0.24 0.02 170 / 0.15);
+  --ring: oklch(0.42 0.08 172);
+  --shadow-float: 0 24px 70px -30px oklch(0.42 0.08 172 / 0.5);
+  --shadow-note: 0 16px 40px -18px oklch(0.24 0.02 170 / 0.55);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html { scroll-padding-top: 6rem; }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    overflow-wrap: anywhere;
+  }
+  h1, h2, h3 { font-family: var(--font-display); }
+}
+
+/* Let content shrink and wrap instead of hiding horizontal overflow. */
+.app-main {
+  padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
+}
+header { padding-top: env(safe-area-inset-top); }
+header > div { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
+footer { padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
+:where(.flex, .grid) > * { min-width: 0; }
+:where(input, select, textarea) { min-width: 0; max-width: 100%; }
+:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+.maplibregl-ctrl-group button { width: 44px; height: 44px; }
+@media (min-width: 640px) {
+  .app-main { padding-inline: max(1.5rem, env(safe-area-inset-left)) max(1.5rem, env(safe-area-inset-right)); }
+}
+@media (max-width: 767px) {
+  :where(main, header, footer, [role="dialog"]) button,
+  :where(main, header, footer, [role="dialog"]) a[class*="rounded"] { min-height: 44px; }
+  :where(main, header, footer, [role="dialog"]) button:not(.calendar-day) { min-width: 44px; }
+  :where(main, header, [role="dialog"]) input:not([type="checkbox"]):not([type="radio"]),
+  :where(main, header, [role="dialog"]) select,
+  :where(main, header, [role="dialog"]) textarea { font-size: 16px; min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+@utility glass {
+  background: color-mix(in oklab, var(--glass) 60%, transparent);
+  backdrop-filter: blur(24px);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--glass) 70%, transparent);
+  border-radius: 12px;
+}
+@utility shadow-float { box-shadow: var(--shadow-float); }
+@utility shadow-note { box-shadow: var(--shadow-note); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@utility rise { animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }
+
+@keyframes punchStamp {
+  0% { transform: scale(1.4) rotate(-8deg); opacity: 0; }
+  50% { transform: scale(0.95) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@utility animate-punch { animation: punchStamp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+
+@keyframes punchPop {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.94); }
+  65% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes punchFlash {
+  0% { background-color: oklch(0.42 0.08 172 / 0.25); }
+  100% { background-color: transparent; }
+}
+
+@keyframes unpunchPop {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.is-punched-card {
+  animation: punchPop 0.5s ease-out, punchFlash 0.7s ease-out;
+}
+
+.is-unpunched-card {
+  animation: unpunchPop 0.5s ease-out;
+}
