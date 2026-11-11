@@ -13,7 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/SiteHeader";
-import { siteSections } from "@/lib/data";
+import { SiteFooter } from "@/components/SiteFooter";
 
 function NotFoundComponent() {
   return (
@@ -92,19 +92,7 @@ function RootComponent() {
         <div className="relative">
           <SiteHeader />
           <main id="main-content" className="app-main mx-auto w-full min-w-0 max-w-7xl"><Outlet /></main>
-          <footer className="mx-auto mt-12 max-w-7xl border-t border-border/60 px-6 py-8">
-            <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-              <p className="text-xs text-muted-foreground">Studeats &middot; Verified student discounts &amp; campus perks</p>
-              <button
-                type="button"
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                className="inline-flex items-center gap-1.5 rounded-full bg-secondary/80 px-3.5 py-1.5 text-xs font-medium text-muted-foreground ring-1 ring-border transition-colors hover:bg-secondary hover:text-foreground active:scale-95"
-              >
-                <span>Back to top</span>
-                <span>&uarr;</span>
-              </button>
-            </div>
-          </footer>
+          <SiteFooter />
         </div>
       </div>
     </QueryClientProvider>
