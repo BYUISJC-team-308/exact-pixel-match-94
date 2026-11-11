@@ -436,7 +436,18 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
   const saved = savedEvents.includes(event.id);
   return (
     <Modal open onClose={onClose} title={event.title}>
-      <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">Free food · {event.food}</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">Free food · {event.food}</span>
+        {event.locationNote?.toLowerCase().includes("community") ? (
+          <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-semibold text-accent">
+            👥 Community Shared Event
+          </span>
+        ) : (
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+            ✓ Verified Campus Event
+          </span>
+        )}
+      </div>
       <h3 className="mt-3 text-2xl font-semibold">{event.title}</h3>
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <div><dt className="font-semibold">When</dt><dd className="text-muted-foreground">{eventDate(event).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}, {event.start}–{event.end}</dd></div>

@@ -84,4 +84,31 @@ describe("Food Events Logic & Categorization", () => {
     expect(extractRoom("Room 3380 WSC")).toBe("Room 3380");
     expect(extractRoom("Wilkinson Student Center - Varsity Theatre")).toBe("Varsity Theatre");
   });
+
+  it("identifies community shared food events vs verified calendar events", () => {
+    const communityEvent = normalizeFoodEvent({
+      id: "comm-1",
+      title: "Leftover Donuts",
+      host: "Student Host",
+      food: "Donuts",
+      building: "TMCB",
+      event_date: getLocalDateString(),
+      start_time: "14:00:00",
+      end_time: "15:00:00",
+      location_note: "Community shared event",
+    });
+    expect(communityEvent.isCommunity).toBe(true);
+
+    const verifiedEvent = normalizeFoodEvent({
+      id: "verified-1",
+      title: "CS Colloquium",
+      host: "Computer Science Dept",
+      food: "Catered Lunch",
+      building: "TMCB",
+      event_date: getLocalDateString(),
+      start_time: "11:00:00",
+      end_time: "12:00:00",
+    });
+    expect(verifiedEvent.isCommunity).toBe(false);
+  });
 });

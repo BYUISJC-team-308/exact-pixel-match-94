@@ -53,7 +53,7 @@ type DbCampus = {
 };
 
 export const fallbackCampuses: Campus[] = [{
-  id: "fallback-byu", slug: "byu-provo", name: "BYU Provo", collegeName: "Brigham Young University",
+  id: "eb801cfa-9f8f-43f5-89e0-6d056b4edcc4", slug: "byu-provo", name: "BYU Provo", collegeName: "Brigham Young University",
   shortName: "BYU", city: "Provo", lat: 40.2487, lng: -111.6502, zoom: 15.3,
   primaryColor: "#082e4f", secondaryColor: "#f8f4e8", mapUrl: "https://map.byu.edu/",
 }];
@@ -69,7 +69,7 @@ export const fallbackCampusBuildings: CampusBuilding[] = buildingRecords
     aliases: [building.name.trim().toLowerCase(), building.label?.trim().toLowerCase()].filter(Boolean) as string[],
     address: building.address?.trim() || "",
     use: building.use?.trim() || "",
-    campusId: "fallback-byu",
+    campusId: "eb801cfa-9f8f-43f5-89e0-6d056b4edcc4",
     lat: building.lat,
     lng: building.lng,
   }));
@@ -120,11 +120,16 @@ export function useCampusBuildingsQuery() {
   return useQuery({
     queryKey: ["campus_buildings"],
     queryFn: fetchCampusBuildings,
-    initialData: fallbackCampusBuildings,
+    placeholderData: fallbackCampusBuildings,
     staleTime: 1000 * 60 * 60,
   });
 }
 
 export function useCampusesQuery() {
-  return useQuery({ queryKey: ["campuses"], queryFn: fetchCampuses, initialData: fallbackCampuses, staleTime: 1000 * 60 * 60 });
+  return useQuery({
+    queryKey: ["campuses"],
+    queryFn: fetchCampuses,
+    placeholderData: fallbackCampuses,
+    staleTime: 1000 * 60 * 60,
+  });
 }

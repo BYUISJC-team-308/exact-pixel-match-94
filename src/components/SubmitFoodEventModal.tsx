@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { useRouter } from "@tanstack/react-router";
 import { Modal, Btn } from "@/components/ui-bits";
 import { useSubmitFoodEventMutation, getLocalDateString, geocodeEventAddress } from "@/lib/food-events";
 import { findCampusBuilding } from "@/lib/map-places";
 import { useCampusBuildingsQuery, useCampusesQuery } from "@/lib/campus-buildings";
 import { toast } from "sonner";
+
+const isUuid = (val?: string | null): val is string =>
+  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
 
 export function SubmitFoodEventModal({
   open,
@@ -12,9 +16,10 @@ export function SubmitFoodEventModal({
   open: boolean;
   onClose: () => void;
 }) {
+  const router = useRouter();
   const submitMutation = useSubmitFoodEventMutation();
-  const { data: campusBuildings } = useCampusBuildingsQuery();
-  const { data: campuses } = useCampusesQuery();
+  const { data: campusBuildings = [] } = useCampusBuildingsQuery();
+  const { data: campuses = [] } = useCampusesQuery();
 
   const todayStr = getLocalDateString();
 
@@ -39,10 +44,36 @@ export function SubmitFoodEventModal({
     }
 
     try {
-      const selectedCampusId = campusId || campuses[0]?.id || "";
-      const availableBuildings = campusBuildings.filter((item) => !selectedCampusId || item.campusId === selectedCampusId || !item.campusId);
+      const selectedCampus = campuses.find((c) => c.id === campusId) || campuses[0];
+      const validCampusId = isUuid(campusId)
+        ? campusId
+        : isUuid(selectedCampus?.id)
+        ? selectedCampus.id
+        : "eb801cfa-9f8f-43f5-89e0-6d056b4edcc4"; // BYU Provo UUID
+
+      const availableBuildings = campusBuildings.filter(
+        (item) => !validCampusId || item.campusId === validCampusId || !item.campusId
+      );
       const selectedBuilding = locationType === "campus" ? findCampusBuilding(building, availableBuildings) : undefined;
-      const coordinates = locationType === "off_campus" ? await geocodeEventAddress(address.trim()) : {};
+      const validBuildingId = isUuid(selectedBuilding?.id) ? selectedBuilding.id : undefined;
+
+      let coordinates: { latitude?: number; longitude?: number } = {};
+      if (locationType === "off_campus") {
+        try {
+          coordinates = await geocodeEventAddress(address.trim());
+        } catch {
+          // If geocoding fails, proceed without coordinates or use address text
+        }
+      } else if (selectedBuilding && Number.isFinite(selectedBuilding.lat) && Number.isFinite(selectedBuilding.lng)) {
+        coordinates = { latitude: selectedBuilding.lat as number, longitude: selectedBuilding.lng as number };
+      } else if (selectedCampus && Number.isFinite(selectedCampus.lat) && Number.isFinite(selectedCampus.lng)) {
+        coordinates = { latitude: selectedCampus.lat, longitude: selectedCampus.lng };
+      }
+
+      const defaultAddress = locationType === "campus"
+        ? (address.trim() || (selectedBuilding ? `${selectedBuilding.name}, BYU, Provo, UT` : `${building.trim()}, BYU, Provo, UT`))
+        : address.trim();
+
       await submitMutation.mutateAsync({
         title: title.trim(),
         host: host.trim() || "Student Host",
@@ -51,15 +82,18 @@ export function SubmitFoodEventModal({
         start_time: startTime ? `${startTime}:00` : "12:00:00",
         end_time: endTime ? `${endTime}:00` : "13:00:00",
         building: building.trim(),
-        ...(selectedBuilding ? { building_id: selectedBuilding.id } : {}),
-        ...(locationType === "campus" && selectedCampusId ? { campus_id: selectedCampusId } : {}),
-        ...(address.trim() ? { address: address.trim() } : {}),
+        ...(validBuildingId ? { building_id: validBuildingId } : {}),
+        ...(locationType === "campus" && validCampusId ? { campus_id: validCampusId } : {}),
+        ...(defaultAddress ? { address: defaultAddress } : {}),
         ...coordinates,
         ...(room.trim() ? { room: room.trim() } : {}),
         ...(details.trim() ? { details: details.trim() } : {}),
+        location_note: "Community shared event",
       });
 
-      toast.success("Free food event posted to Studeats!");
+      toast.success("Free food event shared with the campus community!");
+      void router.invalidate();
+
       // Reset form
       setTitle("");
       setHost("");

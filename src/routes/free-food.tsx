@@ -203,6 +203,15 @@ function FreeFood() {
                               ? "BYU Campus"
                               : "Utah County"}
                         </span>
+                        {e.locationNote?.toLowerCase().includes("community") ? (
+                          <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">
+                            👥 Community Shared
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                            ✓ Verified Event
+                          </span>
+                        )}
                       </div>
                       <button
                         onClick={() => actions.toggleEvent(e.id)}

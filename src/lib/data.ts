@@ -69,6 +69,7 @@ export type FoodEvent = {
   latitude?: number;
   longitude?: number;
   locationNote?: string;
+  isCommunity?: boolean;
 };
 
 // Real food events are loaded live from Supabase (food_events table)

@@ -112,6 +112,10 @@ export function normalizeFoodEvent(row: DbFoodEvent, now = new Date()): Normaliz
     latitude: Number.isFinite(Number(row.latitude)) ? Number(row.latitude) : undefined,
     longitude: Number.isFinite(Number(row.longitude)) ? Number(row.longitude) : undefined,
     locationNote: row.location_note || undefined,
+    isCommunity: Boolean(
+      row.location_note?.toLowerCase().includes("community") ||
+      row.host?.toLowerCase().includes("student host")
+    ),
     x: 50,
     y: 50,
     eventDateObj,
