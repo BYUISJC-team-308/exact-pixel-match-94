@@ -122,7 +122,7 @@ export function OkrSummary({ metrics }: { metrics: TeamOkrSnapshot }) {
         <p className="mt-2 text-xs font-semibold">
           {metrics.firstSave.targetMinutes === null
             ? "Timing target awaiting Product Owner agreement."
-            : "Target: " + metrics.firstSave.targetMinutes + " minutes."}
+            : `Target: under ${metrics.firstSave.targetMinutes} minutes.`}
         </p>
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           First successful recorded deal save minus account creation in Supabase Auth. Users who

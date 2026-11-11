@@ -33,13 +33,19 @@ beforeAll(async () => {
   await db.exec(`
     create role anon; create role authenticated;
     create schema auth;
-    create table auth.users(id uuid primary key, created_at timestamptz not null);
+    create table auth.users(id uuid primary key, created_at timestamptz not null, raw_user_meta_data jsonb);
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
-    create table public.user_activity_logs(id uuid primary key, user_id uuid, device_id text, event_type text, metadata jsonb, created_at timestamptz);
+    create table public.user_activity_logs(id uuid primary key default gen_random_uuid(), user_id uuid, device_id text, event_type text, metadata jsonb, created_at timestamptz);
   `);
   await db.exec(
     readFileSync(
       new URL("../../supabase/migrations/20261110000100_team_okr_dashboard.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await db.exec(
+    readFileSync(
+      new URL("../../supabase/migrations/20261111000100_activity_tracking.sql", import.meta.url),
       "utf8",
     ),
   );
@@ -51,7 +57,7 @@ beforeEach(async () => {
   eventId = 100;
   for (const n of [1, 2, 3, 4]) {
     const at = n === 4 ? "2026-11-09T12:00:00Z" : signup;
-    await db.query("insert into auth.users values ($1,$2)", [id(n), at]);
+    await db.query("insert into auth.users(id, created_at) values ($1,$2)", [id(n), at]);
     await event(n, "signup", at, { session_id: "initial-" + n });
   }
 });
@@ -233,10 +239,51 @@ describe("Authoritative SQL OKR calculations", () => {
       [from, to],
     );
     expect(allowed.rows[0].team_okr_snapshot.version).toBe(1);
+    expect(allowed.rows[0].team_okr_snapshot.firstSave.targetMinutes).toBe(5);
     expect(JSON.stringify(allowed.rows)).not.toContain("device_id");
     await expect(db.query("select public.team_okr_snapshot($1,$2)", [to, from])).rejects.toThrow(
       /valid signup period/,
     );
     await db.exec("reset role");
   });
+});
+
+it("records actual signup, later visit and a deduplicated action with server identity and time", async () => {
+  const account = id(9),
+    initialVisit = id(10),
+    device = id(11),
+    laterVisit = id(12),
+    action = id(13);
+  await db.query(
+    "insert into auth.users(id,created_at,raw_user_meta_data) values ($1,now() - interval '2 hours',$2)",
+    [
+      account,
+      JSON.stringify({ studeats_signup_visit: initialVisit, studeats_signup_device: device }),
+    ],
+  );
+  const sql = "select public.record_studeats_activity($1,$2,$3,$4,$5,$6)";
+  const args = [action, laterVisit, device, account, "deal_saved", "offer-1"];
+  await db.exec("set role anon");
+  await expect(db.query(sql, args)).rejects.toThrow(/permission denied/);
+  await db.exec("reset role; set role authenticated");
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [account]);
+  await expect(
+    db.query(sql, [action, laterVisit, device, id(1), "deal_saved", "offer-1"]),
+  ).rejects.toThrow(/Authenticated account required/);
+  await expect(
+    db.query(sql, [action, laterVisit, device, account, "signup", null]),
+  ).rejects.toThrow(/Invalid activity/);
+  await db.query(sql, args);
+  await db.query(sql, args);
+  await db.exec("reset role");
+  const records = await db.query<{ event_type: string; visit: string; outcome: string | null }>(
+    "select event_type,metadata->>'session_id' as visit,metadata->>'outcome' as outcome from public.user_activity_logs where user_id=$1 order by created_at,event_type",
+    [account],
+  );
+  expect(records.rows).toEqual([
+    { event_type: "session_start", visit: initialVisit, outcome: null },
+    { event_type: "signup", visit: initialVisit, outcome: null },
+    { event_type: "deal_saved", visit: laterVisit, outcome: "success" },
+    { event_type: "session_start", visit: laterVisit, outcome: null },
+  ]);
 });

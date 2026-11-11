@@ -70,10 +70,9 @@ function load() {
     } else {
       state = { ...empty, savedDeals: [] };
     }
-  } catch {}
-
-  // Auto-log session start
-  void logActivityEvent("session_start");
+  } catch {
+    // Keep default state if browser storage is unavailable.
+  }
 }
 
 function set(next: Partial<State>) {
@@ -121,17 +120,13 @@ export const actions = {
   clearRecentMapSearches: () => set({ recentMapSearches: [] }),
   toggleDeal: (id: string) => {
     const isAdding = !state.savedDeals.includes(id);
-    if (isAdding) {
-      void logActivityEvent("deal_saved", { dealId: id });
-    }
     set({ savedDeals: toggle(state.savedDeals, id) });
+    if (isAdding) void logActivityEvent("deal_saved", { dealId: id });
   },
   toggleEvent: (id: string) => {
     const isAdding = !state.savedEvents.includes(id);
-    if (isAdding) {
-      void logActivityEvent("event_saved", { eventId: id });
-    }
     set({ savedEvents: toggle(state.savedEvents, id) });
+    if (isAdding) void logActivityEvent("event_saved", { eventId: id });
   },
   toggleUsed: (id: string, maxUses?: number | null) => {
     const counts = { ...(state.ssUsedCounts || {}) };
@@ -147,8 +142,8 @@ export const actions = {
       const nextCount = current + 1;
       counts[id] = nextCount;
       const nextUsedSS = state.usedSS.includes(id) ? state.usedSS : [...state.usedSS, id];
-      void logActivityEvent("deal_redeemed", { dealId: id, timesUsed: nextCount });
       set({ usedSS: nextUsedSS, ssUsedCounts: counts });
+      void logActivityEvent("deal_redeemed", { dealId: id });
     }
   },
   decrementUsed: (id: string) => {

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { campusCalendarDate } from "@/lib/campus-time";
 import { Calendar } from "@/routes/calendar";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -49,7 +50,7 @@ describe("Mobile calendar journey", () => {
     fireEvent.click(screen.getByRole("button", { name: "Jump to Today" }));
     expect(
       screen.getByRole("heading", {
-        name: new Date().toLocaleDateString(undefined, {
+        name: campusCalendarDate(new Date()).toLocaleDateString("en-US", {
           weekday: "long",
           month: "short",
           day: "numeric",

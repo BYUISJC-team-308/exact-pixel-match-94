@@ -70,6 +70,21 @@ function createMapIcon(kind: "card" | "event" | "discount") {
   return context.getImageData(0, 0, 40, 40);
 }
 
+function placeData(places: MapPlace[], include: (place: MapPlace) => boolean) {
+  return {
+    type: "FeatureCollection" as const,
+    features: places.filter(include).map((place) => ({
+      id: place.id,
+      type: "Feature" as const,
+      geometry: { type: "Point" as const, coordinates: [place.lng, place.lat] },
+      properties: {
+        id: place.id, code: place.code || place.title, name: place.title,
+        kind: place.events.length ? "event" : place.kind, eventCount: place.events.length,
+      },
+    })),
+  };
+}
+
 export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPlaceId, onSelect, onOpenOffer, onOpenEvent, onOpenDeal, onUserLocation }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const onSelectRef = useRef(onSelect);
@@ -83,6 +98,11 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
   onOpenDealRef.current = onOpenDeal;
   onUserLocationRef.current = onUserLocation;
 
+  const latest = useRef({ places, showInactiveBuildings, focusPlaceId });
+  latest.current = { places, showInactiveBuildings, focusPlaceId };
+  const refresh = useRef<((focusChanged: boolean) => void) | null>(null);
+  const previousFocus = useRef(focusPlaceId);
+
   useEffect(() => {
     if (!container.current) return;
     let cancelled = false;
@@ -94,12 +114,13 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
       if (window.matchMedia("(max-width: 1279px)").matches) activePopup?.remove();
     });
     resizeObserver.observe(container.current);
-    const byId = new Map(places.map((place) => [place.id, place]));
+    const findPlace = (id: unknown) => latest.current.places.find((place) => place.id === id);
 
     void import("maplibre-gl").then(({ GeolocateControl, LngLatBounds, Map: MapLibreMap, NavigationControl, Popup, setWorkerUrl }) => {
       if (cancelled || !container.current) return;
       setWorkerUrl(workerUrl);
-      const focusedPlace = focusPlaceId ? byId.get(focusPlaceId) : undefined;
+      const { places, focusPlaceId } = latest.current;
+      const focusedPlace = findPlace(focusPlaceId);
       map = new MapLibreMap({
         container: container.current,
         style: mapStyle,
@@ -255,7 +276,8 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
           .addTo(map);
       };
       map.on("load", () => {
-        if (!map) return;
+        if (!map || cancelled) return;
+        const { places, showInactiveBuildings, focusPlaceId } = latest.current;
         if (view === "campus" && !focusedPlace) {
           const active = places.filter((place) => place.events.length > 0);
           if (active.length === 1 && active[0]) map.easeTo({ center: [active[0].lng, active[0].lat], zoom: 16.2, pitch: 46, bearing: -18 });
@@ -275,12 +297,18 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
             } catch { /* Map styles expose different paint properties. */ }
           }
 
-          const vectorSource = Object.entries(map.getStyle().sources ?? {}).find(([, source]) => source.type === "vector")?.[0];
-          if (vectorSource && !map.getLayer("campus-3d-buildings")) {
+          // Use the provider's actual building source only after TileJSON supplied tiles.
+          const vectorSource = styleLayers.find((layer) =>
+            "source-layer" in layer && layer["source-layer"] === "building" &&
+            "source" in layer && typeof layer.source === "string" &&
+            Boolean((map?.getSource(layer.source) as import("maplibre-gl").VectorTileSource | undefined)?.tiles?.length)
+          );
+          const buildingSource = vectorSource && "source" in vectorSource ? vectorSource.source : undefined;
+          if (typeof buildingSource === "string" && !map.getLayer("campus-3d-buildings")) {
             try {
               const firstLabel = styleLayers.find((layer) => layer.type === "symbol")?.id;
               map.addLayer({
-                id: "campus-3d-buildings", type: "fill-extrusion", source: vectorSource, "source-layer": "building", minzoom: 14,
+                id: "campus-3d-buildings", type: "fill-extrusion", source: buildingSource, "source-layer": "building", minzoom: 14,
                 paint: {
                   "fill-extrusion-color": ["interpolate", ["linear"], ["zoom"], 14, "#d8d4c8", 17, "#f6f1e6"],
                   "fill-extrusion-height": ["coalesce", ["get", "render_height"], ["get", "height"], 12],
@@ -293,12 +321,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
 
           map.addSource("buildings", {
             type: "geojson",
-            data: { type: "FeatureCollection", features: places.filter((place) => showInactiveBuildings || place.events.length > 0).map((place) => ({
-              id: place.id,
-              type: "Feature" as const,
-              geometry: { type: "Point" as const, coordinates: [place.lng, place.lat] },
-              properties: { id: place.id, code: place.code || place.title, name: place.title, eventCount: place.events.length },
-            })) },
+            data: placeData(places, (place) => showInactiveBuildings || place.events.length > 0),
           });
           map.addLayer({ id: "building-points", type: "circle", source: "buildings", paint: {
             "circle-color": ["case", ["boolean", ["feature-state", "selected"], false], "#f5b942", [">", ["get", "eventCount"], 0], "#fff3cf", "#ffffff"],
@@ -315,7 +338,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
           for (const layer of ["building-points", "building-labels"]) {
             map.on("click", layer, (event) => {
               if (map?.queryRenderedFeatures(event.point, { layers: ["place-points"] }).length) return;
-              const place = byId.get(event.features?.[0]?.properties?.["id"]);
+              const place = findPlace(event.features?.[0]?.properties?.["id"]);
               if (place) {
                 if (selectedBuildingId !== undefined) map?.setFeatureState({ source: "buildings", id: selectedBuildingId }, { selected: false });
                 selectedBuildingId = place.id;
@@ -332,14 +355,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
         }
         map.addSource("places", {
           type: "geojson",
-          data: {
-            type: "FeatureCollection",
-            features: places.filter((place) => view !== "campus" || place.events.length > 0).map((place) => ({
-              type: "Feature" as const,
-              geometry: { type: "Point" as const, coordinates: [place.lng, place.lat] },
-              properties: { id: place.id, kind: place.events.length > 0 ? "event" : place.kind, eventCount: place.events.length },
-            })),
-          },
+          data: placeData(places, (place) => view !== "campus" || place.events.length > 0),
           cluster: view !== "campus",
           clusterMaxZoom: view === "campus" ? 16 : 13,
           clusterRadius: 42,
@@ -370,7 +386,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
         }, paint: view === "campus" ? { "text-color": "#ffffff" } : {} });
         map.on("click", "place-points", (event) => {
           const id = event.features?.[0]?.properties?.["id"];
-          const place = byId.get(id);
+          const place = findPlace(id);
           if (place) {
             if (view === "campus") map?.easeTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), 16.2), pitch: 52, bearing: -18, duration: 750 });
             void logActivityEvent("map_pin_selected", { placeId: place.id, kind: place.kind, view });
@@ -383,17 +399,52 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
           if (!feature || feature.geometry.type !== "Point") return;
           const source = map?.getSource("places") as import("maplibre-gl").GeoJSONSource | undefined;
           if (!source) return;
-          const zoom = await source.getClusterExpansionZoom(feature.properties?.["cluster_id"]);
-          map?.easeTo({ center: feature.geometry.coordinates as [number, number], zoom });
+          try {
+            const zoom = await source.getClusterExpansionZoom(feature.properties?.["cluster_id"]);
+            if (!cancelled) map?.easeTo({ center: feature.geometry.coordinates as [number, number], zoom });
+          } catch (error) {
+            // A filter can replace the cluster index while its expansion is pending.
+            if (!cancelled && latest.current.places === places) console.warn("Could not expand map cluster", error);
+          }
         });
         for (const layer of ["clusters", "place-points", "place-icons"]) {
           map.on("mouseenter", layer, () => { if (map) map.getCanvas().style.cursor = "pointer"; });
           map.on("mouseleave", layer, () => { if (map) map.getCanvas().style.cursor = ""; });
         }
+        refresh.current = (focusChanged) => {
+          if (!map || cancelled) return;
+          const current = latest.current;
+          const placesSource = map.getSource<import("maplibre-gl").GeoJSONSource>("places");
+          const buildingsSource = map.getSource<import("maplibre-gl").GeoJSONSource>("buildings");
+          const dataChanged = current.places !== renderedPlaces || current.showInactiveBuildings !== renderedInactive;
+          if (dataChanged) {
+            activePopup?.remove();
+            placesSource?.setData(placeData(current.places, (place) => view !== "campus" || place.events.length > 0));
+            buildingsSource?.setData(placeData(current.places, (place) => current.showInactiveBuildings || place.events.length > 0));
+            renderedPlaces = current.places;
+            renderedInactive = current.showInactiveBuildings;
+          }
+          map.setFilter("selected-place-halo", ["all", ["!", ["has", "point_count"]], ["==", ["get", "id"], current.focusPlaceId || "__none__"]]);
+          const focused = focusChanged && findPlace(current.focusPlaceId);
+          if (focused) map.easeTo({ center: [focused.lng, focused.lat], zoom: Math.max(map.getZoom(), 16.2), duration: 500 });
+        };
+        let renderedPlaces = places;
+        let renderedInactive = showInactiveBuildings;
       });
     });
-    return () => { cancelled = true; resizeObserver.disconnect(); recenterButton?.remove(); map?.remove(); };
-  }, [places, view, campus, showInactiveBuildings, focusPlaceId]);
+    return () => {
+      cancelled = true;
+      refresh.current = null;
+      resizeObserver.disconnect();
+      recenterButton?.remove();
+      map?.remove();
+    };
+  }, [view, campus]);
+
+  useEffect(() => {
+    refresh.current?.(previousFocus.current !== focusPlaceId);
+    previousFocus.current = focusPlaceId;
+  }, [places, showInactiveBuildings, focusPlaceId]);
 
   return <div ref={container} className="relative h-[60svh] min-h-[280px] max-h-[640px] w-full overflow-hidden rounded-[1.6rem] sm:h-[640px] xl:h-[calc(100dvh-6rem)] xl:max-h-[820px]" aria-label={view === "campus" ? `${campus?.shortName || "College"} campus events map` : "Area discounts and free food map"} />;
 }
