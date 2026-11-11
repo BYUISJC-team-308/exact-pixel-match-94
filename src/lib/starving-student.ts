@@ -18,12 +18,25 @@ type OfferRow = {
 };
 
 export async function fetchStarvingStudentOffers(): Promise<SSDeal[]> {
-  const { data, error } = await supabase
-    .from("ss_deals")
-    .select("id,source_key,category,company,item,deal_type,value,details,source_url,captured_at,locations,total_uses")
-    .order("company", { ascending: true });
-  if (error) throw error;
-  return ((data ?? []) as OfferRow[]).map((offer) => ({
+  // Supabase caps individual responses. Fetch every range before filtering or
+  // rendering, with a stable ID tie-breaker so later pages remain discoverable.
+  const offers: OfferRow[] = [];
+  const batchSize = 1000;
+  for (let start = 0; ; start += batchSize) {
+    const { data, error } = await supabase
+      .from("ss_deals")
+      .select(
+        "id,source_key,category,company,item,deal_type,value,details,source_url,captured_at,locations,total_uses",
+      )
+      .order("company", { ascending: true })
+      .order("id", { ascending: true })
+      .range(start, start + batchSize - 1);
+    if (error) throw error;
+    const batch = (data ?? []) as OfferRow[];
+    offers.push(...batch);
+    if (batch.length < batchSize) break;
+  }
+  return offers.map((offer) => ({
     id: offer.id,
     company: offer.company,
     item: offer.item,
