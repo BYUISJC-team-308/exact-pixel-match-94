@@ -10,7 +10,10 @@ export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
       { title: "Your Profile — Studeats" },
-      { name: "description", content: "View and update your Studeats account information and review team analytics." },
+      {
+        name: "description",
+        content: "View and update your Studeats profile.",
+      },
       { property: "og:title", content: "Your Profile — Studeats" },
       { property: "og:description", content: "Manage your Studeats account." },
     ],
@@ -24,14 +27,21 @@ function Profile() {
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
 
   if (!authReady) {
-    return <p className="py-20 text-center text-muted-foreground">Loading…</p>;
+    return (
+      <p className="py-20 text-center text-muted-foreground" role="status">
+        Checking your account…
+      </p>
+    );
   }
 
   if (!user) {
     return (
       <div className="mx-auto max-w-md py-20 text-center">
-        <h1 className="text-3xl font-semibold">No account yet</h1>
-        <p className="mt-2 text-muted-foreground">Create one to save deals and events.</p>
+        <h1 className="text-3xl font-semibold">Sign in to your profile</h1>
+        <p className="mt-2 text-muted-foreground">
+          Sign in to view or edit your name, school, and photo. Saved offers and events currently
+          stay on this browser.
+        </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link
             to="/account"
@@ -49,7 +59,7 @@ function Profile() {
             onClick={() => setAnalyticsOpen(true)}
             className="inline-flex rounded-full bg-secondary px-4 py-2.5 text-sm font-medium ring-1 ring-border hover:bg-glass"
           >
-            📊 Team Analytics
+            📊 Team OKRs
           </button>
         </div>
         <AnalyticsDrawerModal open={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
@@ -82,7 +92,7 @@ function Profile() {
         </div>
       </PageHeader>
 
-      {saved && <p className="mb-3 text-sm font-medium text-primary">Changes saved.</p>}
+      {saved && <p className="mb-3 text-sm font-medium text-primary">Profile changes saved.</p>}
       <AccountForm
         initial={user}
         submitLabel="Save changes"

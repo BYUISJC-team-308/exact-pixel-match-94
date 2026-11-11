@@ -1,3 +1,4 @@
+import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { actions, useStore } from "@/lib/store";
@@ -32,7 +33,14 @@ function FreeFood() {
   const [openDetail, setOpenDetail] = useState<NormalizedFoodEvent | null>(null);
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);
 
-  const { data: events = [], isLoading, isError, error, refetch } = useFoodEventsQuery();
+  const {
+    data: events = [],
+    isPending,
+    isLoading: initialFetchLoading,
+    isError,
+    refetch,
+  } = useFoodEventsQuery();
+  const isLoading = isPending ?? initialFetchLoading;
 
   // Filter out past events
   const futureEvents = events.filter((e) => e.dayOffset >= 0);
@@ -56,7 +64,13 @@ function FreeFood() {
   return (
     <>
       <PageHeader
-        eyebrow={`${todayCount} free food event${todayCount === 1 ? "" : "s"} happening today`}
+        eyebrow={
+          isLoading
+            ? "Loading food events…"
+            : isError
+              ? "Food events couldn’t load"
+              : `${todayCount} food event${todayCount === 1 ? "" : "s"} listed for today`
+        }
         title="Free Food Near Me"
       >
         <div className="flex flex-wrap items-center gap-2">
@@ -143,13 +157,11 @@ function FreeFood() {
 
       {/* Error State */}
       {isError && (
-        <div className="glass mt-8 p-8 text-center">
-          <p className="font-semibold text-destructive">Could not load food events from database.</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {error instanceof Error ? error.message : "Unknown error"}
-          </p>
+        <div role="alert" className="glass mt-8 p-8 text-center">
+          <p className="font-semibold text-destructive">Food events couldn’t load.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Check your connection and try again.</p>
           <Btn variant="soft" onClick={() => refetch()} className="mt-4">
-            Try Again
+            Try again
           </Btn>
         </div>
       )}
@@ -163,15 +175,11 @@ function FreeFood() {
               <h4 className="mt-2 text-base font-semibold">No free food events found</h4>
               <p className="mt-1 text-xs text-muted-foreground">
                 {timeFilter === "today"
-                  ? "Nothing listed for today yet. Try checking 'This Week' or post an event!"
+                  ? "Nothing is listed for today. Try This Week or share an event."
                   : "No events match this filter."}
               </p>
-              <Btn
-                variant="soft"
-                onClick={() => setIsSubmitOpen(true)}
-                className="mt-4 text-xs"
-              >
-                + Post a Food Event
+              <Btn variant="soft" onClick={() => setIsSubmitOpen(true)} className="mt-4 text-xs">
+                + Share Free Food
               </Btn>
             </div>
           ) : (
@@ -189,7 +197,11 @@ function FreeFood() {
                           {e.formattedDate} {e.start}
                         </span>
                         <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                          {e.category === "on_campus" ? "BYU Campus" : "Utah County"}
+                          {e.building === "Location not provided"
+                            ? "Location not provided"
+                            : e.category === "on_campus"
+                              ? "BYU Campus"
+                              : "Utah County"}
                         </span>
                       </div>
                       <button
@@ -203,18 +215,14 @@ function FreeFood() {
                       </button>
                     </div>
 
-                    <button
-                      onClick={() => setOpenDetail(e)}
-                      className="mt-3 block text-left"
-                    >
+                    <button onClick={() => setOpenDetail(e)} className="mt-3 block text-left">
                       <h3 className="text-lg font-semibold leading-snug hover:text-primary transition-colors">
                         {e.title}
                       </h3>
-                      <p className="mt-1 text-sm font-medium text-foreground">
-                        {e.food}
-                      </p>
+                      <p className="mt-1 text-sm font-medium text-foreground">{e.food}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {e.building}{e.room ? `, ${e.room}` : ""} · Hosted by {e.host}
+                        {e.building}
+                        {e.room ? ` · ${roomLabel(e.room)}` : ""} · Hosted by {e.host}
                       </p>
                     </button>
                   </div>
@@ -238,10 +246,7 @@ function FreeFood() {
       )}
 
       {/* Community Event Submission Modal (Question 1 Answer: Option C Hybrid) */}
-      <SubmitFoodEventModal
-        open={isSubmitOpen}
-        onClose={() => setIsSubmitOpen(false)}
-      />
+      <SubmitFoodEventModal open={isSubmitOpen} onClose={() => setIsSubmitOpen(false)} />
 
       {/* Event Detail Modal */}
       <EventDetail event={openDetail} onClose={() => setOpenDetail(null)} />

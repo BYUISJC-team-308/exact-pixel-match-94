@@ -8,9 +8,12 @@ export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
       { title: "Create an Account — Studeats" },
-      { name: "description", content: "Sign up to save discounts, free food events and your school info." },
+      {
+        name: "description",
+        content: "Create a profile with your name, school, and optional photo.",
+      },
       { property: "og:title", content: "Create an Account — Studeats" },
-      { property: "og:description", content: "Save deals and events with a free Studeats account." },
+      { property: "og:description", content: "Create and manage your Studeats profile." },
     ],
   }),
   component: Account,
@@ -21,9 +24,15 @@ function Account() {
   const [notice, setNotice] = useState<string | null>(null);
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader eyebrow="Free forever" title="Create your account">
-        <Link to="/" className="text-sm font-medium text-primary hover:underline">← Back home</Link>
+      <PageHeader eyebrow="Your student profile" title="Create your account">
+        <Link to="/" className="text-sm font-medium text-primary hover:underline">
+          ← Back home
+        </Link>
       </PageHeader>
+      <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
+        An account lets you save your profile details. You can browse without signing in. Saved
+        offers, events, and card-use tracking currently stay on this browser.
+      </p>
       <AccountForm
         submitLabel="Create account"
         onSubmit={async (u) => {
@@ -39,7 +48,10 @@ function Account() {
       />
       {notice && <p className="mt-3 text-sm font-medium text-primary">{notice}</p>}
       <p className="mt-4 text-center text-sm text-muted-foreground">
-        Already have an account? <Link to="/signin" className="text-primary underline">Sign in</Link>
+        Already have an account?{" "}
+        <Link to="/signin" className="text-primary underline">
+          Sign in
+        </Link>
       </p>
     </div>
   );
