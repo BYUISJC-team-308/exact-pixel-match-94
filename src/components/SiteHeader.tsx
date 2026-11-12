@@ -126,7 +126,7 @@ export function SiteHeader() {
   return (
     <header
       ref={headerRef}
-      className="sticky top-0 z-40 border-b border-[#073c2b] bg-[#073c2b] shadow-md"
+      className="student-steals-theme sticky top-0 z-40 border-b border-[#042f23] bg-[#042f23] shadow-md"
     >
       <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:gap-3 sm:px-6">
         <Link
@@ -152,7 +152,7 @@ export function SiteHeader() {
               setAccountOpen(false);
               setQ("");
             }}
-            className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary ring-1 ring-border focus-visible:outline-2 sm:hidden"
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-white ring-1 ring-border focus-visible:outline-2 sm:hidden"
           >
             {searchOpen ? (
               <X className="size-4" aria-hidden="true" />
@@ -168,7 +168,7 @@ export function SiteHeader() {
                 : "relative hidden sm:block"
             }
           >
-            <div className="flex h-11 w-full items-center gap-2 rounded-full bg-secondary px-3 ring-1 ring-border sm:w-56">
+            <div className="flex h-11 w-full items-center gap-2 rounded-full bg-white px-3 ring-1 ring-border sm:w-56">
               <span className="text-muted-foreground">🔍</span>
               <input
                 ref={searchInput}
@@ -231,7 +231,7 @@ export function SiteHeader() {
                   setSearchOpen(false);
                   setQ("");
                 }}
-                className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full border border-[#759b83] bg-white font-sans font-semibold text-[#073c2b] hover:bg-[#edf4ed]"
+                className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full border border-[#759b83] bg-white font-sans font-semibold text-[#042f23] hover:bg-[#edf4ed]"
               >
                 {user?.avatar ? (
                   <img src={user.avatar} alt="" className="size-full object-cover" />
@@ -245,7 +245,7 @@ export function SiteHeader() {
               <span
                 role="status"
                 aria-label="Checking your account"
-                className="grid size-11 place-items-center rounded-full border border-[#759b83] bg-white text-[#073c2b]"
+                className="grid size-11 place-items-center rounded-full border border-[#759b83] bg-white text-[#042f23]"
               >
                 <UserRound className="size-5" aria-hidden="true" />
               </span>
@@ -326,7 +326,7 @@ export function SiteHeader() {
               setAccountOpen(false);
               setQ("");
             }}
-            className="grid size-11 shrink-0 place-items-center rounded-full border border-[#759b83] bg-white text-[#073c2b] hover:bg-[#edf4ed]"
+            className="grid size-11 shrink-0 place-items-center rounded-full border border-[#759b83] bg-white text-[#042f23] hover:bg-[#edf4ed]"
             aria-label="Menu"
             aria-expanded={menu}
           >
@@ -345,7 +345,7 @@ export function SiteHeader() {
               key={n.to}
               to={n.to}
               onClick={() => setMenu(false)}
-              className={`${navPill} rounded-xl border-[#dce9df] bg-[#f4f8f3] text-[#073c2b]`}
+              className={`${navPill} rounded-xl border-[#dce9df] bg-[#f4f8f3] text-[#042f23]`}
               activeOptions={{ exact: true }}
               activeProps={activePill}
             >

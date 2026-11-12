@@ -99,7 +99,7 @@ export function Index() {
   };
 
   return (
-    <div className="relative -mx-4 rounded-b-[2rem] bg-[#f7f8f4] px-4 py-6 sm:-mx-6 sm:px-6 sm:py-10">
+    <div className="student-steals-theme relative -mx-4 rounded-b-[2rem] bg-[#f3f7f0] text-foreground px-4 py-6 sm:-mx-6 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl">
         <h1 id="home-title" className="sr-only">
           Student Steals: discounts, card offers, and free food
@@ -113,7 +113,7 @@ export function Index() {
               <Link
                 key={to}
                 to={to}
-                className={`group flex min-w-0 overflow-hidden rounded-3xl border-2 border-[#759b83] bg-white text-[#073c2b] transition-shadow hover:shadow-lg md:flex-col ${focus}`}
+                className={`group flex min-w-0 overflow-hidden rounded-3xl border-2 border-[#7b9a86] bg-white text-[#042f23] transition-shadow hover:shadow-lg md:flex-col ${focus}`}
               >
                 <div className="relative w-24 shrink-0 overflow-hidden bg-[#e2eee1] min-[390px]:w-28 md:aspect-[16/10] md:w-full">
                   <img
@@ -129,9 +129,9 @@ export function Index() {
                   <h3 className="font-sans text-base font-extrabold leading-snug md:text-xl">
                     {title}
                   </h3>
-                  <p className="mt-1 text-xs leading-relaxed text-[#294c3a] md:text-sm">{detail}</p>
-                  <span className="mt-2 text-[11px] font-medium text-[#294c3a]">{note}</span>
-                  <span className="mt-3 flex min-h-11 items-center justify-between gap-2 rounded-xl bg-[#073c2b] px-3 py-2 text-xs font-bold text-white md:mt-4 md:text-sm">
+                  <p className="mt-1 text-xs leading-relaxed text-[#2e503e] md:text-sm">{detail}</p>
+                  <span className="mt-2 text-[11px] font-medium text-[#2e503e]">{note}</span>
+                  <span className="mt-3 flex min-h-11 items-center justify-between gap-2 rounded-xl bg-[#042f23] px-3 py-2 text-xs font-bold text-white md:mt-4 md:text-sm">
                     {action}
                     <ArrowRight
                       className="size-4 shrink-0 transition-transform motion-safe:group-hover:translate-x-1"
@@ -146,10 +146,13 @@ export function Index() {
         <div className="mt-6 grid items-start gap-4 lg:grid-cols-2">
           <section
             aria-labelledby="today-title"
-            className="rounded-3xl border border-border bg-white p-4 sm:p-5"
+            className="rounded-3xl border-2 border-primary/45 bg-white p-4 sm:p-5"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 id="today-title" className="flex items-center gap-2 text-lg font-semibold">
+              <h2
+                id="today-title"
+                className="flex items-center gap-2 font-sans text-lg font-bold text-primary"
+              >
                 <CalendarDays className="size-5 text-primary" aria-hidden="true" />
                 Today on campus
               </h2>
@@ -194,9 +197,9 @@ export function Index() {
                       <button
                         type="button"
                         onClick={() => setEvent(item)}
-                        className={`flex h-full w-full items-start gap-3 rounded-2xl bg-[#f5f7f3] p-3 text-left ${focus}`}
+                        className={`flex h-full w-full items-start gap-3 rounded-2xl border border-primary/20 bg-[#eaf2e7] p-3 hover:bg-[#e0ecdc] text-left ${focus}`}
                       >
-                        <span className="mt-0.5 shrink-0 rounded-lg bg-gold/15 px-2 py-1 text-xs font-semibold">
+                        <span className="mt-0.5 shrink-0 rounded-lg bg-primary px-2 py-1 text-primary-foreground text-xs font-semibold">
                           {item.start}
                         </span>
                         <div className="min-w-0 flex-1">
@@ -232,11 +235,11 @@ export function Index() {
           <section
             id="my-hub"
             aria-labelledby="hub-title"
-            className="scroll-mt-24 rounded-3xl border border-border bg-white p-4 shadow-sm sm:p-6"
+            className="scroll-mt-24 rounded-3xl border-2 border-primary/45 bg-white p-4 shadow-sm sm:p-6"
           >
             <div className="flex items-center gap-3">
               <Bookmark className="size-5 text-primary" aria-hidden="true" />
-              <h2 id="hub-title" className="text-xl font-semibold">
+              <h2 id="hub-title" className="font-sans text-xl font-bold text-primary">
                 My Hub
               </h2>
               {authReady && user && savedCount > 0 && (

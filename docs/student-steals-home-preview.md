@@ -7,7 +7,7 @@ Based on the November 12 discussion with Bryce and the reference sketch. Student
 - Shared wordmark, mask SVG/favicon, page titles, footer and visible brand references use Student Steals. Provider name Starving Student Card, existing URLs, database configuration, storage keys and saved data are unchanged.
 - Home's oversized visible title is replaced by an accessible screen-reader heading. Three image tiles use white/pale-green backgrounds, deep-green text, clear conditions and full-card links. They stack with compact thumbnails on phones; desktop shows three equal image cards.
 - Header retains search, an account disclosure and a navigation menu at all sizes. Guest options are Sign in/Create account; members get My profile/Sign out through the existing auth flow. Search, menu and account panels are mutually exclusive; outside taps dismiss them, and account/menu Escape restores toggle focus. Expanded navigation is white/green rather than multicolor bubbles.
-- Today on Campus and My Hub markup, data selection, counts, loading/error states, save behavior and desktop/mobile layout are byte-for-byte unchanged from main `2f14d6c` below the shortcuts section. The Map/Calendar/My Hub/Help shortcut tile row was removed following Product Owner visual review; Map and Calendar remain in the main menu.
+- Today on Campus and My Hub retain their data selection, counts, loading/error states, save behavior and desktop/mobile layout. Their visual styling was subsequently unified with the deeper forest-green palette at the Product Owner’s request. The Map/Calendar/My Hub/Help shortcut tile row was removed following Product Owner visual review; Map and Calendar remain in the main menu.
 - No slogan, authentication-provider change, username-login work, new database behavior or provider offer changes.
 
 ## Assets
@@ -29,3 +29,7 @@ Images are local assets, not runtime third-party image requests. Decorative imag
 ## Darker green refinement
 
 Simplified the mask into a flat bandit-mask silhouette with tie details; removed the owl-like face/smile. Added a deep forest-green header with a white wordmark, darker tile text, stronger green borders and filled forest-green action buttons. Shortcut borders also have more definition. Today on Campus/My Hub source remains unchanged. This is still the unmerged review preview.
+
+## Unified homepage palette
+
+Product Owner requested the entire homepage match a slightly darker green. Header, logo, tile actions and footer now use #042F23. Scoped theme variables align Today on Campus/My Hub text, controls, borders, event backgrounds and time badges; yellow time badges are replaced with green/white. Functional behavior, content and layout remain unchanged. Build passed; actual 320/390/1280px browser checks showed no horizontal overflow. Footer was verified as RGB(4,47,35) with white text. Still preview-only in PR #35.
