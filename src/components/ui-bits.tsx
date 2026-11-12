@@ -456,7 +456,7 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
             </span>
           ) : (
             <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              ✓ Verified by Studeats
+              ✓ Verified by Student Steals
             </span>
           )}
           {score.hasVotes && (

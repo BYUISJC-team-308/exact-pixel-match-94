@@ -18,13 +18,13 @@ import { calculateVerificationScore } from "@/lib/deal-verification";
 export const Route = createFileRoute("/discounts")({
   head: () => ({
     meta: [
-      { title: "Discount Dashboard — Studeats" },
+      { title: "Discount Dashboard — Student Steals" },
       {
         name: "description",
         content:
           "Browse, search, filter and save student discounts on food, tech, AI tools and subscriptions.",
       },
-      { property: "og:title", content: "Discount Dashboard — Studeats" },
+      { property: "og:title", content: "Discount Dashboard — Student Steals" },
       {
         property: "og:description",
         content: "Browse listed student discounts and check provider requirements.",

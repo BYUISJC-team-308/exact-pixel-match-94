@@ -49,13 +49,13 @@ export const Route = createFileRoute("/starving-student")({
   errorComponent: CatalogError,
   head: () => ({
     meta: [
-      { title: "Starving Student Card Hub — Studeats" },
+      { title: "Starving Student Card Hub — Student Steals" },
       {
         name: "description",
         content:
           "Every Starving Student Card deal, sorted by category, with a tracker for deals you've used.",
       },
-      { property: "og:title", content: "Starving Student Card Hub — Studeats" },
+      { property: "og:title", content: "Starving Student Card Hub — Student Steals" },
       {
         property: "og:description",
         content: "Track which Starving Student Card deals you've used.",

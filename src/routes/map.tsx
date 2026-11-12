@@ -23,7 +23,7 @@ export const Route = createFileRoute("/map")({
   },
   head: () => ({
     meta: [
-      { title: "Interactive Maps — Studeats" },
+      { title: "Interactive Maps — Student Steals" },
       { name: "description", content: "Explore Starving Student Card deals and free food events on area and BYU campus maps." },
     ],
   }),

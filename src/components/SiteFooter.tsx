@@ -13,7 +13,7 @@ export function SiteFooter() {
     <footer className="mx-auto mt-12 max-w-7xl border-t border-border/60 px-4 py-6 sm:px-6 sm:py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="text-sm font-semibold">Studeats</p>
+          <p className="text-sm font-semibold">Student Steals</p>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             Student discounts, card offers, and free food.
           </p>

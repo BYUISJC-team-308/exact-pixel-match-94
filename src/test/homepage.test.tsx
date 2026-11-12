@@ -170,7 +170,7 @@ describe("Homepage discovery and saved-item journeys", () => {
     expect(screen.queryByText(/1 saved/)).not.toBeInTheDocument();
     expect(screen.queryByText("A look at the listings")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Discounts, Card offers, and Free Food",
+      "Student Steals: discounts, card offers, and free food",
     );
   });
 

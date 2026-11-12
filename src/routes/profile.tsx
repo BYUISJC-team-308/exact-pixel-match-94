@@ -14,13 +14,13 @@ import type { Deal } from "@/lib/data";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Your Profile — Studeats" },
+      { title: "Your Profile — Student Steals" },
       {
         name: "description",
-        content: "View and update your Studeats profile.",
+        content: "View and update your Student Steals profile.",
       },
-      { property: "og:title", content: "Your Profile — Studeats" },
-      { property: "og:description", content: "Manage your Studeats account." },
+      { property: "og:title", content: "Your Profile — Student Steals" },
+      { property: "og:description", content: "Manage your Student Steals account." },
     ],
   }),
   component: Profile,

@@ -1,16 +1,7 @@
 import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  ArrowRight,
-  Bookmark,
-  CalendarDays,
-  CreditCard,
-  MapPin,
-  Tag,
-  Utensils,
-  CircleHelp,
-} from "lucide-react";
+import { ArrowRight, Bookmark, CalendarDays, MapPin, CircleHelp } from "lucide-react";
 import type { Deal } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { DealDetail, EventDetail } from "@/components/ui-bits";
@@ -20,13 +11,13 @@ import { useDealsQuery } from "@/lib/deals";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Studeats — Student deals & free food" },
+      { title: "Student Steals — Student deals & free food" },
       {
         name: "description",
         content:
           "Find student discounts, Starving Student Card offers, and campus free-food events.",
       },
-      { property: "og:title", content: "Studeats — Student deals & free food" },
+      { property: "og:title", content: "Student Steals — Student deals & free food" },
       { property: "og:description", content: "Three ways to save. One place to start." },
     ],
   }),
@@ -42,29 +33,26 @@ const paths = [
     detail: "Offers on food, tech, travel, and more.",
     note: "Check student eligibility",
     action: "Browse discounts",
-    icon: Tag,
-    tone: "bg-[#e4f1e9] text-[#174d3b] border-[#c9dfd1]",
-    iconTone: "bg-[#174d3b] text-white",
+    image: "/images/student-discounts.jpg",
+    imageClass: "object-cover",
   },
   {
     to: "/starving-student",
     title: "Starving Student Card",
     detail: "Browse offers included with your card.",
-    note: "For cardholders",
+    note: "Card required",
     action: "Browse card offers",
-    icon: CreditCard,
-    tone: "bg-[#fff0db] text-[#70431c] border-[#eddbbf]",
-    iconTone: "bg-[#85532c] text-white",
+    image: "/images/starving-student-app.jpg",
+    imageClass: "object-contain p-3 md:p-7",
   },
   {
     to: "/free-food",
     title: "Free food events",
-    detail: "See what's on, what's served, and where to go.",
+    detail: "Find campus events with food provided.",
     note: "Check event requirements",
     action: "Find free food",
-    icon: Utensils,
-    tone: "bg-[#edeafb] text-[#493b75] border-[#dad4ed]",
-    iconTone: "bg-[#5b4a8a] text-white",
+    image: "/images/free-food-pizza.jpg",
+    imageClass: "object-cover",
   },
 ] as const;
 
@@ -113,42 +101,42 @@ export function Index() {
   return (
     <div className="relative -mx-4 rounded-b-[2rem] bg-[#f7f8f4] px-4 py-6 sm:-mx-6 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl">
-        <header className="mb-5 sm:mb-7">
-          <h1
-            id="home-title"
-            className="max-w-3xl text-3xl font-semibold leading-[1.12] tracking-tight sm:text-5xl"
-          >
-            Discounts, Card offers, and Free Food
-          </h1>
-        </header>
+        <h1 id="home-title" className="sr-only">
+          Student Steals: discounts, card offers, and free food
+        </h1>
         <section aria-labelledby="discover-title">
           <h2 id="discover-title" className="sr-only">
             Three ways to save
           </h2>
-          <div className="grid auto-rows-fr gap-3 md:grid-cols-3">
-            {paths.map(({ to, title, detail, note, action, icon: Icon, tone, iconTone }) => (
+          <div className="grid auto-rows-fr gap-3 md:grid-cols-3 md:gap-5">
+            {paths.map(({ to, title, detail, note, action, image, imageClass }) => (
               <Link
                 key={to}
                 to={to}
-                className={`group relative flex min-w-0 items-center gap-3 rounded-3xl border p-4 transition-shadow hover:shadow-md md:flex-col md:items-start md:gap-5 md:p-6 ${tone} ${focus}`}
+                className={`group flex min-w-0 overflow-hidden rounded-3xl border border-[#c9dfd1] bg-white text-[#174d3b] transition-shadow hover:shadow-lg md:flex-col ${focus}`}
               >
-                <span
-                  className={`grid size-12 shrink-0 place-items-center rounded-2xl md:size-14 ${iconTone}`}
-                >
-                  <Icon className="size-6 md:size-7" aria-hidden="true" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-sans text-base font-bold leading-snug md:text-xl">{title}</h3>
-                  <p className="mt-1 max-w-xs text-xs leading-relaxed opacity-85 md:text-sm">
-                    {detail}
-                  </p>
-                  <span className="mt-2 block text-[11px] font-medium opacity-75">{note}</span>
+                <div className="relative w-24 shrink-0 overflow-hidden bg-[#edf4ed] min-[390px]:w-28 md:aspect-[16/10] md:w-full">
+                  <img
+                    src={image}
+                    alt=""
+                    width="900"
+                    height="600"
+                    decoding="async"
+                    className={`absolute inset-0 size-full ${imageClass} transition-transform duration-300 motion-safe:group-hover:scale-[1.03]`}
+                  />
                 </div>
-                <span className="hidden min-h-11 w-full items-center justify-between border-t border-current/15 pt-3 text-sm font-semibold md:flex">
-                  {action}
-                  <ArrowRight className="size-5" aria-hidden="true" />
-                </span>
-                <ArrowRight className="size-5 shrink-0 md:hidden" aria-hidden="true" />
+                <div className="flex min-w-0 flex-1 flex-col p-4 md:p-5">
+                  <h3 className="font-sans text-base font-bold leading-snug md:text-xl">{title}</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-[#416354] md:text-sm">{detail}</p>
+                  <span className="mt-2 text-[11px] font-medium text-[#416354]">{note}</span>
+                  <span className="mt-auto flex min-h-11 items-center justify-between gap-2 pt-3 text-xs font-semibold md:mt-4 md:border-t md:border-[#dce9df] md:text-sm">
+                    {action}
+                    <ArrowRight
+                      className="size-4 shrink-0 transition-transform motion-safe:group-hover:translate-x-1"
+                      aria-hidden="true"
+                    />
+                  </span>
+                </div>
               </Link>
             ))}
           </div>

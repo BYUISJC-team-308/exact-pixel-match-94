@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { InformationPage } from "@/components/InformationPage";
 
 export const Route = createFileRoute("/contact")({
-  head: () => ({ meta: [{ title: "Contact — Studeats" }] }),
+  head: () => ({ meta: [{ title: "Contact — Student Steals" }] }),
   component: ContactPage,
 });
 
@@ -68,7 +68,7 @@ export function ContactPage() {
         <h2>Offer eligibility and redemption</h2>
         <p>
           Contact the merchant, event organizer, or official card provider through the source linked
-          in the listing. The Studeats project team cannot authorize an offer or change a provider’s
+          in the listing. The Student Steals project team cannot authorize an offer or change a provider’s
           requirements.
         </p>
       </section>

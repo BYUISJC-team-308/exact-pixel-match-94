@@ -4,10 +4,10 @@ import { InformationPage } from "@/components/InformationPage";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About — Studeats" },
+      { title: "About — Student Steals" },
       {
         name: "description",
-        content: "Meet the student project behind Studeats and learn how to use its listings.",
+        content: "Meet the student project behind Student Steals and learn how to use its listings.",
       },
     ],
   }),
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/about")({
 export function AboutPage() {
   return (
     <InformationPage
-      title="About Studeats"
+      title="About Student Steals"
       intro="A Group 8 IS 401 student project that brings student discounts, Starving Student Card offers, and free-food events into one place."
     >
       <section>
@@ -31,7 +31,7 @@ export function AboutPage() {
       <section>
         <h2>An independent student project</h2>
         <p>
-          Studeats is a student-built project. It is not an official university service or the
+          Student Steals is a student-built project. It is not an official university service or the
           official Starving Student Card portal. Listing an organization, event, or offer does not
           mean that its provider sponsors or endorses this project.
         </p>
