@@ -13,10 +13,11 @@ const mocks = vi.hoisted(() => ({
   deals: vi.fn(),
   events: vi.fn(),
   retry: vi.fn(),
+  navigate: vi.fn(),
 }));
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: unknown) => options,
-  useNavigate: () => vi.fn(),
+  useNavigate: () => mocks.navigate,
   Link: ({
     to,
     children,
@@ -171,4 +172,29 @@ it("explains signed-out profile access without implying synced saves", () => {
   expect(screen.getByRole("heading", { name: "Hi, Lot" })).toBeInTheDocument();
   expect(screen.getByText("Profile form")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+});
+
+it("focuses mobile search, closes the menu, and submits the first result with Enter", () => {
+  render(<SiteHeader />);
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+  fireEvent.click(screen.getByRole("button", { name: "Open site search" }));
+  expect(screen.queryByRole("navigation", { name: "Main navigation" })).not.toBeInTheDocument();
+  const search = screen.getByRole("textbox", { name: "Search the site" });
+  expect(search).toHaveFocus();
+  fireEvent.change(search, { target: { value: "calendar" } });
+  fireEvent.keyDown(search, { key: "Enter" });
+  expect(mocks.navigate).toHaveBeenCalledWith({ to: "/calendar" });
+  expect(screen.getByRole("button", { name: "Open site search" })).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
+});
+
+it("returns focus on Escape and exposes sign in in the mobile menu", () => {
+  render(<SiteHeader />);
+  fireEvent.click(screen.getByRole("button", { name: "Open site search" }));
+  fireEvent.keyDown(screen.getByRole("textbox", { name: "Search the site" }), { key: "Escape" });
+  expect(screen.getByRole("button", { name: "Open site search" })).toHaveFocus();
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+  expect(screen.getByRole("navigation", { name: "Main navigation" })).toHaveTextContent("Sign in");
 });
