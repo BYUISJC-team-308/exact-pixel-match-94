@@ -67,6 +67,7 @@ vi.mock("@/components/ui-bits", () => ({
   DealDetail: () => null,
   EventDetail: () => null,
   CompanyLogo: () => null,
+  Modal: ({ children, open }: { children: ReactNode; open?: boolean }) => (open ? <div>{children}</div> : null),
   chipTone: () => "",
   Btn: ({
     variant: _variant,

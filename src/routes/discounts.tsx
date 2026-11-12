@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import type { Deal, DealCategory } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
 import {
@@ -13,7 +14,12 @@ import {
 } from "@/components/ui-bits";
 import { useDealsQuery, getDealScore } from "@/lib/deals";
 import { SubmitDealModal } from "@/components/SubmitDealModal";
-import { calculateVerificationScore } from "@/lib/deal-verification";
+import { AuthRequiredModal } from "@/components/AuthRequiredModal";
+import {
+  calculateVerificationScore,
+  useToggleUpvoteMutation,
+  useDealInteractionsQuery,
+} from "@/lib/deal-verification";
 
 export const Route = createFileRoute("/discounts")({
   head: () => ({
@@ -51,6 +57,54 @@ const cats = [
 ] as const;
 type Cat = (typeof cats)[number];
 
+function DealCardUpvoteButton({
+  deal,
+  onRequireAuth,
+}: {
+  deal: Deal;
+  onRequireAuth: (action: string) => void;
+}) {
+  const { user } = useStore();
+  const upvoteMutation = useToggleUpvoteMutation(deal.id);
+  const { data: interactions } = useDealInteractionsQuery(deal.id);
+
+  const hasUpvoted = interactions?.hasUpvoted ?? false;
+  const count = interactions ? interactions.upvotesCount : (deal.upvotesCount ?? 0);
+
+  const handleUpvote = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      onRequireAuth("upvote deals");
+      return;
+    }
+    upvoteMutation.mutate(undefined, {
+      onSuccess: (res) => {
+        toast.success(res.upvoted ? `Upvoted ${deal.company}!` : "Upvote removed.");
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to upvote.");
+      },
+    });
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleUpvote}
+      disabled={upvoteMutation.isPending}
+      title={user ? (hasUpvoted ? "Remove upvote" : "Upvote this deal") : "Sign in to upvote"}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold transition-all ${
+        hasUpvoted
+          ? "bg-primary text-primary-foreground shadow-sm scale-105"
+          : "bg-secondary text-muted-foreground ring-1 ring-border hover:bg-glass hover:text-foreground active:scale-95"
+      }`}
+    >
+      <span className={hasUpvoted ? "text-primary-foreground" : "text-primary"}>▲</span>
+      <span>{count}</span>
+    </button>
+  );
+}
+
 function Discounts() {
   const { savedDeals } = useStore();
   const [cat, setCat] = useState<Cat>("All");
@@ -59,6 +113,8 @@ function Discounts() {
   const [communitySort, setCommunitySort] = useState<"upvotes" | "newest" | "rating">("upvotes");
   const [open, setOpen] = useState<Deal | null>(null);
   const [submitOpen, setSubmitOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authAction, setAuthAction] = useState("upvote deals");
 
   const {
     data: deals = [],
@@ -163,12 +219,12 @@ function Discounts() {
           </div>
 
           {/* Main Card Content */}
-          <button
-            onClick={() => setOpen(d)}
-            className="mt-3.5 block w-full text-left focus:outline-none"
-          >
+          <div className="mt-3.5">
             {/* 1. Company Name & Logo at the Top */}
-            <div className="flex items-center gap-3">
+            <button
+              onClick={() => setOpen(d)}
+              className="flex items-center gap-3 w-full text-left focus:outline-none"
+            >
               <CompanyLogo company={d.company} url={d.url} size={44} />
               <div className="min-w-0 flex-1">
                 <h3 className="text-xl font-bold tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
@@ -178,26 +234,28 @@ function Discounts() {
                   {d.category} · Check provider terms
                 </p>
               </div>
-            </div>
+            </button>
 
-            {/* 2. Noticeable Percent Off / Value & Upvotes */}
+            {/* 2. Value Pill & Interactive Upvote / Real Status */}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-1 text-sm font-bold text-accent ring-1 ring-accent/30">
                 🏷️ {d.value}
               </span>
 
-              {isCommunity && (
-                <div className="flex items-center gap-1.5 text-xs">
-                  <span className="rounded-full bg-secondary px-2 py-0.5 font-bold text-foreground ring-1 ring-border">
-                    ▲ {d.upvotesCount || 0}
+              <div className="flex items-center gap-1.5 text-xs">
+                {score.hasVotes && (
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${score.badgeColor}`}>
+                    {score.percentage}% Real
                   </span>
-                  {score.hasVotes && (
-                    <span className={`rounded-full px-2 py-0.5 font-semibold ${score.badgeColor}`}>
-                      {score.percentage}% Real
-                    </span>
-                  )}
-                </div>
-              )}
+                )}
+                <DealCardUpvoteButton
+                  deal={d}
+                  onRequireAuth={(act) => {
+                    setAuthAction(act);
+                    setAuthOpen(true);
+                  }}
+                />
+              </div>
             </div>
 
             {/* Submitter Attribution for Community Deals */}
@@ -209,10 +267,15 @@ function Discounts() {
             )}
 
             {/* 3. Description */}
-            <p className="mt-2.5 text-sm text-muted-foreground line-clamp-3 leading-relaxed">
-              {d.description}
-            </p>
-          </button>
+            <button
+              onClick={() => setOpen(d)}
+              className="mt-2.5 block w-full text-left focus:outline-none"
+            >
+              <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                {d.description}
+              </p>
+            </button>
+          </div>
         </div>
 
         {/* Footer */}
@@ -421,6 +484,11 @@ function Discounts() {
 
       {open && <DealDetail deal={open} onClose={() => setOpen(null)} />}
       {submitOpen && <SubmitDealModal open={submitOpen} onClose={() => setSubmitOpen(false)} />}
+      <AuthRequiredModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        action={authAction}
+      />
     </>
   );
 }
