@@ -40,3 +40,16 @@ Reviewed Home, Discounts, Starving Student Card (list and grid), Free Food, Cale
 - [W3C: Target Size](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum): minimum target sizing/spacing. This implementation uses a more comfortable 44px height for phone controls; calendar cells retain spaced seven-column geometry.
 - [MDN: VisualViewport](https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport): keyboard/zoom may shrink the visual viewport independently of the layout viewport.
 - [Radix Dialog](https://www.radix-ui.com/primitives/docs/components/dialog): portal, focus containment, accessible names, Escape handling, controlled nested dialogs.
+
+## November 12, 2026 regression audit
+
+Reviewed main `8cdeeab` in the browser before this patch. Homepage design is unchanged pending team feedback.
+
+- Direct-load layout checks: Home, Discounts, Card Hub, Free Food, Calendar, Map, Account, Sign in, Profile, Help, About, Contact, Privacy, Terms. No document horizontal overflow at 320×640, 360×800, 430×800, or landscape 740×360 (56 route/viewport checks). These are layout checks, not a claim that every control was exercised.
+- Signed-in live checks: free-food submission form opens/closes without submitting; discount details show redemption, voting, save and report controls; map list opens, location selection opens both offers, full offer details open/close, directions expose Google/Apple coordinate destinations, and campus view exposes BYU/UVU selection and date controls. No production records changed in this audit.
+- At 740×360 the discount modal stayed within the viewport (top 12px, bottom 348px), with 275px of independently scrollable body content. At 320×640 the event form stayed within top/bottom 12px margins.
+- Reproduced header search Enter doing nothing. Fixed Enter to open the first displayed match, added mobile focus and keyboard Go hint, Escape focus return, mutual exclusion with the mobile menu, and a shorter placeholder. Added Sign in to the guest mobile menu (desktop already had it).
+- Local browser check confirmed search focuses on open and Enter navigates to `/calendar`. Regression tests also cover menu closure, Escape focus, and guest sign-in access.
+- Validation: 108 tests passed; production build passed; changed-file ESLint and `git diff --check` passed.
+
+Remaining limits: browser viewport emulation is not a physical iPhone/Android test; native keyboard behavior, VoiceOver/TalkBack, location permission flows, slow-network performance and every possible save/vote/submission mutation were not exercised here. Existing test-labelled community events and questionable source end times remain data-review work; this patch does not alter them. Header result destinations retain existing page-level navigation semantics.

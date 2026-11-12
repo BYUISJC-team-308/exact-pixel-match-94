@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { siteSections, ssDeals } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { useFoodEventsQuery } from "@/lib/food-events";
@@ -49,6 +49,11 @@ export function SiteHeader() {
   const [menu, setMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const navigate = useNavigate();
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchToggle = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (searchOpen) searchInput.current?.focus();
+  }, [searchOpen]);
   useEffect(() => {
     initAuth();
   }, []);
@@ -104,11 +109,13 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
+            ref={searchToggle}
             aria-label={searchOpen ? "Close site search" : "Open site search"}
             aria-expanded={searchOpen}
             aria-controls="site-search"
             onClick={() => {
               setSearchOpen(!searchOpen);
+              setMenu(false);
               setQ("");
             }}
             className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary ring-1 ring-border focus-visible:outline-2 sm:hidden"
@@ -130,15 +137,26 @@ export function SiteHeader() {
             <div className="flex h-11 w-full items-center gap-2 rounded-full bg-secondary px-3 ring-1 ring-border sm:w-56">
               <span className="text-muted-foreground">🔍</span>
               <input
+                ref={searchInput}
+                enterKeyHint="go"
+                autoComplete="off"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Escape") {
                     setQ("");
                     setSearchOpen(false);
+                    searchToggle.current?.focus();
+                  }
+                  if (event.key === "Enter" && !event.nativeEvent.isComposing && results.length) {
+                    event.preventDefault();
+                    navigate({ to: results[0].to });
+                    setQ("");
+                    setSearchOpen(false);
+                    searchInput.current?.blur();
                   }
                 }}
-                placeholder="Search deals, places, free food"
+                placeholder="Search Studeats"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 aria-label="Search the site"
               />
@@ -227,6 +245,15 @@ export function SiteHeader() {
               {n.label}
             </Link>
           ))}
+          {authReady && !user && (
+            <Link
+              to="/signin"
+              onClick={() => setMenu(false)}
+              className={`${navPill} bg-secondary text-primary sm:hidden`}
+            >
+              Sign in
+            </Link>
+          )}
         </nav>
       )}
     </header>
