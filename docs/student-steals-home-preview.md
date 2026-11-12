@@ -12,11 +12,11 @@ Based on the November 12 discussion with Bryce and the reference sketch. Student
 
 ## Assets
 
-Images are local assets, not runtime third-party image requests. Decorative image alternatives are empty because adjacent headings describe each link. Fixed media regions reserve layout space. Combined JPEG assets are about 315 KiB.
+Images are local assets, not runtime third-party image requests. Decorative image alternatives are empty because adjacent headings describe each link. Fixed media regions reserve layout space. Combined JPEG assets are about 467 KiB.
 
 - `student-discounts.jpg`: illustrative retail photograph from https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=900&q=80 (Unsplash). It is not a participating-business claim.
 - `free-food-pizza.jpg`: illustrative pizza photograph from https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80 (Unsplash). It is not a specific event/menu claim.
-- `starving-student-app.jpg`: current official Starving Student Card App icon from Apple's app listing (app ID 1482047241), retrieved through https://itunes.apple.com/lookup?id=1482047241. Physical-card imagery found during research was outdated; this preview uses the actual app artwork rather than presenting an old offer card as current.
+- `starving-student-card-2027.jpg`: the official current black Utah County card preview, linked from https://www.starvingstudentcards.com/. Published asset: https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/sites/154285/images/c45aa23-c7-253f-afae-b71dfe48ac_SAMPLE-BLACK-2027-thumb.jpg . Cover is marked October 1, 2027. CSS clips the cover from the fold-out artwork and turns it upright; a slight angle and shadow give it a card presentation. This is real provider artwork, not a photograph of a physical card. Old app-icon asset removed.
 - `student-steals-mark.svg`: original code-native mask mark; independent of the provider's brand.
 
 ## Validation
@@ -37,3 +37,7 @@ Product Owner requested the entire homepage match a slightly darker green. Heade
 ## Event preview and sign-in label
 
 My Hub's guest button now reads “Sign in” and retains `/signin?next=hub`. Today on Campus shows up to four events instead of two; the complete-count “See all” link appears when more than four exist. Existing details and query behavior are preserved. Seven homepage tests and the production build passed; browser confirmed four live-data rows and the unchanged sign-in destination.
+
+## Physical card artwork refinement
+
+Replaced the blue app icon with the provider's current black card cover (October 2027 expiry). The downloaded official preview is preserved unchanged; CSS handles cover framing/orientation. Existing tile route/content/behavior unchanged. Production build passed.

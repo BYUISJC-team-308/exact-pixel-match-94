@@ -42,7 +42,7 @@ const paths = [
     detail: "Browse offers included with your card.",
     note: "Card required",
     action: "Browse card offers",
-    image: "/images/starving-student-app.jpg",
+    image: "/images/starving-student-card-2027.jpg",
     imageClass: "object-contain p-3 md:p-7",
   },
   {
@@ -116,14 +116,33 @@ export function Index() {
                 className={`group flex min-w-0 overflow-hidden rounded-3xl border-2 border-[#7b9a86] bg-white text-[#042f23] transition-shadow hover:shadow-lg md:flex-col ${focus}`}
               >
                 <div className="relative w-24 shrink-0 overflow-hidden bg-[#e2eee1] min-[390px]:w-28 md:aspect-[16/10] md:w-full">
-                  <img
-                    src={image}
-                    alt=""
-                    width="900"
-                    height="600"
-                    decoding="async"
-                    className={`absolute inset-0 size-full ${imageClass} transition-transform duration-300 motion-safe:group-hover:scale-[1.03]`}
-                  />
+                  {to === "/starving-student" ? (
+                    <div className="absolute inset-0 grid place-items-center overflow-hidden bg-[#dfebdc]">
+                      <div className="aspect-[1.6] w-40 shrink-0 rotate-[-4deg] overflow-hidden rounded-lg shadow-[0_12px_24px_-8px_#042f2370] ring-1 ring-black/15 md:w-[88%]">
+                        {/* The provider's fold-out preview prints the cover upside down.
+                            Crop its cover with CSS, then orient the whole cover upright. */}
+                        <div className="relative size-full rotate-180 overflow-hidden">
+                          <img
+                            src={image}
+                            alt=""
+                            width="972"
+                            height="1440"
+                            decoding="async"
+                            className="absolute left-0 top-0 h-auto w-full max-w-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <img
+                      src={image}
+                      alt=""
+                      width="900"
+                      height="600"
+                      decoding="async"
+                      className={`absolute inset-0 size-full ${imageClass} transition-transform duration-300 motion-safe:group-hover:scale-[1.03]`}
+                    />
+                  )}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col p-4 md:p-5">
                   <h3 className="font-sans text-base font-extrabold leading-snug md:text-xl">
