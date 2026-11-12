@@ -53,3 +53,5 @@ Reviewed main `8cdeeab` in the browser before this patch. Homepage design is unc
 - Validation: 108 tests passed; production build passed; changed-file ESLint and `git diff --check` passed.
 
 Remaining limits: browser viewport emulation is not a physical iPhone/Android test; native keyboard behavior, VoiceOver/TalkBack, location permission flows, slow-network performance and every possible save/vote/submission mutation were not exercised here. Existing test-labelled community events and questionable source end times remain data-review work; this patch does not alter them. Header result destinations retain existing page-level navigation semantics.
+
+Live verification: merged PR #33 at `51c3545352fb15578c541ef29e901bbd77147f89`; Vercel deployment reported success. On production at 320×640, search focused immediately, showed the new placeholder, and Enter navigated from Discounts to Calendar. No captured browser console errors. Screenshot: `docs/mobile-live-search.jpg`. Signed-in Profile also resolved to its editable account form at 320px; no account fields were changed.
