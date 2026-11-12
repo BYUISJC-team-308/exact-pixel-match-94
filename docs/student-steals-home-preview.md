@@ -25,3 +25,7 @@ Images are local assets, not runtime third-party image requests. Decorative imag
 - Chromium browser checks at actual 320, 360, 390, 430, 768 and 1280px viewport widths: no document overflow; all three local images loaded; stacked tiles below 768px and three columns at/above 768px.
 - Clicked all three tiles to Discount Dashboard, Card Hub and Free Food, then returned using the wordmark. Guest account destinations, menu dismissal and Enter search navigation checked in the browser. Member account/sign-out behavior covered with mocked auth; no production account changes made.
 - Physical iPhone/Android checks and Product Owner visual review remain. Existing source data/test-labelled events are outside this branding preview.
+
+## Darker green refinement
+
+Simplified the mask into a flat bandit-mask silhouette with tie details; removed the owl-like face/smile. Added a deep forest-green header with a white wordmark, darker tile text, stronger green borders and filled forest-green action buttons. Shortcut borders also have more definition. Today on Campus/My Hub source remains unchanged. This is still the unmerged review preview.

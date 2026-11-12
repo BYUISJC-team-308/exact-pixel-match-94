@@ -126,13 +126,13 @@ export function SiteHeader() {
   return (
     <header
       ref={headerRef}
-      className="sticky top-0 z-40 border-b border-[#dce9df] bg-white/95 backdrop-blur-xl"
+      className="sticky top-0 z-40 border-b border-[#073c2b] bg-[#073c2b] shadow-md"
     >
       <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:gap-3 sm:px-6">
         <Link
           to="/"
           aria-label="Student Steals home"
-          className="flex min-w-0 items-center gap-2 text-[#124c3c]"
+          className="flex min-w-0 items-center gap-2 text-white"
         >
           <StudentStealsMark className="size-9 shrink-0 sm:size-11" />
           <span className="font-sans text-base font-bold leading-[1.05] tracking-tight sm:text-xl">
@@ -231,7 +231,7 @@ export function SiteHeader() {
                   setSearchOpen(false);
                   setQ("");
                 }}
-                className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full border border-[#c9dfd1] bg-white font-sans font-semibold text-[#124c3c] hover:bg-[#edf4ed]"
+                className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full border border-[#759b83] bg-white font-sans font-semibold text-[#073c2b] hover:bg-[#edf4ed]"
               >
                 {user?.avatar ? (
                   <img src={user.avatar} alt="" className="size-full object-cover" />
@@ -245,7 +245,7 @@ export function SiteHeader() {
               <span
                 role="status"
                 aria-label="Checking your account"
-                className="grid size-11 place-items-center rounded-full border border-[#c9dfd1] text-[#124c3c]"
+                className="grid size-11 place-items-center rounded-full border border-[#759b83] bg-white text-[#073c2b]"
               >
                 <UserRound className="size-5" aria-hidden="true" />
               </span>
@@ -326,7 +326,7 @@ export function SiteHeader() {
               setAccountOpen(false);
               setQ("");
             }}
-            className="grid size-11 shrink-0 place-items-center rounded-full border border-[#c9dfd1] bg-white text-[#124c3c] hover:bg-[#edf4ed]"
+            className="grid size-11 shrink-0 place-items-center rounded-full border border-[#759b83] bg-white text-[#073c2b] hover:bg-[#edf4ed]"
             aria-label="Menu"
             aria-expanded={menu}
           >
@@ -345,7 +345,7 @@ export function SiteHeader() {
               key={n.to}
               to={n.to}
               onClick={() => setMenu(false)}
-              className={`${navPill} rounded-xl border-[#dce9df] bg-[#f4f8f3] text-[#124c3c]`}
+              className={`${navPill} rounded-xl border-[#dce9df] bg-[#f4f8f3] text-[#073c2b]`}
               activeOptions={{ exact: true }}
               activeProps={activePill}
             >

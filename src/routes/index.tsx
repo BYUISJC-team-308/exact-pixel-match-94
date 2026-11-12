@@ -113,9 +113,9 @@ export function Index() {
               <Link
                 key={to}
                 to={to}
-                className={`group flex min-w-0 overflow-hidden rounded-3xl border border-[#c9dfd1] bg-white text-[#174d3b] transition-shadow hover:shadow-lg md:flex-col ${focus}`}
+                className={`group flex min-w-0 overflow-hidden rounded-3xl border-2 border-[#759b83] bg-white text-[#073c2b] transition-shadow hover:shadow-lg md:flex-col ${focus}`}
               >
-                <div className="relative w-24 shrink-0 overflow-hidden bg-[#edf4ed] min-[390px]:w-28 md:aspect-[16/10] md:w-full">
+                <div className="relative w-24 shrink-0 overflow-hidden bg-[#e2eee1] min-[390px]:w-28 md:aspect-[16/10] md:w-full">
                   <img
                     src={image}
                     alt=""
@@ -126,10 +126,12 @@ export function Index() {
                   />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col p-4 md:p-5">
-                  <h3 className="font-sans text-base font-bold leading-snug md:text-xl">{title}</h3>
-                  <p className="mt-1 text-xs leading-relaxed text-[#416354] md:text-sm">{detail}</p>
-                  <span className="mt-2 text-[11px] font-medium text-[#416354]">{note}</span>
-                  <span className="mt-auto flex min-h-11 items-center justify-between gap-2 pt-3 text-xs font-semibold md:mt-4 md:border-t md:border-[#dce9df] md:text-sm">
+                  <h3 className="font-sans text-base font-extrabold leading-snug md:text-xl">
+                    {title}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-[#294c3a] md:text-sm">{detail}</p>
+                  <span className="mt-2 text-[11px] font-medium text-[#294c3a]">{note}</span>
+                  <span className="mt-3 flex min-h-11 items-center justify-between gap-2 rounded-xl bg-[#073c2b] px-3 py-2 text-xs font-bold text-white md:mt-4 md:text-sm">
                     {action}
                     <ArrowRight
                       className="size-4 shrink-0 transition-transform motion-safe:group-hover:translate-x-1"
@@ -182,7 +184,7 @@ export function Index() {
                 </span>
               </>
             );
-            const className = `min-w-0 rounded-2xl bg-white p-3 hover:shadow-sm ${focus}`;
+            const className = `min-w-0 rounded-2xl border border-[#759b83] bg-white p-3 hover:shadow-sm ${focus}`;
             return to === "#my-hub" ? (
               <a key={to} href={to} aria-label={title} className={className}>
                 {content}
