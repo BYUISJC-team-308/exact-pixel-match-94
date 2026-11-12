@@ -8,6 +8,7 @@ import type { Deal, FoodEvent, SSDeal } from "@/lib/data";
 import { eventDate } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
 import { submitDataIssue, type DataIssueInput } from "@/lib/data-issues";
+import { AuthRequiredModal } from "@/components/AuthRequiredModal";
 import {
   calculateVerificationScore,
   useDealInteractionsQuery,
@@ -395,6 +396,8 @@ export const chipTone = (i: number) => ["bg-primary/10 text-primary", "bg-accent
 export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () => void }) {
   const { savedDeals, user } = useStore();
   const dealId = deal?.id || "";
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authAction, setAuthAction] = useState("vote or upvote deals");
   const { data: interactions } = useDealInteractionsQuery(dealId);
   const voteMutation = useVoteDealMutation(dealId);
   const upvoteMutation = useToggleUpvoteMutation(dealId);
@@ -413,7 +416,8 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
 
   const handleVote = (voteType: DealVoteType) => {
     if (!user) {
-      toast.error("Please sign in to vote on deal verification.");
+      setAuthAction("vote on deal verification");
+      setAuthModalOpen(true);
       return;
     }
     const isRemoving = userVote === voteType;
@@ -432,7 +436,8 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
 
   const handleUpvote = () => {
     if (!user) {
-      toast.error("Please sign in to upvote deals.");
+      setAuthAction("upvote deals");
+      setAuthModalOpen(true);
       return;
     }
     upvoteMutation.mutate(undefined, {
@@ -545,6 +550,24 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
           )}
         </div>
 
+        {!user && (
+          <div className="mt-2.5 flex items-center justify-between rounded-lg bg-primary/10 px-3 py-2 text-xs">
+            <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
+              <span>🔒</span> Sign in to vote or upvote this deal
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthAction("vote or upvote deals");
+                setAuthModalOpen(true);
+              }}
+              className="font-bold text-primary hover:underline"
+            >
+              Sign In →
+            </button>
+          </div>
+        )}
+
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
@@ -585,6 +608,12 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
         <Btn variant="soft" onClick={() => actions.toggleDeal(deal.id)}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
       </div>
       <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="deal" itemId={deal.id} itemLabel={`${deal.company}: ${deal.title}`} /></div>
+
+      <AuthRequiredModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        action={authAction}
+      />
     </Modal>
   );
 }
