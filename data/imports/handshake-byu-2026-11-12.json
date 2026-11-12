@@ -1,0 +1,121 @@
+{
+  "source": "BYU Handshake",
+  "checked_at": "2026-11-12",
+  "timezone": "America/Denver",
+  "coverage": "29 upcoming listings visible to the signed-in BYU account; 22 non-virtual detail pages inspected, including three outside BYU. Expanded descriptions checked for 19 possible BYU listings. Connectathon calendar attachment visually reviewed. Not a guarantee of all university events.",
+  "events": [
+    {
+      "source_id": "2050605",
+      "source_url": "https://byu.joinhandshake.com/stu/events/2050605",
+      "title": "Intermountain Health AI Internship Information Session - CS, Machine Learning, Stats",
+      "host": "BYU College of Computational, Mathematical, and Physical Sciences / Intermountain Health",
+      "event_date": "2026-11-12",
+      "start_time": "16:00:00",
+      "end_time": "17:00:00",
+      "building_code": "JKB",
+      "room": "2107",
+      "food": "Food provided; menu not specified",
+      "food_evidence": "Food will be provided",
+      "summary": "Learn about AI Center of Enablement internships, hear former interns' experiences, and ask about technical careers in healthcare.",
+      "eligibility": "Intended for students interested in data science, AI, machine learning, analytics and MLOps. Other attendance restrictions are not stated.",
+      "registration": "Handshake shows a Register button. Whether registration is required, capacity and deadlines are not stated.",
+      "cost": "No price is stated; the organizer says food is provided. Check the source before attending."
+    },
+    {
+      "source_id": "2057796",
+      "source_url": "https://byu.joinhandshake.com/stu/events/2057796",
+      "title": "Clarins USA: Info Session (Marketing)",
+      "host": "BYU / Clarins USA",
+      "event_date": "2026-11-13",
+      "start_time": "11:00:00",
+      "end_time": "12:30:00",
+      "building_code": "TNRB",
+      "room": "7110 (710)",
+      "food": "Pizza provided",
+      "food_evidence": "Pizza will be provided!",
+      "summary": "Hear a cosmetics industry executive discuss marketing and communications careers, networking, internships and jobs.",
+      "eligibility": "Marketing-focused information session. Specific major, membership or ID restrictions are not stated.",
+      "registration": "Handshake shows a Register button. Whether registration is required, capacity and deadlines are not stated.",
+      "cost": "No price is stated; the organizer says pizza is provided. Check the source before attending."
+    },
+    {
+      "source_id": "2056333",
+      "source_url": "https://byu.joinhandshake.com/stu/events/2056333",
+      "title": "AI Day - CS, IS, Math",
+      "host": "BYU AI Association",
+      "event_date": "2026-11-16",
+      "start_time": "14:00:00",
+      "end_time": "19:00:00",
+      "building_code": "WSC",
+      "room": "Garden Court",
+      "food": "Pizza provided; serving time not specified",
+      "food_evidence": "Pizza will be provided!",
+      "summary": "Student project showcase 2\u20133:45 PM; mini-hackathon/build time 4\u20135:30 PM; professional panel and judging 5:30\u20136:30 PM; awards 6:30\u20136:45 PM. Listing ends at 7 PM. Beginners welcome.",
+      "eligibility": "Advertised to CS, IS and Math students; beginners welcome. Additional attendance restrictions are not stated.",
+      "registration": "Handshake shows a Register button. Whether registration is required, capacity and deadlines are not stated.",
+      "cost": "No price is stated; the organizer says pizza is provided. Check the source before attending."
+    }
+  ],
+  "needs_review": [
+    {
+      "source_id": "2057862",
+      "reason": "Attached schedule confirms a Nov 13 pop-up booth in front of JFSB with cookies and hot cocoa, but gives no time. Keep as a draft until an organizer supplies the time. Nov 11 pizza open house is past; Nov 12 Lunch and Learn (11 AM\u2013noon, JFSB B002) has no explicit provided-food statement."
+    },
+    {
+      "source_id": "2056648",
+      "reason": "RevBlack tabling header says Nov 19 8\u201311 AM; description says Nov 5 9\u201311 AM. No food promise."
+    },
+    {
+      "source_id": "2050828",
+      "reason": "RevBlack session header says Nov 19; description says Nov 12. No food promise."
+    },
+    {
+      "source_id": "2049570",
+      "reason": "Concora header says JFSB B002; description says JFSB B060. No food promise."
+    }
+  ],
+  "no_food_promise_in_expanded_description": [
+    "2060308",
+    "2062356",
+    "2058315",
+    "2043290",
+    "2056562",
+    "2056574",
+    "2062652",
+    "2035258",
+    "2059520",
+    "2058986",
+    "1990668",
+    "2058987"
+  ],
+  "outside_byu": [
+    "2008802",
+    "2062890",
+    "2043866"
+  ],
+  "virtual_only": [
+    "2044898",
+    "2059761",
+    "2044164",
+    "2055479",
+    "2052925",
+    "2054837",
+    "2035253"
+  ],
+  "drafts": [
+    {
+      "source_id": "2057862-friday",
+      "source_url": "https://byu.joinhandshake.com/stu/events/2057862",
+      "title": "Liberal Arts BYU Connect-A-Thon pop-up booth",
+      "host": "BYU Liberal Arts Advisement & Careers",
+      "event_date": "2026-11-13",
+      "building_code": "JFSB",
+      "room": "In front of JFSB",
+      "food": "Cookies and hot cocoa",
+      "start_time": null,
+      "end_time": null,
+      "status": "Needs organizer confirmation of start and end time",
+      "evidence": "Connectathon_Calendar.jpg attached to Handshake event 2057862; Friday Nov 13 row."
+    }
+  ]
+}

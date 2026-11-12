@@ -1,3 +1,4 @@
+import { handshakeEventUrl } from "@/lib/event-source";
 import { roomLabel } from "@/lib/student-copy";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -592,11 +593,16 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
   const { savedEvents } = useStore();
   if (!event) return null;
   const saved = savedEvents.includes(event.id);
+  const sourceUrl = handshakeEventUrl(event.details);
   return (
     <Modal open onClose={onClose} title={event.title}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">Free food · {event.food}</span>
-        {event.locationNote?.toLowerCase().includes("community") ? (
+        {sourceUrl ? (
+          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-primary">
+            Handshake organizer listing
+          </span>
+        ) : event.locationNote?.toLowerCase().includes("community") ? (
           <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-semibold text-accent">
             👥 Community Shared Event
           </span>
@@ -613,7 +619,12 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
         <div><dt className="font-semibold">Where</dt><dd className="text-muted-foreground">{event.building || "Not provided"}</dd></div>
         <div><dt className="font-semibold">Room</dt><dd className="text-muted-foreground">{roomLabel(event.room) || "Not provided"}</dd></div>
       </dl>
-      <p className="mt-4 text-sm text-muted-foreground">{event.details}</p>
+      <p className="mt-4 whitespace-pre-line break-words text-sm text-muted-foreground">{event.details}</p>
+      {sourceUrl && (
+        <a href={sourceUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-11 items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">
+          View event / register on Handshake ↗
+        </a>
+      )}
       <div className="mt-6 flex flex-wrap gap-2">
         <Btn onClick={() => actions.toggleEvent(event.id)}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
         <Link to="/map" className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">See on map</Link>
