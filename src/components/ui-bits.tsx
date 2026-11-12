@@ -7,6 +7,13 @@ import type { Deal, FoodEvent, SSDeal } from "@/lib/data";
 import { eventDate } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
 import { submitDataIssue, type DataIssueInput } from "@/lib/data-issues";
+import {
+  calculateVerificationScore,
+  useDealInteractionsQuery,
+  useVoteDealMutation,
+  useToggleUpvoteMutation,
+  type DealVoteType,
+} from "@/lib/deal-verification";
 
 function ReportIssueButton({ itemType, itemId, itemLabel }: Pick<DataIssueInput, "itemType" | "itemId" | "itemLabel">) {
   const [open, setOpen] = useState(false);
@@ -385,11 +392,96 @@ export function Btn({ variant = "primary", className = "", ...p }: React.ButtonH
 export const chipTone = (i: number) => ["bg-primary/10 text-primary", "bg-accent/10 text-accent", "bg-gold/15 text-gold"][i % 3];
 
 export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () => void }) {
-  const { savedDeals } = useStore();
+  const { savedDeals, user } = useStore();
+  const dealId = deal?.id || "";
+  const { data: interactions } = useDealInteractionsQuery(dealId);
+  const voteMutation = useVoteDealMutation(dealId);
+  const upvoteMutation = useToggleUpvoteMutation(dealId);
+
   if (!deal) return null;
   const saved = savedDeals.includes(deal.id);
+  const isCommunity = deal.verificationStatus === "community";
+
+  const realCount = interactions ? interactions.realVotesCount : (deal.realVotesCount ?? 0);
+  const fakeCount = interactions ? interactions.fakeVotesCount : (deal.fakeVotesCount ?? 0);
+  const upvotesCount = interactions ? interactions.upvotesCount : (deal.upvotesCount ?? 0);
+  const userVote = interactions?.userVote;
+  const hasUpvoted = interactions?.hasUpvoted ?? false;
+
+  const score = calculateVerificationScore(realCount, fakeCount);
+
+  const handleVote = (voteType: DealVoteType) => {
+    if (!user) {
+      toast.error("Please sign in to vote on deal verification.");
+      return;
+    }
+    const isRemoving = userVote === voteType;
+    voteMutation.mutate(
+      { voteType, remove: isRemoving },
+      {
+        onSuccess: () => {
+          toast.success(isRemoving ? "Vote removed." : `Marked as ${voteType === "real" ? "Real" : "Fake/Expired"}.`);
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : "Failed to vote.");
+        },
+      }
+    );
+  };
+
+  const handleUpvote = () => {
+    if (!user) {
+      toast.error("Please sign in to upvote deals.");
+      return;
+    }
+    upvoteMutation.mutate(undefined, {
+      onSuccess: (res) => {
+        toast.success(res.upvoted ? "Deal upvoted!" : "Upvote removed.");
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to upvote.");
+      },
+    });
+  };
+
   return (
     <Modal open onClose={onClose} title={`${deal.company} discount details`}>
+      {/* Verification status header banner */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          {isCommunity ? (
+            <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-accent">
+              👥 Community Deal
+            </span>
+          ) : (
+            <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              ✓ Verified by Studeats
+            </span>
+          )}
+          {score.hasVotes && (
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${score.badgeColor}`}>
+              {score.label} ({score.total} {score.total === 1 ? "vote" : "votes"})
+            </span>
+          )}
+        </div>
+
+        {/* Upvote counter pill */}
+        <button
+          type="button"
+          onClick={handleUpvote}
+          disabled={upvoteMutation.isPending}
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all ${
+            hasUpvoted
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "bg-secondary text-muted-foreground ring-1 ring-border hover:text-foreground"
+          }`}
+          title={hasUpvoted ? "Remove upvote" : "Upvote this deal"}
+        >
+          <span>▲</span>
+          <span>{upvotesCount} {upvotesCount === 1 ? "upvote" : "upvotes"}</span>
+        </button>
+      </div>
+
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <CompanyLogo company={deal.company} url={deal.url} size={48} />
@@ -420,7 +512,73 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
       <dl className="mt-4 space-y-2 text-sm border-t border-border/50 pt-3">
         <div><dt className="font-semibold text-foreground">Company</dt><dd className="text-muted-foreground">{deal.company}</dd></div>
         <div><dt className="font-semibold text-foreground">How to get it</dt><dd className="text-muted-foreground">{deal.howTo}</dd></div>
+        {deal.address && (
+          <div><dt className="font-semibold text-foreground">Location</dt><dd className="text-muted-foreground">{deal.address}{deal.city ? `, ${deal.city}` : ""}</dd></div>
+        )}
+        {deal.submitterUsername && (
+          <div>
+            <dt className="font-semibold text-foreground">Submitted by</dt>
+            <dd className="text-muted-foreground flex items-center gap-1.5">
+              <span className="font-medium text-primary">@{deal.submitterUsername}</span>
+              {deal.submitterName && <span className="text-xs text-muted-foreground">({deal.submitterName})</span>}
+            </dd>
+          </div>
+        )}
       </dl>
+
+      {/* Community Verification Voting Box */}
+      <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-3.5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-foreground">Community Verification</p>
+            <p className="text-[11px] text-muted-foreground">
+              {score.total > 0
+                ? `${score.percentage}% of students confirmed this deal is active (${score.total} total ${score.total === 1 ? "vote" : "votes"})`
+                : "Help fellow students: is this deal working or expired?"}
+            </p>
+          </div>
+          {score.hasVotes && (
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${score.badgeColor}`}>
+              {score.percentage}% Real
+            </span>
+          )}
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => handleVote("real")}
+            disabled={voteMutation.isPending}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+              userVote === "real"
+                ? "bg-emerald-600 text-white ring-2 ring-emerald-600"
+                : "bg-background text-foreground ring-1 ring-border hover:bg-emerald-500/10 hover:text-emerald-600"
+            }`}
+          >
+            <span>👍 Real & Working</span>
+            <span className="rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] dark:bg-white/10">
+              {realCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleVote("fake")}
+            disabled={voteMutation.isPending}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+              userVote === "fake"
+                ? "bg-destructive text-destructive-foreground ring-2 ring-destructive"
+                : "bg-background text-foreground ring-1 ring-border hover:bg-destructive/10 hover:text-destructive"
+            }`}
+          >
+            <span>👎 Fake or Expired</span>
+            <span className="rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] dark:bg-white/10">
+              {fakeCount}
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div className="mt-6 flex flex-wrap gap-2">
         <a href={deal.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Go to provider →</a>
         <Btn variant="soft" onClick={() => actions.toggleDeal(deal.id)}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>

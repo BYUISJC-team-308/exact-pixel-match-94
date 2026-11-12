@@ -21,6 +21,13 @@ export type DbDeal = {
   city?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  user_id?: string | null;
+  verification_status?: string | null;
+  upvotes_count?: number | null;
+  real_votes_count?: number | null;
+  fake_votes_count?: number | null;
+  created_at?: string | null;
+  profiles?: { username?: string | null; full_name?: string | null } | null;
 };
 
 export function isCanadianOnlyDeal(row: { title?: string | null; description?: string | null }): boolean {
@@ -138,6 +145,14 @@ export function normalizeDeal(row: DbDeal): Deal {
     city: row.city || undefined,
     latitude: Number.isFinite(Number(row.latitude)) ? Number(row.latitude) : undefined,
     longitude: Number.isFinite(Number(row.longitude)) ? Number(row.longitude) : undefined,
+    userId: row.user_id || undefined,
+    submitterUsername: row.profiles?.username || undefined,
+    submitterName: row.profiles?.full_name || undefined,
+    verificationStatus: (row.verification_status as Deal["verificationStatus"]) || "verified",
+    upvotesCount: Number(row.upvotes_count) || 0,
+    realVotesCount: Number(row.real_votes_count) || 0,
+    fakeVotesCount: Number(row.fake_votes_count) || 0,
+    createdAt: row.created_at || undefined,
   };
 }
 
@@ -149,18 +164,31 @@ export const getMapDeals = createServerFn({ method: "GET" }).handler(async (): P
 });
 
 export async function fetchDeals(): Promise<Deal[]> {
+  // First attempt to query with submitter profile relation
+  let rawDeals: DbDeal[] = [];
   const { data, error } = await supabase
     .from("deals")
-    .select("*")
+    .select("*, profiles(username, full_name)")
     .order("title", { ascending: true });
 
-  if (error) {
-    console.error("Error fetching deals from Supabase:", error);
-    throw error;
+  if (!error && data) {
+    rawDeals = data as DbDeal[];
+  } else {
+    // Graceful fallback if relationship is not yet indexed or schema is pending migration
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from("deals")
+      .select("*")
+      .order("title", { ascending: true });
+
+    if (fallbackError) {
+      console.error("Error fetching deals from Supabase:", fallbackError);
+      throw fallbackError;
+    }
+    rawDeals = (fallbackData || []) as DbDeal[];
   }
 
-  const rawDeals = ((data || []) as DbDeal[]).filter((d) => !isCanadianOnlyDeal(d));
-  const dedupedRaw = deduplicateDeals(rawDeals);
+  const validDeals = rawDeals.filter((d) => !isCanadianOnlyDeal(d));
+  const dedupedRaw = deduplicateDeals(validDeals);
   return dedupedRaw.map(normalizeDeal);
 }
 

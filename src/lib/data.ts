@@ -9,6 +9,8 @@ export type DealCategory =
   | "Fitness"
   | "Travel";
 
+export type DealVerificationStatus = "verified" | "community" | "pending" | "expired" | "rejected";
+
 export type Deal = {
   id: string;
   title: string;
@@ -26,6 +28,14 @@ export type Deal = {
   city?: string;
   latitude?: number;
   longitude?: number;
+  userId?: string | null;
+  submitterUsername?: string | null;
+  submitterName?: string | null;
+  verificationStatus?: DealVerificationStatus;
+  upvotesCount?: number;
+  realVotesCount?: number;
+  fakeVotesCount?: number;
+  createdAt?: string;
 };
 
 // Real deals are fetched dynamically from Supabase database (deals table)
