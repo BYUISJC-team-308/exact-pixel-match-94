@@ -1,3 +1,4 @@
+import { handshakeEventUrl } from "@/lib/event-source";
 import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
@@ -203,7 +204,11 @@ function FreeFood() {
                               ? "BYU Campus"
                               : "Utah County"}
                         </span>
-                        {e.locationNote?.toLowerCase().includes("community") ? (
+                        {handshakeEventUrl(e.details) ? (
+                          <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-primary">
+                            Handshake listing
+                          </span>
+                        ) : e.locationNote?.toLowerCase().includes("community") ? (
                           <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">
                             👥 Community Shared
                           </span>
