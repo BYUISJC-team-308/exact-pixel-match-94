@@ -79,8 +79,9 @@ describe("Homepage discovery and saved-item journeys", () => {
       "/free-food",
     );
     expect(discovery.getAllByRole("link")).toHaveLength(3);
-    expect(screen.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/help");
-    expect(screen.getByRole("link", { name: "My Hub" })).toHaveAttribute("href", "#my-hub");
+    expect(
+      screen.queryByRole("navigation", { name: "Homepage shortcuts" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/Saved items currently stay on this browser/)).toBeInTheDocument();
     expect(screen.queryByText("Verified Discounts")).not.toBeInTheDocument();
   });

@@ -1,7 +1,7 @@
 import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, Bookmark, CalendarDays, MapPin, CircleHelp } from "lucide-react";
+import { ArrowRight, Bookmark, CalendarDays } from "lucide-react";
 import type { Deal } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { DealDetail, EventDetail } from "@/components/ui-bits";
@@ -143,59 +143,6 @@ export function Index() {
             ))}
           </div>
         </section>
-        <nav
-          aria-label="Homepage shortcuts"
-          className="mt-5 grid grid-cols-2 gap-2 border-b border-border pb-5 sm:grid-cols-4"
-        >
-          {[
-            {
-              to: "/map",
-              title: "Map",
-              description: "Find deals and food near you.",
-              icon: MapPin,
-            },
-            {
-              to: "/calendar",
-              title: "Calendar",
-              description: "Plan around upcoming events.",
-              icon: CalendarDays,
-            },
-            {
-              to: "#my-hub",
-              title: "My Hub",
-              description: "See the discounts and events you saved.",
-              icon: Bookmark,
-            },
-            {
-              to: "/help",
-              title: "How it works",
-              description: "Learn how to find and use offers.",
-              icon: CircleHelp,
-            },
-          ].map(({ to, title, description, icon: Icon }) => {
-            const content = (
-              <>
-                <span className="flex items-center gap-2 text-sm font-semibold text-primary">
-                  <Icon className="size-4 shrink-0" aria-hidden="true" />
-                  {title}
-                </span>
-                <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                  {description}
-                </span>
-              </>
-            );
-            const className = `min-w-0 rounded-2xl border border-[#759b83] bg-white p-3 hover:shadow-sm ${focus}`;
-            return to === "#my-hub" ? (
-              <a key={to} href={to} aria-label={title} className={className}>
-                {content}
-              </a>
-            ) : (
-              <Link key={to} to={to} aria-label={title} className={className}>
-                {content}
-              </Link>
-            );
-          })}
-        </nav>
         <div className="mt-6 grid items-start gap-4 lg:grid-cols-2">
           <section
             aria-labelledby="today-title"

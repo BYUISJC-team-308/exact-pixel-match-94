@@ -7,7 +7,7 @@ Based on the November 12 discussion with Bryce and the reference sketch. Student
 - Shared wordmark, mask SVG/favicon, page titles, footer and visible brand references use Student Steals. Provider name Starving Student Card, existing URLs, database configuration, storage keys and saved data are unchanged.
 - Home's oversized visible title is replaced by an accessible screen-reader heading. Three image tiles use white/pale-green backgrounds, deep-green text, clear conditions and full-card links. They stack with compact thumbnails on phones; desktop shows three equal image cards.
 - Header retains search, an account disclosure and a navigation menu at all sizes. Guest options are Sign in/Create account; members get My profile/Sign out through the existing auth flow. Search, menu and account panels are mutually exclusive; outside taps dismiss them, and account/menu Escape restores toggle focus. Expanded navigation is white/green rather than multicolor bubbles.
-- Today on Campus and My Hub markup, data selection, counts, loading/error states, save behavior and desktop/mobile layout are byte-for-byte unchanged from main `2f14d6c` below the shortcuts section. Existing Map/Calendar/My Hub/Help shortcuts remain.
+- Today on Campus and My Hub markup, data selection, counts, loading/error states, save behavior and desktop/mobile layout are byte-for-byte unchanged from main `2f14d6c` below the shortcuts section. The Map/Calendar/My Hub/Help shortcut tile row was removed following Product Owner visual review; Map and Calendar remain in the main menu.
 - No slogan, authentication-provider change, username-login work, new database behavior or provider offer changes.
 
 ## Assets
