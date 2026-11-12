@@ -33,3 +33,7 @@ Simplified the mask into a flat bandit-mask silhouette with tie details; removed
 ## Unified homepage palette
 
 Product Owner requested the entire homepage match a slightly darker green. Header, logo, tile actions and footer now use #042F23. Scoped theme variables align Today on Campus/My Hub text, controls, borders, event backgrounds and time badges; yellow time badges are replaced with green/white. Functional behavior, content and layout remain unchanged. Build passed; actual 320/390/1280px browser checks showed no horizontal overflow. Footer was verified as RGB(4,47,35) with white text. Still preview-only in PR #35.
+
+## Event preview and sign-in label
+
+My Hub's guest button now reads “Sign in” and retains `/signin?next=hub`. Today on Campus shows up to four events instead of two; the complete-count “See all” link appears when more than four exist. Existing details and query behavior are preserved. Seven homepage tests and the production build passed; browser confirmed four live-data rows and the unchanged sign-in destination.

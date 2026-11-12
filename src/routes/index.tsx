@@ -192,7 +192,7 @@ export function Index() {
             ) : (
               <>
                 <ul className="mt-2 grid gap-2">
-                  {today.slice(0, 2).map((item) => (
+                  {today.slice(0, 4).map((item) => (
                     <li key={item.id}>
                       <button
                         type="button"
@@ -221,7 +221,7 @@ export function Index() {
                     </li>
                   ))}
                 </ul>
-                {today.length > 2 && (
+                {today.length > 4 && (
                   <Link
                     to="/free-food"
                     className={`mt-2 inline-flex min-h-11 items-center rounded text-xs font-semibold text-primary underline ${focus}`}
@@ -263,7 +263,7 @@ export function Index() {
                   search={{ next: "hub" }}
                   className={`mt-3 inline-flex min-h-11 items-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground ${focus}`}
                 >
-                  Sign in to My Hub
+                  Sign in
                 </Link>
               </div>
             ) : hubLoading ? (
