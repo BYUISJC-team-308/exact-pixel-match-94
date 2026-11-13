@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/lib/supabase";
 import type { FoodEvent } from "@/lib/data";
+import type { DealVoteType } from "@/lib/deal-verification";
 import buildingRecords from "@/lib/byu-buildings.json";
 
 export type DbFoodEvent = {
@@ -22,7 +23,13 @@ export type DbFoodEvent = {
   latitude?: number | null;
   longitude?: number | null;
   location_note?: string | null;
+  user_id?: string | null;
+  verification_status?: string | null;
+  upvotes_count?: number | null;
+  real_votes_count?: number | null;
+  fake_votes_count?: number | null;
   created_at?: string;
+  profiles?: { username?: string | null; full_name?: string | null } | null;
 };
 
 export type FoodEventCategory = "all" | "on_campus" | "off_campus";
@@ -113,9 +120,17 @@ export function normalizeFoodEvent(row: DbFoodEvent, now = new Date()): Normaliz
     longitude: Number.isFinite(Number(row.longitude)) ? Number(row.longitude) : undefined,
     locationNote: row.location_note || undefined,
     isCommunity: Boolean(
+      row.verification_status === "community" ||
       row.location_note?.toLowerCase().includes("community") ||
       row.host?.toLowerCase().includes("student host")
     ),
+    userId: row.user_id || undefined,
+    submitterUsername: row.profiles?.username || undefined,
+    submitterName: row.profiles?.full_name || undefined,
+    verificationStatus: row.verification_status || (row.location_note?.toLowerCase().includes("community") ? "community" : "verified"),
+    upvotesCount: Number(row.upvotes_count) || 0,
+    realVotesCount: Number(row.real_votes_count) || 0,
+    fakeVotesCount: Number(row.fake_votes_count) || 0,
     x: 50,
     y: 50,
     eventDateObj,
@@ -132,17 +147,30 @@ export function normalizeFoodEvent(row: DbFoodEvent, now = new Date()): Normaliz
 }
 
 export async function fetchFoodEvents(): Promise<NormalizedFoodEvent[]> {
-  const { data, error } = await supabase
+  try {
+    const { data, error } = await supabase
+      .from("food_events")
+      .select("*, profiles:user_id(username, full_name)")
+      .order("event_date", { ascending: true });
+
+    if (!error && data) {
+      return data.map((row) => normalizeFoodEvent(row as DbFoodEvent));
+    }
+  } catch {
+    // fallback if foreign key relation is warming up
+  }
+
+  const { data: fallbackData, error: fallbackError } = await supabase
     .from("food_events")
     .select("*")
     .order("event_date", { ascending: true });
 
-  if (error) {
-    console.error("Error fetching food_events from Supabase:", error);
-    throw error;
+  if (fallbackError) {
+    console.error("Error fetching food_events from Supabase:", fallbackError);
+    throw fallbackError;
   }
 
-  return (data || []).map((row) => normalizeFoodEvent(row));
+  return (fallbackData || []).map((row) => normalizeFoodEvent(row as DbFoodEvent));
 }
 
 export const getMapFoodEvents = createServerFn({ method: "GET" }).handler(async (): Promise<DbFoodEvent[]> => {
@@ -179,6 +207,8 @@ export type NewFoodEventInput = {
   latitude?: number;
   longitude?: number;
   location_note?: string;
+  user_id?: string | null;
+  verification_status?: string;
 };
 
 export async function geocodeEventAddress(address: string) {
@@ -193,9 +223,21 @@ export async function geocodeEventAddress(address: string) {
 }
 
 export async function insertFoodEvent(input: NewFoodEventInput) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const activeUserId = sessionData?.session?.user?.id ?? input.user_id ?? null;
+
+  const payload = {
+    ...input,
+    user_id: activeUserId,
+    verification_status: input.verification_status || "community",
+    upvotes_count: 0,
+    real_votes_count: 0,
+    fake_votes_count: 0,
+  };
+
   const { data, error } = await supabase
     .from("food_events")
-    .insert([input])
+    .insert([payload])
     .select()
     .single();
 
@@ -214,4 +256,176 @@ export function useSubmitFoodEventMutation() {
       queryClient.invalidateQueries({ queryKey: ["food_events"] });
     },
   });
+}
+
+// ----------------------------------------------------
+// Community Verification & Upvoting for Food Events
+// ----------------------------------------------------
+
+export type FoodEventInteractionState = {
+  userVote: DealVoteType | null;
+  hasUpvoted: boolean;
+  upvotesCount: number;
+  realVotesCount: number;
+  fakeVotesCount: number;
+};
+
+export async function voteOnFoodEvent(eventId: string, voteType: DealVoteType): Promise<void> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) {
+    throw new Error("You must be signed in to verify food events.");
+  }
+
+  const { error } = await supabase
+    .from("food_event_votes")
+    .upsert(
+      {
+        event_id: eventId,
+        user_id: userId,
+        vote_type: voteType,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "event_id,user_id" }
+    );
+
+  if (error) {
+    console.error("Failed to record food event vote:", error);
+    throw error;
+  }
+}
+
+export async function removeFoodEventVote(eventId: string): Promise<void> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return;
+
+  const { error } = await supabase
+    .from("food_event_votes")
+    .delete()
+    .match({ event_id: eventId, user_id: userId });
+
+  if (error) {
+    console.error("Failed to remove food event vote:", error);
+    throw error;
+  }
+}
+
+export async function toggleFoodEventUpvote(eventId: string): Promise<{ upvoted: boolean }> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) {
+    throw new Error("You must be signed in to upvote food events.");
+  }
+
+  const { data: existing } = await supabase
+    .from("food_event_upvotes")
+    .select("id")
+    .match({ event_id: eventId, user_id: userId })
+    .maybeSingle();
+
+  if (existing) {
+    const { error: delError } = await supabase
+      .from("food_event_upvotes")
+      .delete()
+      .match({ event_id: eventId, user_id: userId });
+    if (delError) throw delError;
+    return { upvoted: false };
+  } else {
+    const { error: insError } = await supabase
+      .from("food_event_upvotes")
+      .insert([{ event_id: eventId, user_id: userId }]);
+    if (insError) throw insError;
+    return { upvoted: true };
+  }
+}
+
+export async function fetchFoodEventInteractions(eventId: string): Promise<FoodEventInteractionState> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const { data: eventData } = await supabase
+    .from("food_events")
+    .select("upvotes_count, real_votes_count, fake_votes_count")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  let userVote: DealVoteType | null = null;
+  let hasUpvoted = false;
+
+  if (userId) {
+    const [voteRes, upvoteRes] = await Promise.all([
+      supabase.from("food_event_votes").select("vote_type").match({ event_id: eventId, user_id: userId }).maybeSingle(),
+      supabase.from("food_event_upvotes").select("id").match({ event_id: eventId, user_id: userId }).maybeSingle(),
+    ]);
+    if (voteRes.data?.vote_type === "real" || voteRes.data?.vote_type === "fake") {
+      userVote = voteRes.data.vote_type;
+    }
+    hasUpvoted = Boolean(upvoteRes.data?.id);
+  }
+
+  return {
+    userVote,
+    hasUpvoted,
+    upvotesCount: Number(eventData?.upvotes_count) || 0,
+    realVotesCount: Number(eventData?.real_votes_count) || 0,
+    fakeVotesCount: Number(eventData?.fake_votes_count) || 0,
+  };
+}
+
+export function useVoteFoodEventMutation(eventId: string) {
+  try {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: ({ voteType, remove }: { voteType: DealVoteType; remove?: boolean }) => {
+        if (remove) return removeFoodEventVote(eventId);
+        return voteOnFoodEvent(eventId, voteType);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["food_events"] });
+        queryClient.invalidateQueries({ queryKey: ["food_event_interactions", eventId] });
+      },
+    });
+  } catch {
+    return {
+      mutate: () => {},
+      mutateAsync: async () => {},
+      isPending: false,
+    } as unknown as ReturnType<typeof useMutation<void, Error, { voteType: DealVoteType; remove?: boolean }>>;
+  }
+}
+
+export function useToggleFoodEventUpvoteMutation(eventId: string) {
+  try {
+    const queryClient = useQueryClient();
+    return useMutation({
+      mutationFn: () => toggleFoodEventUpvote(eventId),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["food_events"] });
+        queryClient.invalidateQueries({ queryKey: ["food_event_interactions", eventId] });
+      },
+    });
+  } catch {
+    return {
+      mutate: () => {},
+      mutateAsync: async () => ({ upvoted: false }),
+      isPending: false,
+    } as unknown as ReturnType<typeof useMutation<{ upvoted: boolean }, Error, void>>;
+  }
+}
+
+export function useFoodEventInteractionsQuery(eventId: string) {
+  try {
+    return useQuery({
+      queryKey: ["food_event_interactions", eventId],
+      queryFn: () => fetchFoodEventInteractions(eventId),
+      staleTime: 1000 * 30,
+    });
+  } catch {
+    return {
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useQuery<FoodEventInteractionState>>;
+  }
 }

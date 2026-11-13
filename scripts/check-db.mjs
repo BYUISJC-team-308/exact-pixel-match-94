@@ -74,7 +74,41 @@ async function checkDatabase() {
     console.log("   (No upvotes yet. Sign in and click ▲ on any deal to see rows appear here!)");
   }
 
-  // 4. Data Issue Reports
+  // 4. Free Food Events
+  const { data: foodEvents, error: foodErr } = await client
+    .from("food_events")
+    .select("id, title, host, food, building, location_note")
+    .order("event_date", { ascending: false })
+    .limit(5);
+
+  if (foodErr) {
+    console.error("Error fetching food events:", foodErr.message);
+  } else {
+    console.log(`\n🍕 Latest Free Food Events in 'food_events' (${foodEvents.length} shown):`);
+    console.table(
+      foodEvents.map((f) => ({
+        Title: f.title.length > 25 ? f.title.slice(0, 22) + "..." : f.title,
+        Food: f.food,
+        Host: f.host,
+        Building: f.building,
+        Type: f.location_note?.toLowerCase().includes("community") ? "👥 Community" : "✓ Verified",
+        "Event ID": f.id.slice(0, 8) + "...",
+      }))
+    );
+  }
+
+  // 5. Food Event Votes & Upvotes
+  const { count: foodVotes } = await client
+    .from("food_event_votes")
+    .select("id", { count: "exact", head: true });
+  console.log(`\n🗳️ Total Rows in 'food_event_votes': ${foodVotes ?? 0}`);
+
+  const { count: foodUpvotes } = await client
+    .from("food_event_upvotes")
+    .select("id", { count: "exact", head: true });
+  console.log(`▲ Total Rows in 'food_event_upvotes': ${foodUpvotes ?? 0}`);
+
+  // 6. Data Issue Reports
   const { count: issueCount } = await client
     .from("data_issue_reports")
     .select("id", { count: "exact", head: true });

@@ -80,6 +80,13 @@ export type FoodEvent = {
   longitude?: number;
   locationNote?: string;
   isCommunity?: boolean;
+  userId?: string | null;
+  submitterUsername?: string | null;
+  submitterName?: string | null;
+  verificationStatus?: "verified" | "community" | "expired" | string;
+  upvotesCount?: number;
+  realVotesCount?: number;
+  fakeVotesCount?: number;
 };
 
 // Real food events are loaded live from Supabase (food_events table)

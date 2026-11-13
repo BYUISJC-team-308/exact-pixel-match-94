@@ -2,14 +2,19 @@ import { handshakeEventUrl } from "@/lib/event-source";
 import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { actions, useStore } from "@/lib/store";
 import { EventDetail, PageHeader, Btn } from "@/components/ui-bits";
 import {
   useFoodEventsQuery,
+  useToggleFoodEventUpvoteMutation,
+  useFoodEventInteractionsQuery,
   type NormalizedFoodEvent,
   type FoodEventCategory,
 } from "@/lib/food-events";
+import { calculateVerificationScore } from "@/lib/deal-verification";
 import { SubmitFoodEventModal } from "@/components/SubmitFoodEventModal";
+import { AuthRequiredModal } from "@/components/AuthRequiredModal";
 
 export const Route = createFileRoute("/free-food")({
   head: () => ({
@@ -27,12 +32,62 @@ export const Route = createFileRoute("/free-food")({
   component: FreeFood,
 });
 
+function FoodEventCardUpvoteButton({
+  event,
+  onRequireAuth,
+}: {
+  event: NormalizedFoodEvent;
+  onRequireAuth: (action: string) => void;
+}) {
+  const { user } = useStore();
+  const upvoteMutation = useToggleFoodEventUpvoteMutation(event.id);
+  const { data: interactions } = useFoodEventInteractionsQuery(event.id);
+
+  const hasUpvoted = interactions?.hasUpvoted ?? false;
+  const count = interactions ? interactions.upvotesCount : (event.upvotesCount ?? 0);
+
+  const handleUpvote = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      onRequireAuth("upvote free food events");
+      return;
+    }
+    upvoteMutation.mutate(undefined, {
+      onSuccess: (res) => {
+        toast.success(res.upvoted ? `Upvoted ${event.title}!` : "Upvote removed.");
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to upvote.");
+      },
+    });
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleUpvote}
+      disabled={upvoteMutation.isPending}
+      title={user ? (hasUpvoted ? "Remove upvote" : "Upvote this food event") : "Sign in to upvote"}
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold transition-all ${
+        hasUpvoted
+          ? "bg-primary text-primary-foreground shadow-sm scale-105"
+          : "bg-secondary text-muted-foreground ring-1 ring-border hover:bg-glass hover:text-foreground active:scale-95"
+      }`}
+    >
+      <span className={hasUpvoted ? "text-primary-foreground" : "text-primary"}>▲</span>
+      <span>{count}</span>
+    </button>
+  );
+}
+
 function FreeFood() {
   const { savedEvents } = useStore();
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("today");
   const [locFilter, setLocFilter] = useState<FoodEventCategory>("all");
   const [openDetail, setOpenDetail] = useState<NormalizedFoodEvent | null>(null);
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authAction, setAuthAction] = useState("upvote free food events");
 
   const {
     data: events = [],
@@ -186,13 +241,14 @@ function FreeFood() {
           ) : (
             filteredEvents.map((e) => {
               const saved = savedEvents.includes(e.id);
+              const score = calculateVerificationScore(e.realVotesCount, e.fakeVotesCount);
               return (
                 <div
                   key={e.id}
                   className="glass flex flex-col justify-between p-5 transition-transform hover:-translate-y-0.5"
                 >
                   <div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="rounded-full bg-primary/15 px-2.5 py-0.5 font-mono text-xs font-semibold text-primary">
                           {e.formattedDate} {e.start}
@@ -217,16 +273,30 @@ function FreeFood() {
                             ✓ Verified Event
                           </span>
                         )}
+                        {score.hasVotes && (
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${score.badgeColor}`}>
+                            {score.percentage}% Active
+                          </span>
+                        )}
                       </div>
-                      <button
-                        onClick={() => actions.toggleEvent(e.id)}
-                        className={`text-xl transition-colors ${
-                          saved ? "text-gold" : "text-muted-foreground hover:text-gold"
-                        }`}
-                        aria-label="Save event to hub"
-                      >
-                        {saved ? "★" : "☆"}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <FoodEventCardUpvoteButton
+                          event={e}
+                          onRequireAuth={(act) => {
+                            setAuthAction(act);
+                            setAuthOpen(true);
+                          }}
+                        />
+                        <button
+                          onClick={() => actions.toggleEvent(e.id)}
+                          className={`text-xl transition-colors ${
+                            saved ? "text-gold" : "text-muted-foreground hover:text-gold"
+                          }`}
+                          aria-label="Save event to hub"
+                        >
+                          {saved ? "★" : "☆"}
+                        </button>
+                      </div>
                     </div>
 
                     <button onClick={() => setOpenDetail(e)} className="mt-3 block text-left">
@@ -238,6 +308,11 @@ function FreeFood() {
                         {e.building}
                         {e.room ? ` · ${roomLabel(e.room)}` : ""} · Hosted by {e.host}
                       </p>
+                      {e.submitterUsername && (
+                        <p className="mt-1 text-[11px] font-medium text-muted-foreground">
+                          Shared by <span className="font-semibold text-primary">@{e.submitterUsername}</span>
+                        </p>
+                      )}
                     </button>
                   </div>
 
@@ -259,11 +334,18 @@ function FreeFood() {
         </div>
       )}
 
-      {/* Community Event Submission Modal (Question 1 Answer: Option C Hybrid) */}
+      {/* Community Event Submission Modal */}
       <SubmitFoodEventModal open={isSubmitOpen} onClose={() => setIsSubmitOpen(false)} />
 
       {/* Event Detail Modal */}
       <EventDetail event={openDetail} onClose={() => setOpenDetail(null)} />
+
+      {/* Account Required Modal */}
+      <AuthRequiredModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        action={authAction}
+      />
     </>
   );
 }

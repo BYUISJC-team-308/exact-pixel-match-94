@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { Modal, Btn } from "@/components/ui-bits";
 import { useSubmitFoodEventMutation, getLocalDateString, geocodeEventAddress } from "@/lib/food-events";
 import { findCampusBuilding } from "@/lib/map-places";
 import { useCampusBuildingsQuery, useCampusesQuery } from "@/lib/campus-buildings";
+import { useStore } from "@/lib/store";
 import { toast } from "sonner";
 
 const isUuid = (val?: string | null): val is string =>
@@ -17,6 +18,7 @@ export function SubmitFoodEventModal({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const { user } = useStore();
   const submitMutation = useSubmitFoodEventMutation();
   const { data: campusBuildings = [] } = useCampusBuildingsQuery();
   const { data: campuses = [] } = useCampusesQuery();
@@ -38,6 +40,10 @@ export function SubmitFoodEventModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      toast.error("Please sign in to share a free food event.");
+      return;
+    }
     if (!title.trim() || !food.trim() || !building.trim() || !eventDate || (locationType === "off_campus" && !address.trim())) {
       toast.error("Please fill in event title, food type, date, and location.");
       return;
@@ -74,9 +80,11 @@ export function SubmitFoodEventModal({
         ? (address.trim() || (selectedBuilding ? `${selectedBuilding.name}, BYU, Provo, UT` : `${building.trim()}, BYU, Provo, UT`))
         : address.trim();
 
+      const defaultHost = host.trim() || user.name || (user.username ? `@${user.username}` : "Student Host");
+
       await submitMutation.mutateAsync({
         title: title.trim(),
-        host: host.trim() || "Student Host",
+        host: defaultHost,
         food: food.trim(),
         event_date: eventDate,
         start_time: startTime ? `${startTime}:00` : "12:00:00",
@@ -89,6 +97,7 @@ export function SubmitFoodEventModal({
         ...(room.trim() ? { room: room.trim() } : {}),
         ...(details.trim() ? { details: details.trim() } : {}),
         location_note: "Community shared event",
+        verification_status: "community",
       });
 
       toast.success("Free food event shared with the campus community!");
@@ -103,7 +112,7 @@ export function SubmitFoodEventModal({
       setRoom("");
       setDetails("");
       onClose();
-    } catch (err: unknown) {
+    } catch (err) {
       const msg = err instanceof Error ? err.message : "Database error";
       toast.error(`Could not submit event: ${msg}`);
     }
@@ -121,6 +130,44 @@ export function SubmitFoodEventModal({
             Share campus club meetings, department leftovers, or local student promos.
           </p>
         </div>
+
+        {/* User Attribution / Account Enforcement Banner */}
+        {user ? (
+          <div className="flex items-center gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs">
+            <span className="text-base">👤</span>
+            <div>
+              <p className="font-semibold text-foreground">
+                Sharing as <span className="text-primary font-bold">@{user.username}</span> ({user.name})
+              </p>
+              <p className="text-muted-foreground">Your student account will be credited as the event source.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-foreground">
+            <p className="font-semibold text-amber-700 dark:text-amber-300">
+              Account required to share free food
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              Sign in so fellow students know who shared the alert and can trust the source.
+            </p>
+            <div className="mt-2 flex gap-2">
+              <Link
+                to="/signin"
+                onClick={onClose}
+                className="rounded-full bg-primary px-3 py-1 font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/account"
+                onClick={onClose}
+                className="rounded-full bg-secondary px-3 py-1 font-medium ring-1 ring-border hover:bg-muted"
+              >
+                Create Account
+              </Link>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-3 text-sm">
           <div>
@@ -284,8 +331,8 @@ export function SubmitFoodEventModal({
             <Btn type="button" variant="soft" onClick={onClose}>
               Cancel
             </Btn>
-            <Btn type="submit" disabled={submitMutation.isPending}>
-              {submitMutation.isPending ? "Posting..." : "Publish Event"}
+            <Btn type="submit" disabled={submitMutation.isPending || !user}>
+              {submitMutation.isPending ? "Posting..." : !user ? "Sign in to Publish" : "Publish Event"}
             </Btn>
           </div>
         </form>

@@ -16,6 +16,11 @@ import {
   useToggleUpvoteMutation,
   type DealVoteType,
 } from "@/lib/deal-verification";
+import {
+  useFoodEventInteractionsQuery,
+  useVoteFoodEventMutation,
+  useToggleFoodEventUpvoteMutation,
+} from "@/lib/food-events";
 
 function ReportIssueButton({ itemType, itemId, itemLabel }: Pick<DataIssueInput, "itemType" | "itemId" | "itemLabel">) {
   const [open, setOpen] = useState(false);
@@ -619,35 +624,193 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
 }
 
 export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClose: () => void }) {
-  const { savedEvents } = useStore();
+  const { savedEvents, user } = useStore();
+  const eventId = event?.id || "";
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authAction, setAuthAction] = useState("vote or upvote free food events");
+  const { data: interactions } = useFoodEventInteractionsQuery(eventId);
+  const voteMutation = useVoteFoodEventMutation(eventId);
+  const upvoteMutation = useToggleFoodEventUpvoteMutation(eventId);
+
   if (!event) return null;
   const saved = savedEvents.includes(event.id);
   const sourceUrl = handshakeEventUrl(event.details);
+
+  const realCount = interactions ? interactions.realVotesCount : (event.realVotesCount ?? 0);
+  const fakeCount = interactions ? interactions.fakeVotesCount : (event.fakeVotesCount ?? 0);
+  const upvotesCount = interactions ? interactions.upvotesCount : (event.upvotesCount ?? 0);
+  const userVote = interactions?.userVote;
+  const hasUpvoted = interactions?.hasUpvoted ?? false;
+
+  const score = calculateVerificationScore(realCount, fakeCount);
+
+  const handleVote = (voteType: DealVoteType) => {
+    if (!user) {
+      setAuthAction("verify this free food event");
+      setAuthModalOpen(true);
+      return;
+    }
+    const isRemoving = userVote === voteType;
+    voteMutation.mutate(
+      { voteType, remove: isRemoving },
+      {
+        onSuccess: () => {
+          toast.success(isRemoving ? "Vote removed." : `Marked as ${voteType === "real" ? "Active / Food is here" : "Gone or Expired"}.`);
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : "Failed to vote.");
+        },
+      }
+    );
+  };
+
+  const handleUpvote = () => {
+    if (!user) {
+      setAuthAction("upvote free food events");
+      setAuthModalOpen(true);
+      return;
+    }
+    upvoteMutation.mutate(undefined, {
+      onSuccess: (res) => {
+        toast.success(res.upvoted ? "Event upvoted!" : "Upvote removed.");
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to upvote.");
+      },
+    });
+  };
+
   return (
     <Modal open onClose={onClose} title={event.title}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">Free food · {event.food}</span>
-        {sourceUrl ? (
-          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-primary">
-            Handshake organizer listing
-          </span>
-        ) : event.locationNote?.toLowerCase().includes("community") ? (
-          <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-semibold text-accent">
-            👥 Community Shared Event
-          </span>
-        ) : (
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-            ✓ Verified Campus Event
-          </span>
-        )}
+      {/* Top Banner with Badges and Upvote Button */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold">Free food · {event.food}</span>
+          {sourceUrl ? (
+            <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-primary">
+              Handshake organizer listing
+            </span>
+          ) : event.locationNote?.toLowerCase().includes("community") ? (
+            <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-semibold text-accent">
+              👥 Community Shared Event
+            </span>
+          ) : (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+              ✓ Verified Campus Event
+            </span>
+          )}
+          {score.hasVotes && (
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${score.badgeColor}`}>
+              {score.percentage}% Active ({score.total} {score.total === 1 ? "vote" : "votes"})
+            </span>
+          )}
+        </div>
+
+        {/* Upvote counter pill */}
+        <button
+          type="button"
+          onClick={handleUpvote}
+          disabled={upvoteMutation.isPending}
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all ${
+            hasUpvoted
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "bg-secondary text-muted-foreground ring-1 ring-border hover:text-foreground"
+          }`}
+          title={hasUpvoted ? "Remove upvote" : "Upvote this food event"}
+        >
+          <span>▲</span>
+          <span>{upvotesCount} {upvotesCount === 1 ? "upvote" : "upvotes"}</span>
+        </button>
       </div>
+
       <h3 className="mt-3 text-2xl font-semibold">{event.title}</h3>
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <div><dt className="font-semibold">When</dt><dd className="text-muted-foreground">{eventDate(event).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}, {event.start}–{event.end}</dd></div>
         <div><dt className="font-semibold">Hosted by</dt><dd className="text-muted-foreground">{event.host || "Not provided"}</dd></div>
         <div><dt className="font-semibold">Where</dt><dd className="text-muted-foreground">{event.building || "Not provided"}</dd></div>
         <div><dt className="font-semibold">Room</dt><dd className="text-muted-foreground">{roomLabel(event.room) || "Not provided"}</dd></div>
+        {event.submitterUsername && (
+          <div className="sm:col-span-2">
+            <dt className="font-semibold text-foreground">Shared by</dt>
+            <dd className="text-muted-foreground flex items-center gap-1.5">
+              <span className="font-medium text-primary">@{event.submitterUsername}</span>
+              {event.submitterName && <span className="text-xs text-muted-foreground">({event.submitterName})</span>}
+            </dd>
+          </div>
+        )}
       </dl>
+
+      {/* Community Verification Voting Box */}
+      <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-3.5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-foreground">Food Availability Status</p>
+            <p className="text-[11px] text-muted-foreground">
+              {score.total > 0
+                ? `${score.percentage}% of students confirmed food is still available (${score.total} ${score.total === 1 ? "report" : "reports"})`
+                : "Help fellow students: is food still available or has it run out?"}
+            </p>
+          </div>
+          {score.hasVotes && (
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${score.badgeColor}`}>
+              {score.percentage}% Active
+            </span>
+          )}
+        </div>
+
+        {!user && (
+          <div className="mt-2.5 flex items-center justify-between rounded-lg bg-primary/10 px-3 py-2 text-xs">
+            <span className="text-muted-foreground flex items-center gap-1.5 font-medium">
+              <span>🔒</span> Sign in to verify or upvote this food alert
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthAction("verify free food events");
+                setAuthModalOpen(true);
+              }}
+              className="font-bold text-primary hover:underline"
+            >
+              Sign In →
+            </button>
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => handleVote("real")}
+            disabled={voteMutation.isPending}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+              userVote === "real"
+                ? "bg-emerald-600 text-white ring-2 ring-emerald-600"
+                : "bg-background text-foreground ring-1 ring-border hover:bg-emerald-500/10 hover:text-emerald-600"
+            }`}
+          >
+            <span>🍕 Food is here!</span>
+            <span className="rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] dark:bg-white/10">
+              {realCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleVote("fake")}
+            disabled={voteMutation.isPending}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+              userVote === "fake"
+                ? "bg-destructive text-destructive-foreground ring-2 ring-destructive"
+                : "bg-background text-foreground ring-1 ring-border hover:bg-destructive/10 hover:text-destructive"
+            }`}
+          >
+            <span>❌ Food ran out</span>
+            <span className="rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] dark:bg-white/10">
+              {fakeCount}
+            </span>
+          </button>
+        </div>
+      </div>
+
       <p className="mt-4 whitespace-pre-line break-words text-sm text-muted-foreground">{event.details}</p>
       {sourceUrl && (
         <a href={sourceUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-11 items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">
@@ -659,6 +822,12 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
         <Link to="/map" className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">See on map</Link>
       </div>
       <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="event" itemId={event.id} itemLabel={event.title} /></div>
+
+      <AuthRequiredModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        action={authAction}
+      />
     </Modal>
   );
 }
