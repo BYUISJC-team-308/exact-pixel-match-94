@@ -1,3 +1,5 @@
+> Release approval — November 13, 2026: the Product Owner approved publishing the final design. Earlier “preview-only” entries below describe the review history. Integrated latest main through `aebec5e` (account saves and admin work preserved); combined validation passed 131 tests and the production build. Account-save test fixtures now provide isolated browser storage for the test environment.
+
 # Student Steals homepage preview
 
 Based on the November 12 discussion with Bryce and the reference sketch. Student Steals is the approved name. This branch is a review preview; production is not changed or merged by this task.
