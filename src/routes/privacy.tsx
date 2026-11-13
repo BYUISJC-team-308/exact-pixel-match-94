@@ -18,7 +18,12 @@ export function PrivacyPage() {
           Supabase handles account registration, password sign-in, and session restoration.
           Registration sends your email and password to Supabase Auth. Profile information includes
           your username, name, school, and any phone number or profile image you supply. Signed-in
-          profile edits are stored in the project’s Supabase database.
+          profile edits are stored in the project’s Supabase database. Photos uploaded through
+          profile editing are stored in a private Supabase Storage bucket; the profile row stores
+          their reference. The app requests a temporary photo link for the signed-in owner.
+          Replacing or removing a photo updates the profile first, then attempts to delete the
+          previous uploaded file. If deletion fails, the app reports it; the old file may remain in
+          private storage.
         </p>
         <p>
           The Supabase client keeps session information in your browser so it can restore your

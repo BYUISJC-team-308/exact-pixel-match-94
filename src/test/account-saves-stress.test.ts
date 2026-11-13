@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   isUuid,
   saveUserDeal,
@@ -17,9 +17,18 @@ describe("Account-Backed Saves - Resilience & Stress Tests", () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    const values = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => { values.set(key, String(value)); },
+      removeItem: (key: string) => { values.delete(key); },
+      clear: () => values.clear(),
+    });
     actions.clearSavedItems();
     actions.setUser(null);
   });
+
+  afterEach(() => vi.unstubAllGlobals());
 
   describe("1. Rapid Toggle Spamming & Race Conditions", () => {
     it("preserves exact parity under rapid sequential toggles (even = unsaved)", () => {

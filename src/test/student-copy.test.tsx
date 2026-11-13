@@ -50,7 +50,7 @@ vi.mock("@/lib/food-events", () => ({ useFoodEventsQuery: mocks.events }));
 vi.mock("@/lib/calendar-deals", () => ({ getRecurringSpecialsForDate: () => [] }));
 vi.mock("@/components/SubmitFoodEventModal", () => ({ SubmitFoodEventModal: () => null }));
 vi.mock("@/components/AnalyticsDrawerModal", () => ({ AnalyticsDrawerModal: () => null }));
-vi.mock("@/components/AccountForm", () => ({ AccountForm: () => <p>Profile form</p> }));
+vi.mock("@/components/ProfileEditor", () => ({ ProfileEditor: () => <p>Profile form</p> }));
 vi.mock("@/components/ui-bits", () => ({
   PageHeader: ({
     title,
@@ -172,11 +172,11 @@ it("calendar failures do not claim an empty day, and retries remain available", 
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(mocks.retry).toHaveBeenCalledOnce();
 });
-it("explains signed-out profile access without implying synced saves", () => {
+it("explains signed-out profile access and requires sign-in for editing", () => {
   const view = render(<Profile />);
   expect(screen.getByRole("heading", { name: "Sign in to your profile" })).toBeInTheDocument();
   expect(
-    screen.getByText(/Saved offers and events currently stay on this browser/),
+    screen.getByText(/Sign in to edit your profile and photo/),
   ).toBeInTheDocument();
   mocks.store.mockReturnValue({
     user: { username: "lot", name: "Lot Starr", school: "BYU" },
