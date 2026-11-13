@@ -226,7 +226,7 @@ function Discounts() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                actions.toggleDeal(d.id);
+                actions.toggleDeal(d.id, { company: d.company, title: d.title });
               }}
               aria-label={saved ? "Unsave deal" : "Save deal"}
               className={`text-2xl transition-transform active:scale-125 ${

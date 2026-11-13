@@ -394,7 +394,7 @@ export function Calendar({ renderedAt }: { renderedAt: number }) {
                       {ev.start} – {ev.end}
                     </span>
                     <button
-                      onClick={() => actions.toggleEvent(ev.id)}
+                      onClick={() => actions.toggleEvent(ev.id, { title: ev.title })}
                       className={`text-lg leading-none transition-colors ${
                         saved ? "text-gold" : "text-muted-foreground hover:text-gold"
                       }`}

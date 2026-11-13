@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
-import { actions, type User } from "@/lib/store";
+import { actions, getStoreState, type User } from "@/lib/store";
 import { endActivityVisit, logActivityEvent, signupActivityMetadata } from "@/lib/analytics";
+import { syncAndMergeGuestSaves } from "@/lib/saved";
 
 type ProfileRow = {
   username: string;
@@ -11,8 +12,9 @@ type ProfileRow = {
   avatar_url: string | null;
 };
 
-function toUser(p: ProfileRow): User {
+function toUser(p: ProfileRow, id?: string): User {
   return {
+    ...(id ? { id } : {}),
     username: p.username,
     name: p.full_name ?? p.username,
     email: p.email ?? "",
@@ -27,7 +29,18 @@ async function syncUser(authUserId: string | null) {
     actions.setUser(null);
   } else {
     const { data } = await supabase.from("profiles").select("*").eq("id", authUserId).maybeSingle();
-    actions.setUser(data ? toUser(data as ProfileRow) : null);
+    actions.setUser(data ? toUser(data as ProfileRow, authUserId) : null);
+    try {
+      const currentState = getStoreState();
+      const merged = await syncAndMergeGuestSaves(
+        authUserId,
+        currentState.savedDeals,
+        currentState.savedEvents
+      );
+      actions.setSavedItems(merged);
+    } catch (err) {
+      console.warn("Could not sync saved items on sign-in:", err);
+    }
   }
   actions.setAuthReady();
 }
@@ -80,6 +93,7 @@ export async function signIn(email: string, password: string): Promise<string | 
 export async function signOut() {
   await supabase.auth.signOut();
   actions.setUser(null);
+  actions.clearSavedItems();
 }
 
 export async function updateProfile(u: User): Promise<string | null> {

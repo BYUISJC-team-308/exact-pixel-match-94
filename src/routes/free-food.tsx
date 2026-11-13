@@ -307,7 +307,7 @@ function FreeFood() {
                           }}
                         />
                         <button
-                          onClick={() => actions.toggleEvent(e.id)}
+                          onClick={() => actions.toggleEvent(e.id, { title: e.title })}
                           className={`text-xl transition-colors ${
                             saved ? "text-gold" : "text-muted-foreground hover:text-gold"
                           }`}

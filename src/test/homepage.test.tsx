@@ -180,4 +180,42 @@ describe("Homepage discovery and saved-item journeys", () => {
     expect(screen.getByText("Checking your account…")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Sign in to My Hub" })).not.toBeInTheDocument();
   });
+
+  it("keeps past saved food events accessible in the collapsible Past Events section", () => {
+    mocks.store.mockReturnValue({
+      savedDeals: ["d1"],
+      savedEvents: ["past1"],
+      user: { name: "Jacob" },
+      authReady: true,
+    });
+    mocks.deals.mockReturnValue(query([{ id: "d1", company: "Active Merchant", value: "20% off" }]));
+    mocks.events.mockReturnValue(
+      query([
+        {
+          id: "past1",
+          title: "Attended Hackathon Bagels",
+          food: "Bagels & Cream Cheese",
+          building: "TMCB",
+          start: "9:00 AM",
+          formattedDate: "Nov 1",
+          isToday: false,
+          dayOffset: -5,
+        },
+      ])
+    );
+    render(<Index />);
+    const hub = within(screen.getByRole("region", { name: "My Hub" }));
+    expect(hub.getByText("Active Merchant")).toBeInTheDocument();
+    expect(hub.getByText("🕒 Past Events")).toBeInTheDocument();
+    expect(hub.getByText("1")).toBeInTheDocument();
+
+    // Toggle past events open
+    fireEvent.click(hub.getByRole("button", { name: /Show past events/ }));
+    expect(hub.getByText("Attended Hackathon Bagels")).toBeInTheDocument();
+    expect(hub.getByRole("button", { name: /Hide past events/ })).toBeInTheDocument();
+
+    // Click to view past event details
+    fireEvent.click(hub.getByRole("button", { name: /Attended Hackathon Bagels/ }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Attended Hackathon Bagels details");
+  });
 });
