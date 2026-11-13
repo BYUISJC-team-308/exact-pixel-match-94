@@ -79,8 +79,9 @@ describe("Homepage discovery and saved-item journeys", () => {
       "/free-food",
     );
     expect(discovery.getAllByRole("link")).toHaveLength(3);
-    expect(screen.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/help");
-    expect(screen.getByRole("link", { name: "My Hub" })).toHaveAttribute("href", "#my-hub");
+    expect(
+      screen.queryByRole("navigation", { name: "Homepage shortcuts" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/Saved items currently stay on this browser/)).toBeInTheDocument();
     expect(screen.queryByText("Verified Discounts")).not.toBeInTheDocument();
   });
@@ -108,11 +109,13 @@ describe("Homepage discovery and saved-item journeys", () => {
   });
 
   it("keeps today compact without losing the path to additional events", () => {
-    mocks.events.mockReturnValue(query([event("a"), event("b"), event("c")]));
+    mocks.events.mockReturnValue(
+      query([event("a"), event("b"), event("c"), event("d"), event("e")]),
+    );
     render(<Index />);
     const today = within(screen.getByRole("region", { name: "Today on campus" }));
-    expect(today.getAllByRole("listitem")).toHaveLength(2);
-    expect(today.getByRole("link", { name: "See all 3 events today" })).toHaveAttribute(
+    expect(today.getAllByRole("listitem")).toHaveLength(4);
+    expect(today.getByRole("link", { name: "See all 5 events today" })).toHaveAttribute(
       "href",
       "/free-food",
     );
@@ -162,7 +165,7 @@ describe("Homepage discovery and saved-item journeys", () => {
       query([{ id: "d1", company: "Private saved merchant", value: "10% off" }]),
     );
     render(<Index />);
-    expect(screen.getByRole("link", { name: "Sign in to My Hub" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute(
       "href",
       "/signin?next=hub",
     );
@@ -170,7 +173,7 @@ describe("Homepage discovery and saved-item journeys", () => {
     expect(screen.queryByText(/1 saved/)).not.toBeInTheDocument();
     expect(screen.queryByText("A look at the listings")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Discounts, Card offers, and Free Food",
+      "Student Steals: discounts, card offers, and free food",
     );
   });
 
@@ -178,7 +181,7 @@ describe("Homepage discovery and saved-item journeys", () => {
     mocks.store.mockReturnValue({ savedDeals: [], savedEvents: [], user: null, authReady: false });
     render(<Index />);
     expect(screen.getByText("Checking your account…")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Sign in to My Hub" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in", exact: true })).not.toBeInTheDocument();
   });
 
   it("keeps past saved food events accessible in the collapsible Past Events section", () => {

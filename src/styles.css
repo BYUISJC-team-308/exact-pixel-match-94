@@ -36,7 +36,7 @@
 
 :root {
   --radius: 0.75rem;
-  --background: oklch(0.94 0.012 230);
+  --background: oklch(0.985 0.005 145);
   --foreground: oklch(0.24 0.02 170);
   --card: oklch(1 0 0 / 0.6);
   --card-foreground: oklch(0.24 0.02 170);
@@ -189,4 +189,15 @@ footer { padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
   border: 1.5px dashed color-mix(in oklab, var(--color-muted-foreground) 40%, transparent);
   background-color: color-mix(in oklab, var(--color-secondary) 50%, transparent);
   color: color-mix(in oklab, var(--color-muted-foreground) 60%, transparent);
+}
+
+/* Student Steals preview: one forest palette for home and shared brand chrome. */
+.student-steals-theme {
+  --primary: #042f23;
+  --primary-foreground: #f4f9f1;
+  --foreground: #15372a;
+  --muted-foreground: #365641;
+  --secondary: #eaf2e7;
+  --border: #9bb29f;
+  --ring: #042f23;
 }

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { InformationPage } from "@/components/InformationPage";
 
 export const Route = createFileRoute("/privacy")({
-  head: () => ({ meta: [{ title: "Privacy — Studeats" }] }),
+  head: () => ({ meta: [{ title: "Privacy — Student Steals" }] }),
   component: PrivacyPage,
 });
 
@@ -10,7 +10,7 @@ export function PrivacyPage() {
   return (
     <InformationPage
       title="Privacy"
-      intro="How the current Studeats application handles account information, browser storage, activity, and maps."
+      intro="How the current Student Steals application handles account information, browser storage, activity, and maps."
     >
       <section>
         <h2>Accounts and profiles</h2>

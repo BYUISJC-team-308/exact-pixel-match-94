@@ -7,13 +7,13 @@ import { signUp } from "@/lib/auth";
 export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
-      { title: "Create an Account — Studeats" },
+      { title: "Create an Account — Student Steals" },
       {
         name: "description",
         content: "Create a profile with your name, school, and optional photo.",
       },
-      { property: "og:title", content: "Create an Account — Studeats" },
-      { property: "og:description", content: "Create and manage your Studeats profile." },
+      { property: "og:title", content: "Create an Account — Student Steals" },
+      { property: "og:description", content: "Create and manage your Student Steals profile." },
     ],
   }),
   component: Account,

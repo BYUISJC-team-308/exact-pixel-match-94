@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ComponentType, ReactNode } from "react";
 import { eventCountLabel, roomLabel } from "@/lib/student-copy";
@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   deals: vi.fn(),
   events: vi.fn(),
   retry: vi.fn(),
+  signOut: vi.fn(),
   navigate: vi.fn(),
 }));
 vi.mock("@tanstack/react-router", () => ({
@@ -35,7 +36,11 @@ vi.mock("@tanstack/react-router", () => ({
     </a>
   ),
 }));
-vi.mock("@/lib/auth", () => ({ initAuth: vi.fn(), signOut: vi.fn(), updateProfile: vi.fn() }));
+vi.mock("@/lib/auth", () => ({
+  initAuth: vi.fn(),
+  signOut: mocks.signOut,
+  updateProfile: vi.fn(),
+}));
 vi.mock("@/lib/store", () => ({
   useStore: mocks.store,
   actions: { toggleDeal: vi.fn(), toggleEvent: vi.fn() },
@@ -108,18 +113,26 @@ it.each([
 ])("labels room %s without repeated prefixes", (room, label) => {
   expect(roomLabel(room)).toBe(label);
 });
-it("labels guest and member account destinations accurately and waits for session restoration", () => {
+it("keeps guest and member account options accurate and waits for session restoration", () => {
   const view = render(<SiteHeader />);
+  expect(screen.queryByRole("link", { name: "Sign in", exact: true })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Sign in or create account" }));
+  expect(screen.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute(
+    "href",
+    "/signin",
+  );
   expect(screen.getByRole("link", { name: "Create account" })).toHaveAttribute("href", "/account");
-  expect(screen.queryByRole("link", { name: "Profile" })).not.toBeInTheDocument();
   mocks.store.mockReturnValue({ user: null, authReady: false });
   view.rerender(<SiteHeader />);
   expect(screen.getByRole("status", { name: "Checking your account" })).toBeInTheDocument();
-  expect(screen.queryByRole("link", { name: "Create account" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("navigation", { name: "Account options" })).not.toBeInTheDocument();
   mocks.store.mockReturnValue({ user: { name: "Lot" }, authReady: true });
   view.rerender(<SiteHeader />);
-  expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute("href", "/profile");
+  expect(screen.getByRole("button", { name: "Profile options" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "My profile" })).toHaveAttribute("href", "/profile");
+  expect(screen.getByRole("button", { name: "Sign out", exact: true })).toBeInTheDocument();
 });
+
 it("keeps discount loading/error/empty states distinct without an unsupported schedule claim", () => {
   mocks.deals.mockReturnValue({ data: [], isPending: true, isLoading: false, isError: false });
   const view = render(<Discounts />);
@@ -191,11 +204,32 @@ it("focuses mobile search, closes the menu, and submits the first result with En
   );
 });
 
-it("returns focus on Escape and exposes sign in in the mobile menu", () => {
+it("returns focus on Escape and keeps account access separate from navigation", () => {
   render(<SiteHeader />);
   fireEvent.click(screen.getByRole("button", { name: "Open site search" }));
   fireEvent.keyDown(screen.getByRole("textbox", { name: "Search the site" }), { key: "Escape" });
   expect(screen.getByRole("button", { name: "Open site search" })).toHaveFocus();
   fireEvent.click(screen.getByRole("button", { name: "Menu" }));
-  expect(screen.getByRole("navigation", { name: "Main navigation" })).toHaveTextContent("Sign in");
+  expect(screen.getByRole("navigation", { name: "Main navigation" })).toHaveTextContent("Calendar");
+  fireEvent.click(screen.getByRole("button", { name: "Sign in or create account" }));
+  expect(screen.queryByRole("navigation", { name: "Main navigation" })).not.toBeInTheDocument();
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.getByRole("button", { name: "Sign in or create account" })).toHaveFocus();
+  expect(screen.queryByRole("navigation", { name: "Account options" })).not.toBeInTheDocument();
+});
+
+it("signs out through the existing auth flow and dismisses navigation with Escape", async () => {
+  mocks.store.mockReturnValue({ user: { name: "Lot" }, authReady: true });
+  mocks.signOut.mockResolvedValue(undefined);
+  render(<SiteHeader />);
+  fireEvent.click(screen.getByRole("button", { name: "Profile options" }));
+  fireEvent.click(screen.getByRole("button", { name: "Sign out", exact: true }));
+  await waitFor(() =>
+    expect(screen.queryByRole("navigation", { name: "Account options" })).not.toBeInTheDocument(),
+  );
+  expect(mocks.signOut).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole("button", { name: "Menu", exact: true }));
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.queryByRole("navigation", { name: "Main navigation" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Menu", exact: true })).toHaveFocus();
 });

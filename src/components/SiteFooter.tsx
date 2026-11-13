@@ -10,11 +10,11 @@ const footerLinks = [
 
 export function SiteFooter() {
   return (
-    <footer className="mx-auto mt-12 max-w-7xl border-t border-border/60 px-4 py-6 sm:px-6 sm:py-8">
+    <footer className="student-steals-theme mx-auto mt-12 max-w-7xl rounded-t-3xl border-t border-[#042f23] bg-[#042f23] text-white px-4 py-6 sm:px-6 sm:py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="text-sm font-semibold">Studeats</p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          <p className="text-sm font-semibold">Student Steals</p>
+          <p className="mt-1 text-xs leading-relaxed text-white/80">
             Student discounts, card offers, and free food.
           </p>
         </div>
@@ -26,7 +26,7 @@ export function SiteFooter() {
             <Link
               key={to}
               to={to}
-              className="inline-flex min-h-11 items-center rounded-lg text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="inline-flex min-h-11 items-center rounded-lg text-sm font-medium text-white underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2"
               activeProps={{ "aria-current": "page" }}
             >
               {label}
@@ -43,7 +43,7 @@ export function SiteFooter() {
                 : "smooth",
             })
           }
-          className="inline-flex min-h-11 w-fit shrink-0 items-center gap-2 rounded-full bg-secondary px-4 text-xs font-medium text-muted-foreground ring-1 ring-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="inline-flex min-h-11 w-fit shrink-0 items-center gap-2 rounded-full bg-white/10 px-4 text-xs font-medium text-white/80 ring-1 ring-white/30 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2"
         >
           Back to top <ArrowUp className="size-4" aria-hidden="true" />
         </button>

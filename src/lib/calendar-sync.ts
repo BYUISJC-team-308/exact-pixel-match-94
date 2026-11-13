@@ -50,7 +50,7 @@ export function getGoogleCalendarUrl(item: CalendarEventItem): string {
   const text = encodeURIComponent(item.title);
   const location = encodeURIComponent([item.building, item.room].filter(Boolean).join(", "));
   const details = encodeURIComponent(
-    `${item.details || ""}\n\nDiscovered on Studeats: https://studeats.vercel.app`,
+    `${item.details || ""}\n\nDiscovered on Student Steals: https://studeats.vercel.app`,
   );
 
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${datesParam}&details=${details}&location=${location}`;
@@ -71,7 +71,7 @@ export function buildCalendarFile(item: CalendarEventItem): string {
   const icsLines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Studeats//BYU Student Deals & Free Food//EN",
+    "PRODID:-//Student Steals//BYU Student Deals & Free Food//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",

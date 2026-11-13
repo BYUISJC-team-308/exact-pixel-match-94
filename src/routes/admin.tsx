@@ -46,7 +46,7 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
   head: () => ({
     meta: [
-      { title: "Admin Reports & Moderation — Studeats" },
+      { title: "Admin Reports & Moderation — Student Steals" },
       {
         name: "description",
         content: "View and manage student data issue reports and moderate community deals.",
@@ -1358,7 +1358,7 @@ create policy "Allow admins and users to delete food_events"
               <p className="font-bold">Permanent deletion warning</p>
               <p className="mt-0.5 leading-relaxed">
                 You are about to permanently take down{" "}
-                <span className="font-semibold underline">"{deletingItem?.label}"</span>. This will immediately remove the listing from Studeats for all users.
+                <span className="font-semibold underline">"{deletingItem?.label}"</span>. This will immediately remove the listing from Student Steals for all users.
               </p>
             </div>
           </div>

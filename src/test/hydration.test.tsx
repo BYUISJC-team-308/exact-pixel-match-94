@@ -161,7 +161,10 @@ it("restores browser saves after hydration, ignores legacy local identity, and w
     actions.setUser({ username: "tester", name: "Test Student", email: "", school: "BYU" });
     actions.setAuthReady();
   });
-  expect(document.querySelector('[aria-label="Profile"]')).toHaveAttribute("href", "/profile");
+  expect(document.querySelector('[aria-label="Profile options"]')).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
   expect(document.querySelector('[aria-label="Create account"]')).toBeNull();
 });
 

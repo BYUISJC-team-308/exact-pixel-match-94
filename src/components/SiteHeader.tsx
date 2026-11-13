@@ -1,39 +1,48 @@
+import { StudentStealsMark } from "@/components/StudentStealsMark";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { siteSections, ssDeals } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { useFoodEventsQuery } from "@/lib/food-events";
 import { useDealsQuery } from "@/lib/deals";
-import { initAuth } from "@/lib/auth";
-import { Search, X, House, Tag, CreditCard, Utensils, CalendarDays, MapPin } from "lucide-react";
+import { initAuth, signOut } from "@/lib/auth";
+import {
+  Search,
+  X,
+  House,
+  Tag,
+  CreditCard,
+  Utensils,
+  CalendarDays,
+  MapPin,
+  Menu,
+  UserRound,
+  LogOut,
+} from "lucide-react";
 
 const nav = [
-  { to: "/", label: "Home", icon: House, tone: "bg-[#e7eef8] text-[#294b78] border-[#c9d8ee]" },
+  { to: "/", label: "Home", icon: House },
   {
     to: "/discounts",
     label: "Discounts",
     icon: Tag,
-    tone: "bg-[#e4f1e9] text-[#174d3b] border-[#c9dfd1]",
   },
   {
     to: "/starving-student",
-    label: "Starving Student",
+    label: "Starving Student Card",
     icon: CreditCard,
-    tone: "bg-[#fff0db] text-[#70431c] border-[#eddbbf]",
   },
   {
     to: "/free-food",
     label: "Free Food",
     icon: Utensils,
-    tone: "bg-[#edeafb] text-[#493b75] border-[#dad4ed]",
   },
   {
     to: "/calendar",
     label: "Calendar",
     icon: CalendarDays,
-    tone: "bg-[#fbe7ec] text-[#843450] border-[#edcbd6]",
   },
-  { to: "/map", label: "Map", icon: MapPin, tone: "bg-[#e0f2f3] text-[#205c64] border-[#bddfe2]" },
+  { to: "/map", label: "Map", icon: MapPin },
 ] as const;
 
 const navPill =
@@ -48,6 +57,37 @@ export function SiteHeader() {
   const [q, setQ] = useState("");
   const [menu, setMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [accountError, setAccountError] = useState("");
+  const headerRef = useRef<HTMLElement>(null);
+  const accountToggle = useRef<HTMLButtonElement>(null);
+  const menuToggle = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const dismissOutside = (event: PointerEvent) => {
+      if (!headerRef.current?.contains(event.target as Node)) {
+        setAccountOpen(false);
+        setMenu(false);
+        setSearchOpen(false);
+        setQ("");
+      }
+    };
+    const dismissEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && accountOpen) {
+        setAccountOpen(false);
+        accountToggle.current?.focus();
+      } else if (event.key === "Escape" && menu) {
+        setMenu(false);
+        menuToggle.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", dismissOutside);
+    document.addEventListener("keydown", dismissEscape);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside);
+      document.removeEventListener("keydown", dismissEscape);
+    };
+  }, [accountOpen, menu]);
   const navigate = useNavigate();
   const searchInput = useRef<HTMLInputElement>(null);
   const searchToggle = useRef<HTMLButtonElement>(null);
@@ -84,28 +124,21 @@ export function SiteHeader() {
     : [];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-glass/60 bg-glass/55 backdrop-blur-xl">
+    <header
+      ref={headerRef}
+      className="student-steals-theme sticky top-0 z-40 border-b border-[#042f23] bg-[#042f23] shadow-md"
+    >
       <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:gap-3 sm:px-6">
-        <Link to="/" className="flex shrink-0 items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
-            SB
+        <Link
+          to="/"
+          aria-label="Student Steals home"
+          className="flex min-w-0 items-center gap-2 text-white"
+        >
+          <StudentStealsMark className="size-9 shrink-0 sm:size-11" />
+          <span className="font-sans text-base font-bold leading-[1.05] tracking-tight sm:text-xl">
+            Student<span className="block sm:inline"> Steals</span>
           </span>
-          <span className="font-display text-lg font-semibold tracking-tight">Studeats</span>
         </Link>
-        <nav className="ml-3 hidden items-center gap-1 xl:flex">
-          {nav.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              activeOptions={{ exact: true }}
-              className={`${navPill} ${n.tone}`}
-              activeProps={activePill}
-            >
-              <n.icon className="size-4 shrink-0" aria-hidden="true" />
-              {n.label}
-            </Link>
-          ))}
-        </nav>
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
@@ -116,9 +149,10 @@ export function SiteHeader() {
             onClick={() => {
               setSearchOpen(!searchOpen);
               setMenu(false);
+              setAccountOpen(false);
               setQ("");
             }}
-            className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary ring-1 ring-border focus-visible:outline-2 sm:hidden"
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-white ring-1 ring-border focus-visible:outline-2 sm:hidden"
           >
             {searchOpen ? (
               <X className="size-4" aria-hidden="true" />
@@ -134,7 +168,7 @@ export function SiteHeader() {
                 : "relative hidden sm:block"
             }
           >
-            <div className="flex h-11 w-full items-center gap-2 rounded-full bg-secondary px-3 ring-1 ring-border sm:w-56">
+            <div className="flex h-11 w-full items-center gap-2 rounded-full bg-white px-3 ring-1 ring-border sm:w-56">
               <span className="text-muted-foreground">🔍</span>
               <input
                 ref={searchInput}
@@ -156,7 +190,7 @@ export function SiteHeader() {
                     searchInput.current?.blur();
                   }
                 }}
-                placeholder="Search Studeats"
+                placeholder="Search Student Steals"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 aria-label="Search the site"
               />
@@ -183,61 +217,135 @@ export function SiteHeader() {
               </div>
             )}
           </div>
-          {authReady && !user && (
-            <Link
-              to="/signin"
-              className="hidden rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border hover:bg-glass sm:inline-flex"
-            >
-              Sign in
-            </Link>
-          )}
-          {authReady ? (
-            <Link
-              to={user ? "/profile" : "/account"}
-              aria-label={user ? "Profile" : "Create account"}
-              className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full bg-secondary font-display font-semibold text-primary ring-1 ring-border"
-            >
-              {user?.avatar ? (
-                <img src={user.avatar} alt="" className="size-full object-cover" />
-              ) : user ? (
-                user.name[0]?.toUpperCase()
-              ) : (
-                "👤"
-              )}
-            </Link>
-          ) : (
-            <span
-              role="status"
-              aria-label="Checking your account"
-              className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary text-primary ring-1 ring-border"
-            >
-              <span aria-hidden="true">👤</span>
-            </span>
-          )}
+          <div className="relative">
+            {authReady ? (
+              <button
+                ref={accountToggle}
+                type="button"
+                aria-label={user ? "Profile options" : "Sign in or create account"}
+                aria-expanded={accountOpen}
+                aria-controls="account-options"
+                onClick={() => {
+                  setAccountOpen(!accountOpen);
+                  setMenu(false);
+                  setSearchOpen(false);
+                  setQ("");
+                }}
+                className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-full border border-[#759b83] bg-white font-sans font-semibold text-[#042f23] hover:bg-[#edf4ed]"
+              >
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="" className="size-full object-cover" />
+                ) : user ? (
+                  user.name[0]?.toUpperCase()
+                ) : (
+                  <UserRound className="size-5" aria-hidden="true" />
+                )}
+              </button>
+            ) : (
+              <span
+                role="status"
+                aria-label="Checking your account"
+                className="grid size-11 place-items-center rounded-full border border-[#759b83] bg-white text-[#042f23]"
+              >
+                <UserRound className="size-5" aria-hidden="true" />
+              </span>
+            )}
+            {accountOpen && authReady && (
+              <nav
+                id="account-options"
+                aria-label="Account options"
+                className="absolute right-0 top-full z-50 mt-3 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-[#dce9df] bg-white p-2 shadow-lg"
+              >
+                <p className="px-3 py-2 text-xs font-semibold text-[#416354]">
+                  {user ? "Your account" : "Welcome to Student Steals"}
+                </p>
+                {user ? (
+                  <>
+                    <Link
+                      to="/profile"
+                      onClick={() => setAccountOpen(false)}
+                      className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-primary hover:bg-[#edf4ed]"
+                    >
+                      <UserRound className="size-4" aria-hidden="true" />
+                      My profile
+                    </Link>
+                    <button
+                      type="button"
+                      disabled={signingOut}
+                      onClick={async () => {
+                        setSigningOut(true);
+                        setAccountError("");
+                        try {
+                          await signOut();
+                          setAccountOpen(false);
+                        } catch {
+                          setAccountError("Couldn’t sign out. Please try again.");
+                        } finally {
+                          setSigningOut(false);
+                        }
+                      }}
+                      className="flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-sm text-primary hover:bg-[#edf4ed] disabled:opacity-60"
+                    >
+                      <LogOut className="size-4" aria-hidden="true" />
+                      {signingOut ? "Signing out…" : "Sign out"}
+                    </button>
+                    {accountError && (
+                      <p role="alert" className="px-3 py-2 text-xs text-destructive">
+                        {accountError}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/signin"
+                      onClick={() => setAccountOpen(false)}
+                      className="flex min-h-11 items-center rounded-xl bg-primary px-3 text-sm font-semibold text-white"
+                    >
+                      Sign in
+                    </Link>
+                    <Link
+                      to="/account"
+                      onClick={() => setAccountOpen(false)}
+                      className="mt-1 flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-primary hover:bg-[#edf4ed]"
+                    >
+                      Create account
+                    </Link>
+                  </>
+                )}
+              </nav>
+            )}
+          </div>
           <button
+            ref={menuToggle}
+            type="button"
+            aria-controls="main-navigation"
             onClick={() => {
               setMenu(!menu);
               setSearchOpen(false);
+              setAccountOpen(false);
+              setQ("");
             }}
-            className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary ring-1 ring-border xl:hidden"
+            className="grid size-11 shrink-0 place-items-center rounded-full border border-[#759b83] bg-white text-[#042f23] hover:bg-[#edf4ed]"
             aria-label="Menu"
             aria-expanded={menu}
           >
-            ☰
+            <Menu className="size-5" aria-hidden="true" />
           </button>
         </div>
       </div>
       {menu && (
         <nav
+          id="main-navigation"
           aria-label="Main navigation"
-          className="flex max-h-[60dvh] flex-wrap gap-2 overflow-y-auto px-4 pb-3 pt-1 sm:px-6 xl:hidden"
+          className="mx-auto grid max-h-[60dvh] max-w-7xl grid-cols-2 gap-2 overflow-y-auto px-4 pb-4 pt-1 sm:grid-cols-3 sm:px-6"
         >
           {nav.map((n) => (
             <Link
               key={n.to}
               to={n.to}
               onClick={() => setMenu(false)}
-              className={`${navPill} ${n.tone}`}
+              className={`${navPill} rounded-xl border-[#dce9df] bg-[#f4f8f3] text-[#042f23]`}
               activeOptions={{ exact: true }}
               activeProps={activePill}
             >
@@ -245,15 +353,6 @@ export function SiteHeader() {
               {n.label}
             </Link>
           ))}
-          {authReady && !user && (
-            <Link
-              to="/signin"
-              onClick={() => setMenu(false)}
-              className={`${navPill} bg-secondary text-primary sm:hidden`}
-            >
-              Sign in
-            </Link>
-          )}
         </nav>
       )}
     </header>

@@ -52,7 +52,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" },
-      { title: "Studeats — Student discounts & free food" },
+      { title: "Student Steals — Student discounts & free food" },
       { name: "description", content: "Student discounts, Starving Student Card deals and free campus food in one place." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -62,7 +62,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" },
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/student-steals-mark.svg", type: "image/svg+xml" },
     ],
   }),
   shellComponent: RootShell,
@@ -86,9 +86,9 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <div className="relative min-h-screen text-pretty">
         <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
-          <div className="absolute -top-32 -left-24 h-[36rem] w-[36rem] rounded-full bg-primary/20 blur-3xl" />
-          <div className="absolute top-1/4 -right-24 h-[30rem] w-[30rem] rounded-full bg-accent/15 blur-3xl" />
-          <div className="absolute bottom-0 left-1/3 h-[26rem] w-[26rem] rounded-full bg-gold/15 blur-3xl" />
+          <div className="absolute -top-32 -left-24 h-[36rem] w-[36rem] rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute top-1/4 -right-24 h-[30rem] w-[30rem] rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-[26rem] w-[26rem] rounded-full bg-primary/10 blur-3xl" />
         </div>
         <div className="relative">
           <SiteHeader />

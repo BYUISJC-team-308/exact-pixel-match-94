@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { InformationPage } from "@/components/InformationPage";
 
 export const Route = createFileRoute("/terms")({
-  head: () => ({ meta: [{ title: "Terms — Studeats" }] }),
+  head: () => ({ meta: [{ title: "Terms — Student Steals" }] }),
   component: TermsPage,
 });
 
@@ -15,7 +15,7 @@ export function TermsPage() {
       <section>
         <h2>About the service</h2>
         <p>
-          Studeats helps students discover discounts, cardholder offers, and food events. It is an
+          Student Steals helps students discover discounts, cardholder offers, and food events. It is an
           IS 401 class project, not an official university service, merchant, ticket seller, or
           Starving Student Card provider.
         </p>

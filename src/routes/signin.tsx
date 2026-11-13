@@ -29,7 +29,7 @@ function SignInPage() {
         <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-5xl">Sign in</h1>
       </div>
       <p className="mx-auto mb-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-        Use the email and password for your Studeats account. Saved offers and events currently stay
+        Use the email and password for your Student Steals account. Saved offers and events currently stay
         on this browser.
       </p>
       <SignInForm onSubmit={handleSignIn} />

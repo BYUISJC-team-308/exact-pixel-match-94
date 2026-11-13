@@ -13,12 +13,12 @@ import { getRecurringSpecialsForDate, type RecurringSpecial } from "@/lib/calend
 export const Route = createFileRoute("/calendar")({
   head: () => ({
     meta: [
-      { title: "Free Food & Deals Calendar — Studeats" },
+      { title: "Free Food & Deals Calendar — Student Steals" },
       {
         name: "description",
         content: "Browse listed food events by date and add an event to your calendar.",
       },
-      { property: "og:title", content: "Free Food & Deals Calendar — Studeats" },
+      { property: "og:title", content: "Free Food & Deals Calendar — Student Steals" },
       {
         property: "og:description",
         content: "Browse campus free food and weekly dining specials by date.",

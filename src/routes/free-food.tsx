@@ -22,13 +22,13 @@ export const Route = createFileRoute("/free-food")({
   }),
   head: () => ({
     meta: [
-      { title: "Free Food Near Me — Studeats" },
+      { title: "Free Food Near Me — Student Steals" },
       {
         name: "description",
         content:
           "Free food events on BYU campus and across Utah County today and this week, with times, buildings, and rooms.",
       },
-      { property: "og:title", content: "Free Food Near Me — Studeats" },
+      { property: "og:title", content: "Free Food Near Me — Student Steals" },
       { property: "og:description", content: "Find free food on campus and in Utah County." },
     ],
   }),

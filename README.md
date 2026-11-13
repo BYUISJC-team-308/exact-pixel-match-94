@@ -1,3 +1,7 @@
+# Student Steals homepage
+
+The branding preview uses a compact header, profile-based account options, a green/white navigation menu and three image discovery tiles. Today on Campus and My Hub retain their existing layout and behavior. Routes, provider names, auth/storage contracts and saved data remain unchanged. See [preview scope, assets and validation](docs/student-steals-home-preview.md). Approved for production publication by the Product Owner on November 13, 2026.
+
 ## Hydration and campus date rendering (P32)
 
 Calendar and Map loaders serialize a render instant so SSR and initial browser markup match. Browser time is read after hydration; event dates/times use America/Denver and displayed labels use en-US. Keep browser-local/auth state behind the existing external-store server snapshot. Never suppress hydration warnings to hide a divergent first render. See [hydration regression evidence](docs/hydration-review.md) and `src/test/hydration.test.tsx` for the locale, midnight, event-boundary, and restored-state checks.

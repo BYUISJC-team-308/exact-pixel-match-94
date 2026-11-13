@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   isUuid,
   fetchUserSavedDeals,
@@ -15,7 +15,17 @@ import { actions, getStoreState } from "@/lib/store";
 describe("Account-backed Saves & Guest Migration (P03 & P04)", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    // Store tests need browser storage even when Node exposes an unavailable native localStorage.
+    const storage = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+      clear: () => storage.clear(),
+    });
   });
+
+  afterEach(() => vi.unstubAllGlobals());
 
   describe("UUID Validation", () => {
     it("validates RFC4122 standard UUIDs", () => {
@@ -89,7 +99,7 @@ describe("Account-backed Saves & Guest Migration (P03 & P04)", () => {
       await saveUserDeal("user-uuid-1", validDealId);
       expect(upsertMock).toHaveBeenCalledWith(
         [{ user_id: "user-uuid-1", deal_id: validDealId }],
-        expect.objectContaining({ onConflict: "user_id,deal_id", ignoreDuplicates: true })
+        expect.objectContaining({ onConflict: "user_id,deal_id", ignoreDuplicates: true }),
       );
 
       await unsaveUserDeal("user-uuid-1", validDealId);
@@ -130,16 +140,16 @@ describe("Account-backed Saves & Guest Migration (P03 & P04)", () => {
       const merged = await syncAndMergeGuestSaves(
         "user-uuid-1",
         [existingRemoteDeal, localGuestDeal], // deal 1 is duplicate, deal 2 is new
-        [localGuestEvent]
+        [localGuestEvent],
       );
 
       expect(upsertDeals).toHaveBeenCalledWith(
         [{ user_id: "user-uuid-1", deal_id: localGuestDeal }],
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(upsertEvents).toHaveBeenCalledWith(
         [{ user_id: "user-uuid-1", event_id: localGuestEvent }],
-        expect.any(Object)
+        expect.any(Object),
       );
 
       expect(merged.deals).toContain(existingRemoteDeal);
