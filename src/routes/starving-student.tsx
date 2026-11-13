@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { SSDeal } from "@/lib/data";
 import { getStarvingStudentOffers } from "@/lib/starving-student";
@@ -142,6 +142,20 @@ export function CardHub({
   const setViewMode = (view: CardSearch["view"]) => change({ view });
   const resultsRef = useRef<HTMLHeadingElement>(null);
   const [open, setOpen] = useState<SSDeal | null>(null);
+
+  // Auto-open deal when directed via ?dealId= query parameter
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get("dealId");
+      if (targetId && ssDeals.length > 0) {
+        const found = ssDeals.find((d) => d.id === targetId);
+        if (found) {
+          setOpen(found);
+        }
+      }
+    }
+  }, [ssDeals]);
 
   // Confirmation state for un-marking a deal
   const [confirmDeal, setConfirmDeal] = useState<SSDeal | null>(null);

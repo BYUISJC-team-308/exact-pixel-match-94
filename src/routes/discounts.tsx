@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Deal, DealCategory } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
@@ -22,6 +22,9 @@ import {
 } from "@/lib/deal-verification";
 
 export const Route = createFileRoute("/discounts")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    dealId: typeof search.dealId === "string" ? search.dealId : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Discount Dashboard — Studeats" },
@@ -106,6 +109,7 @@ function DealCardUpvoteButton({
 }
 
 function Discounts() {
+  const search = typeof Route.useSearch === "function" ? Route.useSearch() : undefined;
   const { savedDeals } = useStore();
   const [cat, setCat] = useState<Cat>("All");
   const [q, setQ] = useState("");
@@ -124,6 +128,20 @@ function Discounts() {
     refetch,
   } = useDealsQuery();
   const isLoading = isPending ?? initialFetchLoading;
+
+  // Auto-open deal when directed via ?dealId= query parameter
+  useEffect(() => {
+    if (search?.dealId && deals.length > 0) {
+      const target = deals.find((d) => d.id === search.dealId);
+      if (target) {
+        setOpen(target);
+        setTimeout(() => {
+          const el = document.getElementById(`deal-${search.dealId}`);
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 150);
+      }
+    }
+  }, [search?.dealId, deals]);
 
   const t = q.toLowerCase();
   const filtered = deals.filter((d) => {
@@ -173,6 +191,7 @@ function Discounts() {
     return (
       <div
         key={d.id}
+        id={`deal-${d.id}`}
         className="glass group relative flex flex-col justify-between overflow-hidden p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-float border border-border/70 hover:border-border"
       >
         <div>

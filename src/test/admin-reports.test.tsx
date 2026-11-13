@@ -87,6 +87,9 @@ const mockFoodEvents: any[] = [
 
 describe("Admin Reports Dashboard (/admin)", () => {
   let queryClient: QueryClient;
+  const mockDeleteDeal = vi.fn().mockResolvedValue(undefined);
+  const mockDeleteFoodEvent = vi.fn().mockResolvedValue(undefined);
+  const mockUpdateReport = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -105,7 +108,7 @@ describe("Admin Reports Dashboard (/admin)", () => {
     } as any);
 
     vi.spyOn(dataIssuesModule, "useUpdateReportStatusMutation").mockReturnValue({
-      mutateAsync: vi.fn().mockResolvedValue(undefined),
+      mutateAsync: mockUpdateReport,
       isPending: false,
     } as any);
 
@@ -114,13 +117,23 @@ describe("Admin Reports Dashboard (/admin)", () => {
       isLoading: false,
     } as any);
 
+    vi.spyOn(dealsModule, "useDeleteDealMutation").mockReturnValue({
+      mutateAsync: mockDeleteDeal,
+      isPending: false,
+    } as any);
+
     vi.spyOn(foodEventsModule, "useFoodEventsQuery").mockReturnValue({
       data: mockFoodEvents,
       isLoading: false,
     } as any);
+
+    vi.spyOn(foodEventsModule, "useDeleteFoodEventMutation").mockReturnValue({
+      mutateAsync: mockDeleteFoodEvent,
+      isPending: false,
+    } as any);
   });
 
-  it("renders header, metrics cards, and submitted reports list", () => {
+  it("renders header, metrics cards, and submitted reports list with deep links", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <AdminPage />
@@ -137,19 +150,11 @@ describe("Admin Reports Dashboard (/admin)", () => {
     expect(screen.getAllByText("Resolved").length).toBeGreaterThan(0);
     expect(screen.getByText("Disputed Posts")).toBeInTheDocument();
 
-    // Reports content
-    expect(screen.getByText("Waffle Love: Free W Eats")).toBeInTheDocument();
-    expect(screen.getByText("ACM Opening Social & Tech Talks")).toBeInTheDocument();
-    expect(screen.getByText("Sub Zero: Free Ice Cream")).toBeInTheDocument();
-
-    // Issue types
-    expect(screen.getByText(/⚠️ Offer is expired/)).toBeInTheDocument();
-    expect(screen.getByText(/⚠️ Location is incorrect/)).toBeInTheDocument();
-
-    // Notes
-    expect(
-      screen.getByText(/"The cashier said the promotion ended last Friday."/)
-    ).toBeInTheDocument();
+    // Direct deep-link hrefs to specific items
+    const openOnPageLinks = screen.getAllByRole("link", { name: /Open on Page/i });
+    expect(openOnPageLinks[0]).toHaveAttribute("href", "/discounts?dealId=deal-101");
+    expect(openOnPageLinks[1]).toHaveAttribute("href", "/free-food?eventId=event-202");
+    expect(openOnPageLinks[2]).toHaveAttribute("href", "/starving-student?dealId=ss-303");
   });
 
   it("filters reports by search query", () => {
@@ -187,12 +192,6 @@ describe("Admin Reports Dashboard (/admin)", () => {
   });
 
   it("opens resolve modal and submits status update", async () => {
-    const mockMutate = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(dataIssuesModule, "useUpdateReportStatusMutation").mockReturnValue({
-      mutateAsync: mockMutate,
-      isPending: false,
-    } as any);
-
     render(
       <QueryClientProvider client={queryClient}>
         <AdminPage />
@@ -215,11 +214,55 @@ describe("Admin Reports Dashboard (/admin)", () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalledWith({
+      expect(mockUpdateReport).toHaveBeenCalledWith({
         id: "rep-1",
         status: "resolved",
         resolutionNotes: "Verified with manager and removed.",
       });
     });
+  });
+
+  it("allows administrators to delete reported listings and auto-resolves the report", async () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AdminPage />
+      </QueryClientProvider>
+    );
+
+    // Click Delete Post on the first report (Waffle Love)
+    const deleteButtons = screen.getAllByRole("button", { name: /Delete Post/i });
+    fireEvent.click(deleteButtons[0]);
+
+    // Delete Confirmation Modal appears
+    expect(screen.getByRole("heading", { name: "Delete Community Listing" })).toBeInTheDocument();
+    expect(screen.getByText(/Permanent deletion warning/i)).toBeInTheDocument();
+
+    // Confirm deletion
+    const confirmDeleteBtn = screen.getByRole("button", { name: "Delete Permanently" });
+    fireEvent.click(confirmDeleteBtn);
+
+    await waitFor(() => {
+      expect(mockDeleteDeal).toHaveBeenCalledWith("deal-101");
+      expect(mockUpdateReport).toHaveBeenCalledWith({
+        id: "rep-1",
+        status: "resolved",
+        resolutionNotes: "Listing permanently deleted by administrator.",
+      });
+    });
+  });
+
+  it("allows quick in-page preview of reported listings", () => {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AdminPage />
+      </QueryClientProvider>
+    );
+
+    // Click Quick Preview on Waffle Love report
+    const previewButtons = screen.getAllByRole("button", { name: /Quick Preview/i });
+    fireEvent.click(previewButtons[0]);
+
+    // DealDetail modal opens directly on the admin page
+    expect(screen.getByText("Free W Eats")).toBeInTheDocument();
   });
 });

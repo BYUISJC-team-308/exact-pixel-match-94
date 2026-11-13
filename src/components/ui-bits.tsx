@@ -20,7 +20,9 @@ import {
   useFoodEventInteractionsQuery,
   useVoteFoodEventMutation,
   useToggleFoodEventUpvoteMutation,
+  deleteFoodEvent,
 } from "@/lib/food-events";
+import { deleteDeal } from "@/lib/deals";
 
 function ReportIssueButton({ itemType, itemId, itemLabel }: Pick<DataIssueInput, "itemType" | "itemId" | "itemLabel">) {
   const [open, setOpen] = useState(false);
@@ -513,7 +515,9 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
         </div>
       </div>
 
-      <div className="mt-4 flex items-center">
+      {deal.title && <h4 className="mt-3 text-lg font-bold text-foreground">{deal.title}</h4>}
+
+      <div className="mt-3 flex items-center">
         <span className="inline-flex items-center rounded-lg bg-accent/15 px-3 py-1 text-base font-bold text-accent ring-1 ring-accent/30">
           🏷️ {deal.value}
         </span>
@@ -612,7 +616,29 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
         <a href={deal.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Go to provider →</a>
         <Btn variant="soft" onClick={() => actions.toggleDeal(deal.id)}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
       </div>
-      <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="deal" itemId={deal.id} itemLabel={`${deal.company}: ${deal.title}`} /></div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+        <ReportIssueButton itemType="deal" itemId={deal.id} itemLabel={`${deal.company}: ${deal.title}`} />
+        {user && (
+          <button
+            type="button"
+            onClick={async () => {
+              if (window.confirm(`Admin: Permanently delete listing "${deal.company}: ${deal.title}"?`)) {
+                try {
+                  await deleteDeal(deal.id);
+                  toast.success("Listing deleted by administrator");
+                  onClose();
+                  window.location.reload();
+                } catch {
+                  toast.error("Could not delete listing. Check permissions.");
+                }
+              }
+            }}
+            className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline dark:text-rose-400"
+          >
+            🗑️ Delete listing (Admin)
+          </button>
+        )}
+      </div>
 
       <AuthRequiredModal
         open={authModalOpen}
@@ -821,7 +847,29 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
         <Btn onClick={() => actions.toggleEvent(event.id)}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
         <Link to="/map" className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">See on map</Link>
       </div>
-      <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="event" itemId={event.id} itemLabel={event.title} /></div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+        <ReportIssueButton itemType="event" itemId={event.id} itemLabel={event.title} />
+        {user && (
+          <button
+            type="button"
+            onClick={async () => {
+              if (window.confirm(`Admin: Permanently delete event "${event.title}"?`)) {
+                try {
+                  await deleteFoodEvent(event.id);
+                  toast.success("Event deleted by administrator");
+                  onClose();
+                  window.location.reload();
+                } catch {
+                  toast.error("Could not delete event. Check permissions.");
+                }
+              }
+            }}
+            className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline dark:text-rose-400"
+          >
+            🗑️ Delete event (Admin)
+          </button>
+        )}
+      </div>
 
       <AuthRequiredModal
         open={authModalOpen}

@@ -429,3 +429,22 @@ export function useFoodEventInteractionsQuery(eventId: string) {
     } as unknown as ReturnType<typeof useQuery<FoodEventInteractionState>>;
   }
 }
+
+export async function deleteFoodEvent(eventId: string): Promise<void> {
+  const { error } = await supabase.from("food_events").delete().eq("id", eventId);
+  if (error) {
+    console.error("Error deleting food event from Supabase:", error);
+    throw error;
+  }
+}
+
+export function useDeleteFoodEventMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (eventId: string) => deleteFoodEvent(eventId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["food_events_query"] });
+      void queryClient.invalidateQueries({ queryKey: ["data_issue_reports"] });
+    },
+  });
+}

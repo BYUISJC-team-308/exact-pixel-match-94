@@ -1,9 +1,12 @@
 import { useState, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   PageHeader,
   Modal,
   Btn,
+  DealDetail,
+  EventDetail,
 } from "@/components/ui-bits";
 import { calculateVerificationScore } from "@/lib/deal-verification";
 import { useStore } from "@/lib/store";
@@ -13,26 +16,28 @@ import {
   type DataIssueReport,
   type ReportStatus,
 } from "@/lib/data-issues";
-import { useDealsQuery } from "@/lib/deals";
-import { useFoodEventsQuery } from "@/lib/food-events";
+import { useDealsQuery, useDeleteDealMutation, type Deal } from "@/lib/deals";
+import {
+  useFoodEventsQuery,
+  useDeleteFoodEventMutation,
+  type NormalizedFoodEvent,
+} from "@/lib/food-events";
 import {
   AlertTriangle,
   CheckCircle2,
   Clock,
   ExternalLink,
-  Filter,
   RefreshCw,
   Search,
   ShieldAlert,
   Tag,
   Utensils,
   CreditCard,
-  Check,
   X,
   ArrowRight,
   Database,
   Eye,
-  Info,
+  Trash2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -133,7 +138,7 @@ function TypeBadge({ type }: { type: DataIssueReport["itemType"] }) {
 }
 
 export function AdminPage() {
-  const { user, authReady } = useStore();
+  const { user } = useStore();
   const [activeTab, setActiveTab] = useState<"reports" | "disputed" | "health">("reports");
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState<DataIssueReport["itemType"] | "all">("all");
@@ -144,7 +149,19 @@ export function AdminPage() {
   const [resolutionNotes, setResolutionNotes] = useState("");
   const [resolveAction, setResolveAction] = useState<"resolved" | "dismissed">("resolved");
 
-  // React Queries
+  // In-app listing preview state
+  const [previewDeal, setPreviewDeal] = useState<Deal | null>(null);
+  const [previewEvent, setPreviewEvent] = useState<NormalizedFoodEvent | null>(null);
+
+  // Listing deletion modal state
+  const [deletingItem, setDeletingItem] = useState<{
+    id: string;
+    label: string;
+    type: "deal" | "event";
+    reportId?: string;
+  } | null>(null);
+
+  // React Queries and Mutations
   const {
     data: reports = [],
     isLoading: loadingReports,
@@ -156,6 +173,8 @@ export function AdminPage() {
   const { data: deals = [] } = useDealsQuery();
   const { data: foodEvents = [] } = useFoodEventsQuery();
   const updateStatusMutation = useUpdateReportStatusMutation();
+  const deleteDealMutation = useDeleteDealMutation();
+  const deleteFoodEventMutation = useDeleteFoodEventMutation();
 
   // Metrics counts
   const openCount = reports.filter((r) => r.status === "open").length;
@@ -204,8 +223,10 @@ export function AdminPage() {
         status: newStatus,
         resolutionNotes: notes,
       });
+      toast.success(`Report marked as ${newStatus}`);
     } catch (err) {
       console.error("Failed to update report status:", err);
+      toast.error("Failed to update report status");
     }
   };
 
@@ -223,10 +244,60 @@ export function AdminPage() {
         status: resolveAction,
         resolutionNotes: resolutionNotes.trim() || undefined,
       });
+      toast.success(
+        resolveAction === "resolved" ? "Report marked resolved" : "Report dismissed"
+      );
       setResolvingReport(null);
       setResolutionNotes("");
     } catch (err) {
       console.error("Failed to resolve report:", err);
+      toast.error("Failed to update report status");
+    }
+  };
+
+  const handleQuickPreview = (itemType: DataIssueReport["itemType"], itemId: string) => {
+    if (itemType === "deal") {
+      const match = deals.find((d) => d.id === itemId);
+      if (match) {
+        setPreviewDeal(match);
+      } else {
+        toast.info("Deal not found in active listings (may have already been deleted or expired).");
+      }
+    } else if (itemType === "event") {
+      const match = foodEvents.find((e) => e.id === itemId);
+      if (match) {
+        setPreviewEvent(match);
+      } else {
+        toast.info("Food event not found in active listings.");
+      }
+    } else {
+      toast.info("Starving Student offers can be inspected on the Card Hub page.");
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingItem) return;
+    try {
+      if (deletingItem.type === "deal") {
+        await deleteDealMutation.mutateAsync(deletingItem.id);
+      } else if (deletingItem.type === "event") {
+        await deleteFoodEventMutation.mutateAsync(deletingItem.id);
+      }
+
+      // If associated with a report, automatically resolve it
+      if (deletingItem.reportId) {
+        await updateStatusMutation.mutateAsync({
+          id: deletingItem.reportId,
+          status: "resolved",
+          resolutionNotes: "Listing permanently deleted by administrator.",
+        });
+      }
+
+      toast.success(`"${deletingItem.label}" has been permanently deleted.`);
+      setDeletingItem(null);
+    } catch (err) {
+      console.error("Failed to delete post:", err);
+      toast.error("Failed to delete listing. Please check permissions.");
     }
   };
 
@@ -269,15 +340,15 @@ export function AdminPage() {
           </div>
           <div>
             <h2 className="text-sm font-bold text-foreground">
-              Administrator Reports Console
+              Administrator Reports & Moderation Console
             </h2>
             <p className="text-xs text-muted-foreground">
               {user ? (
                 <>
-                  Signed in as <span className="font-semibold text-foreground">@{user.username}</span> ({user.email || user.name})
+                  Signed in as <span className="font-semibold text-foreground">@{user.username}</span> ({user.email || user.name}) · Full moderation & deletion access enabled
                 </>
               ) : (
-                "Signed out preview mode. Sign in to your administrator account to save resolution notes."
+                "Signed out preview mode. Sign in to your administrator account to save resolution notes or delete posts."
               )}
             </p>
           </div>
@@ -464,9 +535,6 @@ export function AdminPage() {
               <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
                 {reportsError instanceof Error ? reportsError.message : "Error connecting to Supabase table 'data_issue_reports'."}
               </p>
-              <p className="mt-2 text-xs font-mono bg-muted p-2 rounded-lg max-w-lg mx-auto text-left">
-                Check Supabase SQL Editor: ensure migration 20261113000200_admin_reports_access.sql has been applied.
-              </p>
               <button
                 type="button"
                 onClick={() => void refetchReports()}
@@ -488,12 +556,13 @@ export function AdminPage() {
           ) : (
             <div className="space-y-4">
               {filteredReports.map((report) => {
+                // Direct deep link to item on the live site
                 const targetLink =
                   report.itemType === "deal"
-                    ? "/discounts"
+                    ? `/discounts?dealId=${encodeURIComponent(report.itemId)}`
                     : report.itemType === "event"
-                      ? "/free-food"
-                      : "/starving-student";
+                      ? `/free-food?eventId=${encodeURIComponent(report.itemId)}`
+                      : `/starving-student?dealId=${encodeURIComponent(report.itemId)}`;
 
                 return (
                   <article
@@ -548,17 +617,50 @@ export function AdminPage() {
                         )}
                       </div>
 
-                      {/* Admin Actions */}
+                      {/* Admin Inspection & Actions */}
                       <div className="flex flex-wrap items-center gap-1.5 sm:flex-col sm:items-end">
-                        <Link
-                          to={targetLink}
-                          className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-glass"
-                        >
-                          View Listing <ArrowRight className="size-3" />
-                        </Link>
+                        <div className="flex items-center gap-1.5">
+                          {/* Quick In-Page Preview */}
+                          {(report.itemType === "deal" || report.itemType === "event") && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuickPreview(report.itemType, report.itemId)}
+                              className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"
+                            >
+                              <Eye className="size-3" /> Quick Preview
+                            </button>
+                          )}
 
+                          {/* Direct deep link to item on the page */}
+                          <Link
+                            to={targetLink}
+                            className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-glass"
+                          >
+                            Open on Page <ExternalLink className="size-3" />
+                          </Link>
+                        </div>
+
+                        {/* Delete Post Action */}
+                        {(report.itemType === "deal" || report.itemType === "event") && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDeletingItem({
+                                id: report.itemId,
+                                label: report.itemLabel,
+                                type: report.itemType as "deal" | "event",
+                                reportId: report.id,
+                              })
+                            }
+                            className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-500/20 dark:text-rose-400"
+                          >
+                            <Trash2 className="size-3" /> Delete Post
+                          </button>
+                        )}
+
+                        {/* Status workflow buttons */}
                         {report.status === "open" && (
-                          <>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
                             <button
                               type="button"
                               onClick={() => void handleStatusChange(report, "reviewing")}
@@ -580,11 +682,11 @@ export function AdminPage() {
                             >
                               Dismiss
                             </button>
-                          </>
+                          </div>
                         )}
 
                         {report.status === "reviewing" && (
-                          <>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
                             <button
                               type="button"
                               onClick={() => handleOpenResolveModal(report, "resolved")}
@@ -606,14 +708,14 @@ export function AdminPage() {
                             >
                               Reopen
                             </button>
-                          </>
+                          </div>
                         )}
 
                         {(report.status === "resolved" || report.status === "dismissed") && (
                           <button
                             type="button"
                             onClick={() => void handleStatusChange(report, "open")}
-                            className="rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-glass"
+                            className="rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-glass mt-1"
                           >
                             Reopen Report
                           </button>
@@ -636,7 +738,7 @@ export function AdminPage() {
               Community Items with Low Trust or Fake Votes
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              These listings were contributed by users and have received "Fake / Expired" or "Food ran out" votes from other students.
+              These listings were contributed by users and have received "Fake / Expired" or "Food ran out" votes from other students. Administrators can inspect or delete them.
             </p>
           </div>
 
@@ -697,12 +799,32 @@ export function AdminPage() {
                           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${score.badgeColor}`}>
                             {score.percentage}% Real ({score.total} votes)
                           </span>
-                          <Link
-                            to="/discounts"
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDeal(deal)}
                             className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/20"
                           >
-                            Inspect →
+                            Preview
+                          </button>
+                          <Link
+                            to={`/discounts?dealId=${encodeURIComponent(deal.id)}`}
+                            className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold ring-1 ring-border hover:bg-glass"
+                          >
+                            Open on Page ↗
                           </Link>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDeletingItem({
+                                id: deal.id,
+                                label: `${deal.company}: ${deal.title}`,
+                                type: "deal",
+                              })
+                            }
+                            className="rounded-full bg-rose-500/15 px-3 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-500/25 dark:text-rose-400"
+                          >
+                            🗑️ Delete
+                          </button>
                         </div>
                       </div>
                     );
@@ -769,12 +891,32 @@ export function AdminPage() {
                           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${score.badgeColor}`}>
                             {score.percentage}% Active ({score.total} votes)
                           </span>
-                          <Link
-                            to="/free-food"
+                          <button
+                            type="button"
+                            onClick={() => setPreviewEvent(event)}
                             className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/20"
                           >
-                            Inspect →
+                            Preview
+                          </button>
+                          <Link
+                            to={`/free-food?eventId=${encodeURIComponent(event.id)}`}
+                            className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold ring-1 ring-border hover:bg-glass"
+                          >
+                            Open on Page ↗
                           </Link>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDeletingItem({
+                                id: event.id,
+                                label: event.title,
+                                type: "event",
+                              })
+                            }
+                            className="rounded-full bg-rose-500/15 px-3 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-500/25 dark:text-rose-400"
+                          >
+                            🗑️ Delete
+                          </button>
                         </div>
                       </div>
                     );
@@ -818,11 +960,13 @@ export function AdminPage() {
                 Supabase Migration Reference
               </h4>
               <p className="mt-1 text-xs text-muted-foreground">
-                Ensure this SQL snippet is executed in your Supabase SQL Editor to allow administrators to read and update reports:
+                Ensure this SQL snippet is executed in your Supabase SQL Editor to allow administrators to read, update reports, and delete listings:
               </p>
               <pre className="mt-2 overflow-x-auto rounded-lg bg-black/90 p-3 text-[11px] font-mono text-emerald-400">
 {`-- Migration: 20261113000200_admin_reports_access.sql
-grant select, update on public.data_issue_reports to anon, authenticated;
+grant select, update, delete on public.data_issue_reports to anon, authenticated;
+grant delete on public.deals to anon, authenticated;
+grant delete on public.food_events to anon, authenticated;
 
 drop policy if exists "allow read data_issue_reports" on public.data_issue_reports;
 create policy "allow read data_issue_reports"
@@ -835,11 +979,31 @@ create policy "allow update data_issue_reports"
   on public.data_issue_reports for update
   to anon, authenticated
   using (true)
-  with check (status in ('open', 'reviewing', 'resolved', 'dismissed'));`}
+  with check (status in ('open', 'reviewing', 'resolved', 'dismissed'));
+
+drop policy if exists "Allow admins and users to delete deals" on public.deals;
+create policy "Allow admins and users to delete deals"
+  on public.deals for delete
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "Allow admins and users to delete food_events" on public.food_events;
+create policy "Allow admins and users to delete food_events"
+  on public.food_events for delete
+  to anon, authenticated
+  using (true);`}
               </pre>
             </div>
           </div>
         </section>
+      )}
+
+      {/* Quick In-Page Listing Previews */}
+      {previewDeal && (
+        <DealDetail deal={previewDeal} onClose={() => setPreviewDeal(null)} />
+      )}
+      {previewEvent && (
+        <EventDetail event={previewEvent} onClose={() => setPreviewEvent(null)} />
       )}
 
       {/* Resolve / Dismiss Dialog Modal */}
@@ -890,6 +1054,51 @@ create policy "allow update data_issue_reports"
                   ? "Confirm Resolved"
                   : "Confirm Dismissed"}
             </Btn>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Post Confirmation Modal */}
+      <Modal
+        open={!!deletingItem}
+        onClose={() => setDeletingItem(null)}
+        title="Delete Community Listing"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 rounded-xl bg-rose-500/10 p-3.5 border border-rose-500/20 text-rose-700 dark:text-rose-300">
+            <Trash2 className="size-5 shrink-0 mt-0.5" />
+            <div className="text-xs">
+              <p className="font-bold">Permanent deletion warning</p>
+              <p className="mt-0.5 leading-relaxed">
+                You are about to permanently take down{" "}
+                <span className="font-semibold underline">"{deletingItem?.label}"</span>. This will immediately remove the listing from Studeats for all users.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            If this listing is tied to a report, the report will automatically be marked as resolved with note: "Listing permanently deleted by administrator."
+          </p>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+            <button
+              type="button"
+              onClick={() => setDeletingItem(null)}
+              disabled={deleteDealMutation.isPending || deleteFoodEventMutation.isPending}
+              className="rounded-full bg-secondary px-4 py-2 text-xs font-semibold ring-1 ring-border hover:bg-glass"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={deleteDealMutation.isPending || deleteFoodEventMutation.isPending}
+              onClick={() => void handleConfirmDelete()}
+              className="rounded-full bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+            >
+              {deleteDealMutation.isPending || deleteFoodEventMutation.isPending
+                ? "Deleting…"
+                : "Delete Permanently"}
+            </button>
           </div>
         </div>
       </Modal>

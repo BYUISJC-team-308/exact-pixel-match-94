@@ -1,7 +1,7 @@
 import { handshakeEventUrl } from "@/lib/event-source";
 import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { actions, useStore } from "@/lib/store";
 import { EventDetail, PageHeader, Btn } from "@/components/ui-bits";
@@ -17,6 +17,9 @@ import { SubmitFoodEventModal } from "@/components/SubmitFoodEventModal";
 import { AuthRequiredModal } from "@/components/AuthRequiredModal";
 
 export const Route = createFileRoute("/free-food")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    eventId: typeof search.eventId === "string" ? search.eventId : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Free Food Near Me — Studeats" },
@@ -81,6 +84,7 @@ function FoodEventCardUpvoteButton({
 }
 
 function FreeFood() {
+  const search = typeof Route.useSearch === "function" ? Route.useSearch() : undefined;
   const { savedEvents } = useStore();
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("today");
   const [locFilter, setLocFilter] = useState<FoodEventCategory>("all");
@@ -97,6 +101,20 @@ function FreeFood() {
     refetch,
   } = useFoodEventsQuery();
   const isLoading = isPending ?? initialFetchLoading;
+
+  // Auto-open event when directed via ?eventId= query parameter
+  useEffect(() => {
+    if (search?.eventId && events.length > 0) {
+      const target = events.find((e) => e.id === search.eventId);
+      if (target) {
+        setOpenDetail(target);
+        setTimeout(() => {
+          const el = document.getElementById(`event-${search.eventId}`);
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 150);
+      }
+    }
+  }, [search?.eventId, events]);
 
   // Filter out past events
   const futureEvents = events.filter((e) => e.dayOffset >= 0);
@@ -245,6 +263,7 @@ function FreeFood() {
               return (
                 <div
                   key={e.id}
+                  id={`event-${e.id}`}
                   className="glass flex flex-col justify-between p-5 transition-transform hover:-translate-y-0.5"
                 >
                   <div>

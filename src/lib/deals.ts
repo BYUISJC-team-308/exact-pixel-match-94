@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/lib/supabase";
 import type { Deal, DealCategory } from "@/lib/data";
@@ -198,5 +198,24 @@ export function useDealsQuery() {
     queryFn: fetchDeals,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: true,
+  });
+}
+
+export async function deleteDeal(dealId: string): Promise<void> {
+  const { error } = await supabase.from("deals").delete().eq("id", dealId);
+  if (error) {
+    console.error("Error deleting deal from Supabase:", error);
+    throw error;
+  }
+}
+
+export function useDeleteDealMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dealId: string) => deleteDeal(dealId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["deals_list"] });
+      void queryClient.invalidateQueries({ queryKey: ["data_issue_reports"] });
+    },
   });
 }
