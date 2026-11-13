@@ -44,6 +44,9 @@ export function ContactPage() {
           <Link className="inline-flex min-h-11 items-center" to="/free-food">
             Free-food events
           </Link>
+          <Link className="inline-flex min-h-11 items-center text-primary font-semibold" to="/admin">
+            Admin Reports Dashboard →
+          </Link>
         </div>
       </section>
       <section>

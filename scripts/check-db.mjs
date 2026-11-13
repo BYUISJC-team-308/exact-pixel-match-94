@@ -109,10 +109,26 @@ async function checkDatabase() {
   console.log(`▲ Total Rows in 'food_event_upvotes': ${foodUpvotes ?? 0}`);
 
   // 6. Data Issue Reports
-  const { count: issueCount } = await client
+  const { data: reports, count: issueCount, error: reportsErr } = await client
     .from("data_issue_reports")
-    .select("id", { count: "exact", head: true });
+    .select("id, item_type, item_label, issue_type, status, created_at", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .limit(5);
+
   console.log(`\n📝 Total Rows in 'data_issue_reports': ${issueCount ?? 0}`);
+  if (reports && reports.length > 0) {
+    console.table(
+      reports.map((r) => ({
+        Type: r.item_type,
+        Item: r.item_label.length > 25 ? r.item_label.slice(0, 22) + "..." : r.item_label,
+        Issue: r.issue_type,
+        Status: r.status,
+        Reported: r.created_at,
+      }))
+    );
+  } else {
+    console.log("   (No reports found or RLS policy pending. Apply migration 20261113000200_admin_reports_access.sql in Supabase)");
+  }
 
   console.log("\n=================================================================\n");
 }
