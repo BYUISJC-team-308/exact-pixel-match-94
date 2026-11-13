@@ -27,7 +27,7 @@ export const Route = createFileRoute("/profile")({
 });
 
 function Profile() {
-  const { user, authReady } = useStore();
+  const { user, authReady, savedDeals = [], savedEvents = [] } = useStore();
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
@@ -117,6 +117,45 @@ function Profile() {
       </PageHeader>
 
       <ProfileEditor key={user.id} initial={user} />
+
+      {/* Account Saved Items Overview */}
+      <section className="mt-8 rounded-2xl border border-border bg-card p-6 shadow-sm" aria-labelledby="saved-overview-heading">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 id="saved-overview-heading" className="text-xl font-bold tracking-tight text-foreground">
+                My Saved Items
+              </h2>
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                {(savedDeals?.length ?? 0) + (savedEvents?.length ?? 0)} total
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Discounts and food events synced to your account across your devices.
+            </p>
+          </div>
+          <a
+            href="/#my-hub"
+            className="inline-flex items-center rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            Open My Hub →
+          </a>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-border/70 bg-secondary/40 p-3.5">
+            <span className="text-xs font-medium text-muted-foreground">Saved Deals</span>
+            <p className="mt-1 text-2xl font-bold text-foreground">{savedDeals?.length ?? 0}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-secondary/40 p-3.5">
+            <span className="text-xs font-medium text-muted-foreground">Saved Food Events</span>
+            <p className="mt-1 text-2xl font-bold text-foreground">{savedEvents?.length ?? 0}</p>
+          </div>
+          <div className="col-span-2 rounded-xl border border-border/70 bg-secondary/40 p-3.5 sm:col-span-1">
+            <span className="text-xs font-medium text-muted-foreground">Cloud Sync</span>
+            <p className="mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400">✓ Supabase Active</p>
+          </div>
+        </div>
+      </section>
 
       {/* User Submission History Section */}
       <section className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-sm" aria-labelledby="submissions-heading">

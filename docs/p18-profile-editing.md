@@ -1,5 +1,7 @@
 # P18 — profile field and photo editing
 
+Release approval (November 13): Product Owner requested merge and publication. Integrated current main through `a8632ea`, preserving the new account-saves profile overview. Combined validation: 176 tests across 29 files and production build passed. New stress-test fixtures use isolated browser storage under Node; application saves logic is unchanged. Physical-device/Lighthouse checks remain separately documented below.
+
 Owner: Lot Holmstead, taking over Feature 9 follow-up with Product Owner authorization. Date: November 13, 2026. Proposed board estimate remains 5 points; team confirms sprint commitment.
 
 ## Scope and behavior

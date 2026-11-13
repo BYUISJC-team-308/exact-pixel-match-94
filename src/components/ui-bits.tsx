@@ -655,6 +655,24 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
   );
 }
 
+function makeGoogleCalendarUrl(event: {
+  title: string;
+  food?: string;
+  details?: string;
+  host?: string;
+  building?: string;
+  room?: string;
+}) {
+  const title = encodeURIComponent(`Free Food: ${event.title}`);
+  const details = encodeURIComponent(
+    `🍕 Food: ${event.food || "Refreshments"}\n📍 Location: ${event.building || ""}${event.room ? ` (Room ${event.room})` : ""}\n👤 Host: ${event.host || ""}\n\n${event.details || ""}\n\nSaved via Studeats`
+  );
+  const location = encodeURIComponent(
+    `${event.building || ""}${event.room ? ` Room ${event.room}` : ""}`
+  );
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}`;
+}
+
 export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClose: () => void }) {
   const { savedEvents, user } = useStore();
   const eventId = event?.id || "";
@@ -851,6 +869,14 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
       )}
       <div className="mt-6 flex flex-wrap gap-2">
         <Btn onClick={() => actions.toggleEvent(event.id, { title: event.title })}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
+        <a
+          href={makeGoogleCalendarUrl(event)}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border hover:bg-glass transition-colors"
+        >
+          <span>📅</span> Add to Google Calendar ↗
+        </a>
         <Link to="/map" className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">See on map</Link>
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
