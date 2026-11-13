@@ -61,12 +61,22 @@ export function Index() {
   const [deal, setDeal] = useState<Deal | null>(null);
   const [event, setEvent] = useState<NormalizedFoodEvent | null>(null);
   const [showAllSaved, setShowAllSaved] = useState(false);
+  const [showPastEvents, setShowPastEvents] = useState(false);
   const dealsQuery = useDealsQuery();
   const eventsQuery = useFoodEventsQuery();
   const deals = dealsQuery.data ?? [];
   const events = eventsQuery.data ?? [];
   const today = events.filter((item) => item.isToday);
   const savedCount = savedDeals.length + savedEvents.length;
+
+  const savedEventsList = events.filter((item) => savedEvents.includes(item.id));
+  const pastEvents = savedEventsList.filter(
+    (item) => item.dayOffset !== undefined && item.dayOffset < 0 && !item.isToday
+  );
+  const activeEvents = savedEventsList.filter(
+    (item) => item.dayOffset === undefined || item.dayOffset >= 0 || item.isToday
+  );
+
   const saved = [
     ...deals
       .filter((item) => savedDeals.includes(item.id))
@@ -77,8 +87,7 @@ export function Index() {
         kind: "Discount",
         open: () => setDeal(item),
       })),
-    ...events
-      .filter((item) => savedEvents.includes(item.id))
+    ...activeEvents
       .map((item) => ({
         key: `event-${item.id}`,
         title: item.title,
@@ -340,7 +349,101 @@ export function Index() {
                       : `Show all ${saved.length} saved items`}
                   </button>
                 )}
+                {pastEvents.length > 0 && (
+                  <div className="mt-4 border-t border-border/70 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowPastEvents(!showPastEvents)}
+                      aria-expanded={showPastEvents}
+                      className={`flex w-full items-center justify-between rounded-lg py-1 text-xs font-semibold text-muted-foreground hover:text-foreground ${focus}`}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span>🕒 Past Events</span>
+                        <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-foreground ring-1 ring-border">
+                          {pastEvents.length}
+                        </span>
+                      </span>
+                      <span className="text-primary underline">
+                        {showPastEvents ? "Hide past events" : "Show past events"}
+                      </span>
+                    </button>
+                    {showPastEvents && (
+                      <ul className="mt-2 divide-y divide-border/60">
+                        {pastEvents.map((item) => (
+                          <li key={`past-event-${item.id}`}>
+                            <button
+                              type="button"
+                              onClick={() => setEvent(item)}
+                              className={`flex min-h-12 w-full items-center justify-between py-2 text-left ${focus}`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-muted-foreground line-through">
+                                  {item.title}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {item.formattedDate} · {item.food}
+                                </p>
+                              </div>
+                              <span className="ml-2 text-xs font-semibold text-primary shrink-0">
+                                View details →
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </>
+            ) : pastEvents.length > 0 ? (
+              <div className="mt-3">
+                <p className="text-xs text-muted-foreground">
+                  No upcoming items saved. Review your past attended events below:
+                </p>
+                <div className="mt-3 border-t border-border/70 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowPastEvents(!showPastEvents)}
+                    aria-expanded={showPastEvents}
+                    className={`flex w-full items-center justify-between rounded-lg py-1 text-xs font-semibold text-muted-foreground hover:text-foreground ${focus}`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span>🕒 Past Events</span>
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-foreground ring-1 ring-border">
+                        {pastEvents.length}
+                      </span>
+                    </span>
+                    <span className="text-primary underline">
+                      {showPastEvents ? "Hide past events" : "Show past events"}
+                    </span>
+                  </button>
+                  {showPastEvents && (
+                    <ul className="mt-2 divide-y divide-border/60">
+                      {pastEvents.map((item) => (
+                        <li key={`past-event-${item.id}`}>
+                          <button
+                            type="button"
+                            onClick={() => setEvent(item)}
+                            className={`flex min-h-12 w-full items-center justify-between py-2 text-left ${focus}`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-semibold text-muted-foreground line-through">
+                                {item.title}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {item.formattedDate} · {item.food}
+                              </p>
+                            </div>
+                            <span className="ml-2 text-xs font-semibold text-primary shrink-0">
+                              View details →
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
             ) : savedCount > 0 ? (
               <div className="mt-4 text-sm">
                 <p>We couldn’t find these saved items in the current catalog.</p>

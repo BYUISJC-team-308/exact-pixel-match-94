@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "ingest:events": "node scripts/ingest-campus-events.mjs",
     "scrape": "node scripts/scrape-deals.js",
-    "scrape:food": "node scripts/scrape-food-events.js"
+    "scrape:food": "node scripts/scrape-food-events.js",
+    "check-db": "node scripts/check-db.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"

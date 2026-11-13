@@ -69,6 +69,12 @@ function Profile() {
           >
             📊 Team OKRs
           </button>
+          <Link
+            to="/admin"
+            className="inline-flex rounded-full bg-secondary px-4 py-2.5 text-sm font-medium ring-1 ring-border hover:bg-glass"
+          >
+            🛡️ Admin Reports
+          </Link>
         </div>
         <AnalyticsDrawerModal open={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
       </div>
@@ -88,6 +94,18 @@ function Profile() {
           >
             📊 Team OKRs
           </button>
+          <Link
+            to="/admin"
+            className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-semibold ring-1 ring-border hover:bg-glass transition-colors"
+          >
+            🛡️ Admin Reports
+          </Link>
+          <a
+            href="/#my-hub"
+            className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-semibold ring-1 ring-border hover:bg-glass transition-colors"
+          >
+            ★ My Hub
+          </a>
           <Link
             to="/"
             className="inline-flex items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border hover:bg-glass transition-colors"
