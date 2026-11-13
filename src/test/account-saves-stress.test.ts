@@ -271,4 +271,33 @@ describe("Account-Backed Saves - Resilience & Stress Tests", () => {
       expect(merged.events).toEqual(localEvents);
     });
   });
+
+  describe("5. Cross-Tab Real-Time Sync", () => {
+    it("updates store in real-time when a storage event fires from another tab", () => {
+      expect(getStoreState().savedDeals).toHaveLength(0);
+
+      // Simulate another browser tab saving a deal into localStorage
+      const updatedStorage = {
+        savedDeals: ["deal-from-other-tab"],
+        savedEvents: ["event-from-other-tab"],
+        recentMapSearches: [],
+        ssUsedCounts: {},
+        usedSS: [],
+        preferredCampus: "byu-provo",
+      };
+      localStorage.setItem("studeats-state", JSON.stringify(updatedStorage));
+
+      // Dispatch storage event
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "studeats-state",
+          newValue: JSON.stringify(updatedStorage),
+        })
+      );
+
+      const state = getStoreState();
+      expect(state.savedDeals).toEqual(["deal-from-other-tab"]);
+      expect(state.savedEvents).toEqual(["event-from-other-tab"]);
+    });
+  });
 });

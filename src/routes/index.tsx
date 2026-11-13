@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowRight, Bookmark, CalendarDays } from "lucide-react";
 import type { Deal } from "@/lib/data";
-import { useStore } from "@/lib/store";
+import { useStore, actions } from "@/lib/store";
 import { DealDetail, EventDetail } from "@/components/ui-bits";
 import { useFoodEventsQuery, type NormalizedFoodEvent } from "@/lib/food-events";
 import { useDealsQuery } from "@/lib/deals";
@@ -62,6 +62,7 @@ export function Index() {
   const [event, setEvent] = useState<NormalizedFoodEvent | null>(null);
   const [showAllSaved, setShowAllSaved] = useState(false);
   const [showPastEvents, setShowPastEvents] = useState(false);
+  const [hubFilter, setHubFilter] = useState<"all" | "deals" | "events">("all");
   const dealsQuery = useDealsQuery();
   const eventsQuery = useFoodEventsQuery();
   const deals = dealsQuery.data ?? [];
@@ -77,25 +78,42 @@ export function Index() {
     (item) => item.dayOffset === undefined || item.dayOffset >= 0 || item.isToday
   );
 
-  const saved = [
-    ...deals
-      .filter((item) => savedDeals.includes(item.id))
-      .map((item) => ({
-        key: `deal-${item.id}`,
-        title: item.company,
-        detail: item.value,
-        kind: "Discount",
-        open: () => setDeal(item),
-      })),
-    ...activeEvents
-      .map((item) => ({
-        key: `event-${item.id}`,
-        title: item.title,
-        detail: `${item.formattedDate} · ${item.start}`,
-        kind: "Event",
-        open: () => setEvent(item),
-      })),
-  ];
+  const savedDealsItems = deals
+    .filter((item) => savedDeals.includes(item.id))
+    .map((item) => ({
+      key: `deal-${item.id}`,
+      id: item.id,
+      title: item.company,
+      detail: item.value,
+      kind: "Discount" as const,
+      open: () => setDeal(item),
+      onRemove: (e: React.MouseEvent) => {
+        e.stopPropagation();
+        actions.toggleDeal(item.id, { company: item.company, title: item.title });
+      },
+    }));
+
+  const savedEventsItems = activeEvents
+    .map((item) => ({
+      key: `event-${item.id}`,
+      id: item.id,
+      title: item.title,
+      detail: `${item.formattedDate} · ${item.start}`,
+      kind: "Event" as const,
+      open: () => setEvent(item),
+      onRemove: (e: React.MouseEvent) => {
+        e.stopPropagation();
+        actions.toggleEvent(item.id, { title: item.title });
+      },
+    }));
+
+  const allActiveSaved = [...savedDealsItems, ...savedEventsItems];
+  const saved =
+    hubFilter === "deals"
+      ? savedDealsItems
+      : hubFilter === "events"
+      ? savedEventsItems
+      : allActiveSaved;
   const hubLoading =
     (savedDeals.length > 0 && dealsQuery.isPending) ||
     (savedEvents.length > 0 && eventsQuery.isPending);
@@ -286,6 +304,11 @@ export function Index() {
                 <p className="text-sm text-muted-foreground">
                   Sign in to see your saved discounts and events in My Hub.
                 </p>
+                {savedCount > 0 && (
+                  <p className="mt-1 text-xs font-semibold text-primary">
+                    ★ {savedCount} {savedCount === 1 ? "item" : "items"} saved on this browser ready to sync.
+                  </p>
+                )}
                 <Link
                   to="/signin"
                   search={{ next: "hub" }}
@@ -313,13 +336,54 @@ export function Index() {
               </div>
             ) : saved.length > 0 ? (
               <>
+                {allActiveSaved.length > 2 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5" role="tablist" aria-label="Filter saved items">
+                    <button
+                      type="button"
+                      onClick={() => setHubFilter("all")}
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
+                        hubFilter === "all"
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-secondary text-muted-foreground hover:text-foreground ring-1 ring-border"
+                      }`}
+                    >
+                      All ({allActiveSaved.length})
+                    </button>
+                    {savedDealsItems.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setHubFilter("deals")}
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
+                          hubFilter === "deals"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-secondary text-muted-foreground hover:text-foreground ring-1 ring-border"
+                        }`}
+                      >
+                        Discounts ({savedDealsItems.length})
+                      </button>
+                    )}
+                    {savedEventsItems.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setHubFilter("events")}
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
+                          hubFilter === "events"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-secondary text-muted-foreground hover:text-foreground ring-1 ring-border"
+                        }`}
+                      >
+                        Events ({savedEventsItems.length})
+                      </button>
+                    )}
+                  </div>
+                )}
                 <ul className="mt-3 divide-y divide-border">
                   {(showAllSaved ? saved : saved.slice(0, 3)).map((item) => (
-                    <li key={item.key}>
+                    <li key={item.key} className="group flex items-center justify-between gap-2">
                       <button
                         type="button"
                         onClick={item.open}
-                        className={`flex min-h-16 w-full items-center gap-3 rounded-lg py-3 text-left ${focus}`}
+                        className={`flex min-h-16 flex-1 items-center gap-3 rounded-lg py-3 text-left ${focus}`}
                       >
                         <div className="min-w-0 flex-1">
                           <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
@@ -333,6 +397,15 @@ export function Index() {
                           </p>
                         </div>
                         <ArrowRight className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={item.onRemove}
+                        aria-label={`Remove ${item.title}`}
+                        title={`Remove ${item.title} from hub`}
+                        className="grid size-7 shrink-0 place-items-center rounded-full text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive active:scale-95"
+                      >
+                        <span className="text-sm font-bold leading-none">✕</span>
                       </button>
                     </li>
                   ))}

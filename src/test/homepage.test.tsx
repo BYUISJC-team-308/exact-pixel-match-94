@@ -102,7 +102,7 @@ describe("Homepage discovery and saved-item journeys", () => {
     expect(hub.getAllByRole("listitem")).toHaveLength(3);
     fireEvent.click(hub.getByRole("button", { name: "Show all 4 saved items" }));
     expect(hub.getAllByRole("listitem")).toHaveLength(4);
-    fireEvent.click(hub.getByRole("button", { name: /Campus event e1/ }));
+    fireEvent.click(hub.getAllByRole("button", { name: /Campus event e1/ })[0]);
     expect(screen.getByRole("dialog")).toHaveTextContent("Campus event e1 details");
     fireEvent.click(hub.getByRole("button", { name: "Show fewer saved items" }));
     expect(hub.getAllByRole("listitem")).toHaveLength(3);

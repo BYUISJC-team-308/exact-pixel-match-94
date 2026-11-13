@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentType, ReactNode } from "react";
 import { Route as DiscountsRoute } from "@/routes/discounts";
 import { Route as FoodRoute } from "@/routes/free-food";
+import { Route as ProfileRoute } from "@/routes/profile";
 import { Index } from "@/routes/index";
 import { DealDetail, EventDetail } from "@/components/ui-bits";
 import { actions } from "@/lib/store";
@@ -83,6 +84,7 @@ vi.mock("@/components/AnalyticsDrawerModal", () => ({ AnalyticsDrawerModal: () =
 const routePage = (route: unknown) => (route as { component: ComponentType }).component;
 const Discounts = routePage(DiscountsRoute);
 const Food = routePage(FoodRoute);
+const Profile = routePage(ProfileRoute);
 
 const mockDeals: Deal[] = [
   {
@@ -369,6 +371,96 @@ describe("Saved Routes & Component UI Integration Tests (P03 & P04)", () => {
         hub.getByText(/No upcoming items saved\. Review your past attended events below:/i)
       ).toBeInTheDocument();
       expect(hub.getByRole("button", { name: /Show past events/ })).toBeInTheDocument();
+    });
+
+    it("removes a saved item directly from My Hub via the inline quick remove button", () => {
+      mocks.store.mockReturnValue({
+        user: { name: "Jacob", username: "jacobirish" },
+        authReady: true,
+        savedDeals: ["d-uuid-1"],
+        savedEvents: [],
+        preferredCampus: "byu-provo",
+      });
+
+      render(<Index />);
+      const hub = within(screen.getByRole("region", { name: "My Hub" }));
+
+      const removeBtn = hub.getByRole("button", { name: "Remove Waffle Love" });
+      expect(removeBtn).toBeInTheDocument();
+
+      fireEvent.click(removeBtn);
+
+      expect(actions.toggleDeal).toHaveBeenCalledWith(
+        "d-uuid-1",
+        expect.objectContaining({ company: "Waffle Love" })
+      );
+    });
+
+    it("filters active hub items between All, Discounts, and Events tabs", () => {
+      mocks.store.mockReturnValue({
+        user: { name: "Jacob", username: "jacobirish" },
+        authReady: true,
+        savedDeals: ["d-uuid-1", "d-uuid-2"],
+        savedEvents: ["e-uuid-1"],
+        preferredCampus: "byu-provo",
+      });
+
+      render(<Index />);
+      const hub = within(screen.getByRole("region", { name: "My Hub" }));
+
+      // Filter tabs are present
+      expect(hub.getByRole("button", { name: "All (3)" })).toBeInTheDocument();
+      expect(hub.getByRole("button", { name: "Discounts (2)" })).toBeInTheDocument();
+      expect(hub.getByRole("button", { name: "Events (1)" })).toBeInTheDocument();
+
+      // Click Discounts tab
+      fireEvent.click(hub.getByRole("button", { name: "Discounts (2)" }));
+      expect(hub.getByText("Waffle Love")).toBeInTheDocument();
+      expect(hub.getByText("Daylight Donuts")).toBeInTheDocument();
+      expect(hub.queryByText("Upcoming Pizza Social")).not.toBeInTheDocument();
+
+      // Click Events tab
+      fireEvent.click(hub.getByRole("button", { name: "Events (1)" }));
+      expect(hub.queryByText("Waffle Love")).not.toBeInTheDocument();
+      expect(hub.queryByText("Daylight Donuts")).not.toBeInTheDocument();
+      expect(hub.getByText("Upcoming Pizza Social")).toBeInTheDocument();
+    });
+  });
+
+  describe("Event Google Calendar Export", () => {
+    it("renders Google Calendar URL with encoded title, location, and food details", () => {
+      render(<EventDetail event={mockEvents[0]} onClose={vi.fn()} />);
+
+      const calLink = screen.getByRole("link", { name: /Add to Google Calendar/i });
+      expect(calLink).toBeInTheDocument();
+
+      const href = calLink.getAttribute("href") || "";
+      expect(href).toContain("calendar.google.com/calendar/render");
+      expect(href).toContain("Free%20Food%3A%20Upcoming%20Pizza%20Social");
+      expect(href).toContain("Pepperoni%20%26%20Cheese%20Pizza");
+      expect(href).toContain("TMCB");
+    });
+  });
+
+  describe("Profile Page Saved Items Overview", () => {
+    it("displays synced saved deals and events count in user profile overview", () => {
+      mocks.store.mockReturnValue({
+        user: { name: "Jacob Irish", username: "jacobirish", school: "BYU" },
+        authReady: true,
+        savedDeals: ["d-uuid-1", "d-uuid-2"],
+        savedEvents: ["e-uuid-1"],
+        preferredCampus: "byu-provo",
+      });
+
+      render(<Profile />);
+
+      expect(screen.getByRole("heading", { name: "My Saved Items" })).toBeInTheDocument();
+      expect(screen.getByText("3 total")).toBeInTheDocument();
+      expect(screen.getByText("Saved Deals")).toBeInTheDocument();
+      expect(screen.getByText("2")).toBeInTheDocument();
+      expect(screen.getByText("Saved Food Events")).toBeInTheDocument();
+      expect(screen.getByText("1")).toBeInTheDocument();
+      expect(screen.getByText("✓ Supabase Active")).toBeInTheDocument();
     });
   });
 });

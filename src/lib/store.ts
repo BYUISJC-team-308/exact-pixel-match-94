@@ -89,6 +89,16 @@ function set(next: Partial<State>) {
   listeners.forEach((l) => l());
 }
 
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key === KEY) {
+      loaded = false;
+      load();
+      listeners.forEach((l) => l());
+    }
+  });
+}
+
 export function getStoreState(): State {
   load();
   return state;
