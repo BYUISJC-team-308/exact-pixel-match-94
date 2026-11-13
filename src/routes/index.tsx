@@ -34,7 +34,7 @@ const paths = [
     note: "Check student eligibility",
     action: "Browse discounts",
     image: "/images/student-discounts.svg",
-    imageClass: "object-contain bg-[#042f23]",
+    imageClass: "object-contain bg-[#f7fbf4]",
   },
   {
     to: "/starving-student",

@@ -51,3 +51,5 @@ Discount illustration validation: production build passed; browser checks at act
 ## Inverted discovery tiles
 
 All three main discovery tiles now have forest-green content backgrounds, white headings, light supporting text and white action surfaces with green labels/arrows. Image regions and lower homepage panels retain their existing styling. Build passed; browser confirmed the three tile backgrounds/text colors and no overflow at 390px and 1280px. Still preview-only.
+
+Discount artwork colors reversed after the discovery tiles became dark: white/pale background, forest-green tag and white percent symbol. Mobile preview checked without horizontal overflow; production build passed. Other imagery and controls unchanged.
