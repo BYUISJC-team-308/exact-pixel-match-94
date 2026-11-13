@@ -12,9 +12,9 @@ Based on the November 12 discussion with Bryce and the reference sketch. Student
 
 ## Assets
 
-Images are local assets, not runtime third-party image requests. Decorative image alternatives are empty because adjacent headings describe each link. Fixed media regions reserve layout space. Combined JPEG assets are about 467 KiB.
+Images are local assets, not runtime third-party image requests. Decorative image alternatives are empty because adjacent headings describe each link. Fixed media regions reserve layout space. Combined JPEG assets are about 350 KiB; the discount illustration is a lightweight SVG.
 
-- `student-discounts.jpg`: illustrative retail photograph from https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=900&q=80 (Unsplash). It is not a participating-business claim.
+- `student-discounts.svg`: original code-native white price tag and percent illustration on forest green; replaces the retail photograph so the tile represents all discount categories.
 - `free-food-pizza.jpg`: illustrative pizza photograph from https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80 (Unsplash). It is not a specific event/menu claim.
 - `starving-student-card-2027.jpg`: the official current black Utah County card preview, linked from https://www.starvingstudentcards.com/. Published asset: https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/sites/154285/images/c45aa23-c7-253f-afae-b71dfe48ac_SAMPLE-BLACK-2027-thumb.jpg . Cover is marked October 1, 2027. CSS clips the cover from the fold-out artwork and turns it upright; a slight angle and shadow give it a card presentation. This is real provider artwork, not a photograph of a physical card. Old app-icon asset removed.
 - `student-steals-mark.svg`: original code-native mask mark; independent of the provider's brand.
@@ -41,3 +41,9 @@ My Hub's guest button now reads “Sign in” and retains `/signin?next=hub`. To
 ## Physical card artwork refinement
 
 Replaced the blue app icon with the provider's current black card cover (October 2027 expiry). The downloaded official preview is preserved unchanged; CSS handles cover framing/orientation. Existing tile route/content/behavior unchanged. Production build passed.
+
+## Discount illustration trial — November 13
+
+Replaced the retail photo with an original SVG discount tag, oversized percent symbol, subtle string/shadow and forest-green background. Decorative asset uses existing tile link/label; no functionality or other tile changes.
+
+Discount illustration validation: production build passed; browser checks at actual 390px and 1280px widths showed no document overflow. Saved phone and desktop screenshots; preview remains unmerged.

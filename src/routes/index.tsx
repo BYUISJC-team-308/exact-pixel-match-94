@@ -33,8 +33,8 @@ const paths = [
     detail: "Offers on food, tech, travel, and more.",
     note: "Check student eligibility",
     action: "Browse discounts",
-    image: "/images/student-discounts.jpg",
-    imageClass: "object-cover",
+    image: "/images/student-discounts.svg",
+    imageClass: "object-contain bg-[#042f23]",
   },
   {
     to: "/starving-student",
