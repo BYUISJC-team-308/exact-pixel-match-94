@@ -321,7 +321,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
 
           map.addSource("buildings", {
             type: "geojson",
-            data: placeData(places, (place) => showInactiveBuildings || place.events.length > 0),
+            data: placeData(places, (place) => showInactiveBuildings || place.events.length > 0 || place.id === focusPlaceId),
           });
           map.addLayer({ id: "building-points", type: "circle", source: "buildings", paint: {
             "circle-color": ["case", ["boolean", ["feature-state", "selected"], false], "#f5b942", [">", ["get", "eventCount"], 0], "#fff3cf", "#ffffff"],
@@ -355,7 +355,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
         }
         map.addSource("places", {
           type: "geojson",
-          data: placeData(places, (place) => view !== "campus" || place.events.length > 0),
+          data: placeData(places, (place) => view !== "campus" || place.events.length > 0 || place.id === focusPlaceId),
           cluster: view !== "campus",
           clusterMaxZoom: view === "campus" ? 16 : 13,
           clusterRadius: 42,
@@ -417,10 +417,10 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
           const placesSource = map.getSource<import("maplibre-gl").GeoJSONSource>("places");
           const buildingsSource = map.getSource<import("maplibre-gl").GeoJSONSource>("buildings");
           const dataChanged = current.places !== renderedPlaces || current.showInactiveBuildings !== renderedInactive;
-          if (dataChanged) {
+          if (dataChanged || focusChanged) {
             activePopup?.remove();
-            placesSource?.setData(placeData(current.places, (place) => view !== "campus" || place.events.length > 0));
-            buildingsSource?.setData(placeData(current.places, (place) => current.showInactiveBuildings || place.events.length > 0));
+            placesSource?.setData(placeData(current.places, (place) => view !== "campus" || place.events.length > 0 || place.id === current.focusPlaceId));
+            buildingsSource?.setData(placeData(current.places, (place) => current.showInactiveBuildings || place.events.length > 0 || place.id === current.focusPlaceId));
             renderedPlaces = current.places;
             renderedInactive = current.showInactiveBuildings;
           }

@@ -71,6 +71,8 @@ export type FoodEvent = {
   end: string;
   building: string;
   buildingId?: string;
+  campusId?: string;
+  date?: string;
   room: string;
   details: string;
   x: number;

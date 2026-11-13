@@ -2,21 +2,41 @@ import { useRenderClock } from "@/hooks/use-render-clock";
 import { campusDateTime, DISPLAY_LOCALE, eventCountdown, isUpcomingEvent } from "@/lib/campus-time";
 import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BadgePercent, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Clock3, CreditCard, List, MapPin, Search, SlidersHorizontal, Sparkles, Utensils, X } from "lucide-react";
+import { toast } from "sonner";
 import { MapCanvas } from "@/components/MapCanvas";
 import { DealDetail, EventDetail, PageHeader, SSDetail } from "@/components/ui-bits";
 import type { Deal, SSDeal } from "@/lib/data";
 import { getMapDeals, normalizeDeal } from "@/lib/deals";
 import { logActivityEvent } from "@/lib/analytics";
-import { getMapFoodEvents, normalizeFoodEvent, type NormalizedFoodEvent } from "@/lib/food-events";
-import { buildingPlaces, cardPlaces, discountPlaces, eventPlaces, type MapPlace } from "@/lib/map-places";
+import { detectLocationCategory, getMapFoodEvents, normalizeFoodEvent, type NormalizedFoodEvent } from "@/lib/food-events";
+import { buildingPlaces, cardPlaces, discountPlaces, eventPlaces, findCampusBuilding, type MapPlace } from "@/lib/map-places";
 import { getStarvingStudentOffers } from "@/lib/starving-student";
 import { getMapCampusBuildings, getMapCampuses } from "@/lib/campus-buildings";
 import { actions, useStore } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 
+export type MapSearch = {
+  eventId?: string;
+  buildingId?: string;
+  dealId?: string;
+  offerId?: string;
+  date?: string;
+  campus?: string;
+  view?: "area" | "campus";
+};
+
 export const Route = createFileRoute("/map")({
+  validateSearch: (search: Record<string, unknown>): MapSearch => ({
+    eventId: typeof search.eventId === "string" ? search.eventId : undefined,
+    buildingId: typeof search.buildingId === "string" ? search.buildingId : undefined,
+    dealId: typeof search.dealId === "string" ? search.dealId : undefined,
+    offerId: typeof search.offerId === "string" ? search.offerId : undefined,
+    date: typeof search.date === "string" ? search.date : undefined,
+    campus: typeof search.campus === "string" ? search.campus : undefined,
+    view: search.view === "area" || search.view === "campus" ? search.view : undefined,
+  }),
   loader: async () => {
     const [offers, eventRows, dealRows, campusBuildingRows, campuses] = await Promise.all([getStarvingStudentOffers(), getMapFoodEvents(), getMapDeals(), getMapCampusBuildings(), getMapCampuses()]);
     return { offers, eventRows, dealRows, campusBuildingRows, campuses, renderedAt: Date.now() };
@@ -63,9 +83,24 @@ function eventStatus(event: NormalizedFoodEvent, now: Date) {
 function MapPage() {
   const router = useRouter();
   const { offers, eventRows, dealRows, campusBuildingRows, campuses, renderedAt } = Route.useLoaderData();
+  const search: MapSearch | undefined = typeof Route.useSearch === "function" ? Route.useSearch() : undefined;
   const clock = useRenderClock(renderedAt);
   const now = useMemo(() => new Date(clock), [clock]);
-  const [view, setView] = useState<View>("area");
+
+  const targetEventRow = useMemo(() => {
+    return search?.eventId ? eventRows.find((r) => r.id === search.eventId) : undefined;
+  }, [search?.eventId, eventRows]);
+
+  const initialView: View = useMemo(() => {
+    if (search?.view === "area" || search?.view === "campus") return search.view;
+    if (search?.dealId || search?.offerId) return "area";
+    if (targetEventRow) {
+      return detectLocationCategory(targetEventRow.building) === "off_campus" ? "area" : "campus";
+    }
+    return "area";
+  }, [search?.view, search?.dealId, search?.offerId, targetEventRow]);
+
+  const [view, setView] = useState<View>(initialView);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [listLimit, setListLimit] = useState(20);
@@ -74,7 +109,14 @@ function MapPage() {
   const [openEvent, setOpenEvent] = useState<NormalizedFoodEvent | null>(null);
   const [openDeal, setOpenDeal] = useState<Deal | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [campusDate, setCampusDate] = useState(() => campusDateTime(now).date);
+
+  const initialCampusDate = useMemo(() => {
+    if (search?.date) return search.date;
+    if (targetEventRow?.event_date) return targetEventRow.event_date;
+    return campusDateTime(now).date;
+  }, [search?.date, targetEventRow, now]);
+
+  const [campusDate, setCampusDate] = useState(initialCampusDate);
   const [showInactiveBuildings, setShowInactiveBuildings] = useState(false);
   const [radius, setRadius] = useState<Radius>("all");
   const [focusPlaceId, setFocusPlaceId] = useState<string | null>(null);
@@ -82,7 +124,18 @@ function MapPage() {
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
   const { recentMapSearches, preferredCampus } = useStore();
-  const [campusSlug, setCampusSlug] = useState(() => campuses.some((campus) => campus.slug === preferredCampus) ? preferredCampus : campuses[0]?.slug || "byu-provo");
+
+  const initialCampusSlug = useMemo(() => {
+    if (search?.campus && campuses.some((campus) => campus.slug === search.campus)) return search.campus;
+    if (targetEventRow?.campus_id) {
+      const match = campuses.find((campus) => campus.id === targetEventRow.campus_id);
+      if (match) return match.slug;
+    }
+    if (campuses.some((campus) => campus.slug === preferredCampus)) return preferredCampus;
+    return campuses[0]?.slug || "byu-provo";
+  }, [search?.campus, targetEventRow, campuses, preferredCampus]);
+
+  const [campusSlug, setCampusSlug] = useState(initialCampusSlug);
   useEffect(() => { void logActivityEvent("map_opened"); }, []);
   useEffect(() => {
     const channel = supabase.channel("map-live-updates")
@@ -100,7 +153,7 @@ function MapPage() {
   const campusBuildingRowsForSelection = useMemo(() => campusBuildingRows.filter((building) => !selectedCampus || building.campusId === selectedCampus.id || (selectedCampus.slug === "byu-provo" && !building.campusId)), [campusBuildingRows, selectedCampus]);
   const cards = useMemo(() => cardPlaces(offers), [offers]);
   const campusEvents = useMemo(() => eventPlaces(events, campusBuildingRows), [events, campusBuildingRows]);
-  const selectedCampusEvents = useMemo(() => eventRows.filter((row) => row.event_date === campusDate && (!selectedCampus || row.campus_id === selectedCampus.id || (selectedCampus.slug === "byu-provo" && !row.campus_id && Boolean(row.building_id)))).map((row) => normalizeFoodEvent(row, now)), [eventRows, campusDate, selectedCampus, now]);
+  const selectedCampusEvents = useMemo(() => eventRows.filter((row) => row.event_date === campusDate && (!selectedCampus || row.campus_id === selectedCampus.id || (selectedCampus.slug === "byu-provo" && !row.campus_id && (Boolean(row.building_id) || Boolean(findCampusBuilding(row.building, campusBuildingRowsForSelection)))))).map((row) => normalizeFoodEvent(row, now)), [eventRows, campusDate, selectedCampus, campusBuildingRowsForSelection, now]);
   const buildings = useMemo(() => buildingPlaces(selectedCampusEvents, campusBuildingRowsForSelection), [selectedCampusEvents, campusBuildingRowsForSelection]);
   const discounts = useMemo(() => discountPlaces(dealRows.map(normalizeDeal)), [dealRows]);
   const places = useMemo(() => view === "campus" ? buildings : [
@@ -126,6 +179,172 @@ function MapPage() {
   const choosePlace = (place: MapPlace) => { setSelected(place); setFocusPlaceId(place.id); setMobileSheetOpen(true); setMobileSheetExpanded(true); };
   const changeView = (next: View) => { setView(next); setSelected(null); setQuery(""); setListLimit(20); setMobileSheetOpen(false); };
   const changeFilter = (next: Filter) => { setFilter(next); setSelected(null); setListLimit(20); };
+
+  const handledSearchRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const searchKey = [
+      search?.eventId,
+      search?.buildingId,
+      search?.dealId,
+      search?.offerId,
+      search?.date,
+      search?.campus,
+      search?.view,
+    ]
+      .filter(Boolean)
+      .join(":");
+
+    if (!searchKey) {
+      handledSearchRef.current = null;
+      return;
+    }
+
+    if (handledSearchRef.current === searchKey) {
+      return;
+    }
+
+    // 1. Free Food Event Deep Link
+    if (search?.eventId) {
+      const target = eventRows.find((r) => r.id === search.eventId);
+      if (!target) {
+        toast.error("Event not found.");
+        handledSearchRef.current = searchKey;
+        return;
+      }
+
+      if (target.event_date && campusDate !== target.event_date) {
+        setCampusDate(target.event_date);
+        return;
+      }
+
+      if (target.campus_id) {
+        const matchingCampus = campuses.find((c) => c.id === target.campus_id);
+        if (matchingCampus && campusSlug !== matchingCampus.slug) {
+          setCampusSlug(matchingCampus.slug);
+          return;
+        }
+      }
+
+      const isOffCampus =
+        search.view === "area" ||
+        detectLocationCategory(target.building) === "off_campus";
+
+      if (isOffCampus) {
+        if (view !== "area") setView("area");
+        const allEventPlaces = eventPlaces(
+          eventRows.map((r) => normalizeFoodEvent(r, now)),
+          campusBuildingRows
+        );
+        const place = allEventPlaces.find(
+          (p) =>
+            p.events.some((e) => e.id === target.id) ||
+            (Number.isFinite(target.latitude) &&
+              Number.isFinite(target.longitude) &&
+              Math.abs(p.lat - Number(target.latitude)) < 0.0001 &&
+              Math.abs(p.lng - Number(target.longitude)) < 0.0001)
+        );
+        if (place) {
+          choosePlace(place);
+          handledSearchRef.current = searchKey;
+        } else {
+          toast.info("Location coordinates not available for this event.");
+          handledSearchRef.current = searchKey;
+        }
+      } else {
+        if (view !== "campus") setView("campus");
+        const targetBuildingId =
+          search.buildingId ||
+          target.building_id ||
+          findCampusBuilding(target.building, campusBuildingRowsForSelection)?.id;
+
+        const place = buildings.find(
+          (b) =>
+            b.events.some((e) => e.id === target.id) ||
+            (targetBuildingId &&
+              (b.id === `building-${targetBuildingId}` ||
+                b.code?.toLowerCase() === targetBuildingId.toLowerCase())) ||
+            (findCampusBuilding(target.building, campusBuildingRowsForSelection) &&
+              b.title.toLowerCase() ===
+                findCampusBuilding(target.building, campusBuildingRowsForSelection)?.name.toLowerCase())
+        );
+
+        if (place) {
+          choosePlace(place);
+          handledSearchRef.current = searchKey;
+        } else {
+          toast.info("Location coordinates not available for this event.");
+          handledSearchRef.current = searchKey;
+        }
+      }
+      return;
+    }
+
+    // 2. Campus Building Deep Link
+    if (search?.buildingId) {
+      if (view !== "campus") setView("campus");
+      const place = buildings.find(
+        (b) =>
+          b.id === `building-${search.buildingId}` ||
+          b.code?.toLowerCase() === search.buildingId?.toLowerCase()
+      );
+      if (place) {
+        choosePlace(place);
+        handledSearchRef.current = searchKey;
+      } else {
+        toast.info("Building not found on map.");
+        handledSearchRef.current = searchKey;
+      }
+      return;
+    }
+
+    // 3. Discount Deep Link
+    if (search?.dealId) {
+      if (view !== "area") setView("area");
+      const place = discounts.find(
+        (p) =>
+          p.id === `discount-${search.dealId}` ||
+          p.deals.some((d) => d.id === search.dealId)
+      );
+      if (place) {
+        choosePlace(place);
+        handledSearchRef.current = searchKey;
+      } else {
+        toast.info("Location coordinates not available for this deal.");
+        handledSearchRef.current = searchKey;
+      }
+      return;
+    }
+
+    // 4. Starving Student Card Offer Deep Link
+    if (search?.offerId) {
+      if (view !== "area") setView("area");
+      const place = cards.find((p) =>
+        p.cardOffers.some((o) => o.id === search.offerId)
+      );
+      if (place) {
+        choosePlace(place);
+        handledSearchRef.current = searchKey;
+      } else {
+        toast.info("Location coordinates not available for this card offer.");
+        handledSearchRef.current = searchKey;
+      }
+      return;
+    }
+  }, [
+    search,
+    campusDate,
+    campusSlug,
+    view,
+    eventRows,
+    buildings,
+    campusBuildingRows,
+    campusBuildingRowsForSelection,
+    campuses,
+    cards,
+    discounts,
+    now,
+  ]);
 
   return (
     <>
@@ -247,22 +466,31 @@ function MapPage() {
               <div className="mt-4 space-y-2">
                 {selected.kind === "building" && selected.events.length === 0 && <p className="text-sm text-muted-foreground">No upcoming free food events at this building.</p>}
                 {selected.cardOffers.map((offer) => (
-                  <button key={offer.id} type="button" onClick={() => setOpenOffer(offer)} className="w-full rounded-2xl border-l-4 border-primary bg-secondary p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md">
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary"><CreditCard className="size-3.5" />Starving Student Card</span>
+                  <button key={offer.id} type="button" onClick={() => setOpenOffer(offer)} className={`w-full rounded-2xl border-l-4 ${search?.offerId === offer.id ? "border-primary bg-primary/10 ring-2 ring-primary/40" : "border-primary bg-secondary"} p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md`}>
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary"><CreditCard className="size-3.5" />Starving Student Card</span>
+                      {search?.offerId === offer.id && <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">Selected</span>}
+                    </div>
                     <strong className="mt-1 block text-sm">{offer.item}</strong>
                     <span className="text-xs text-muted-foreground">{offer.value} · View details →</span>
                   </button>
                 ))}
                 {selected.deals.map((deal) => (
-                  <button key={deal.id} type="button" onClick={() => setOpenDeal(deal)} className="w-full rounded-2xl border-l-4 border-violet-600 bg-secondary p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md">
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700"><BadgePercent className="size-3.5" />Student discount</span>
+                  <button key={deal.id} type="button" onClick={() => setOpenDeal(deal)} className={`w-full rounded-2xl border-l-4 ${search?.dealId === deal.id ? "border-violet-600 bg-violet-600/10 ring-2 ring-violet-600/40" : "border-violet-600 bg-secondary"} p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md`}>
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700"><BadgePercent className="size-3.5" />Student discount</span>
+                      {search?.dealId === deal.id && <span className="rounded-full bg-violet-600/20 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-300">Selected</span>}
+                    </div>
                     <strong className="mt-1 block text-sm">{deal.title}</strong>
                     <span className="text-xs text-muted-foreground">{deal.value} · View details →</span>
                   </button>
                 ))}
                 {selected.events.map((event) => (
-                  <button key={event.id} type="button" onClick={() => setOpenEvent(event)} className="w-full rounded-2xl border-l-4 border-amber-500 bg-secondary p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${eventStatus(event, now).className}`}>{eventStatus(event, now).label}</span>
+                  <button key={event.id} type="button" onClick={() => setOpenEvent(event)} className={`w-full rounded-2xl border-l-4 ${search?.eventId === event.id ? "border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/40" : "border-amber-500 bg-secondary"} p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${eventStatus(event, now).className}`}>{eventStatus(event, now).label}</span>
+                      {search?.eventId === event.id && <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">Selected Event</span>}
+                    </div>
                     <strong className="mt-1 block text-sm">{event.title}</strong>
                     <span className="block text-xs text-muted-foreground">{event.food} · {event.formattedDate}, {event.formattedTime}</span>
                     <span className="text-xs text-muted-foreground">{event.building}{event.room ? ` · ${roomLabel(event.room)}` : ""}</span>

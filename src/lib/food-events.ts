@@ -113,6 +113,8 @@ export function normalizeFoodEvent(row: DbFoodEvent, now = new Date()): Normaliz
     end: endFormatted || row.end_time || "13:00",
     building: row.building || "Location not provided",
     buildingId: row.building_id || undefined,
+    campusId: row.campus_id || undefined,
+    date: row.event_date || undefined,
     room: row.room || "",
     details: row.details || "No extra details provided.",
     address: row.address || undefined,
