@@ -41,6 +41,43 @@ create policy "Allow admins and users to delete food_events"
   to anon, authenticated
   using (true);
 
+-- Atomic Administrator Deletion Function (Bypasses RLS with elevated security definer)
+create or replace function public.admin_delete_listing(
+  p_item_type text,
+  p_item_id uuid,
+  p_report_id uuid default null
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_item_type = 'deal' then
+    delete from public.deals where id = p_item_id;
+  elsif p_item_type = 'event' then
+    delete from public.food_events where id = p_item_id;
+  end if;
+
+  if p_report_id is not null then
+    update public.data_issue_reports
+    set status = 'resolved',
+        resolution_notes = coalesce(resolution_notes, 'Listing permanently deleted by administrator.'),
+        resolved_at = timezone('utc'::text, now())
+    where id = p_report_id;
+  else
+    -- Also auto-resolve any open reports for this item
+    update public.data_issue_reports
+    set status = 'resolved',
+        resolution_notes = 'Listing permanently deleted by administrator.',
+        resolved_at = timezone('utc'::text, now())
+    where item_id = p_item_id::text
+      and status in ('open', 'reviewing');
+  end if;
+end;
+$$;
+
+grant execute on function public.admin_delete_listing to anon, authenticated, service_role;
+
 -- Index for fast status filtering
 create index if not exists data_issue_reports_status_idx
   on public.data_issue_reports (status, created_at desc);

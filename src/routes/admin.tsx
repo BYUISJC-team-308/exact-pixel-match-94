@@ -284,20 +284,30 @@ export function AdminPage() {
         await deleteFoodEventMutation.mutateAsync(deletingItem.id);
       }
 
-      // If associated with a report, automatically resolve it
+      // If associated with a report, ensure it's marked resolved in UI
       if (deletingItem.reportId) {
-        await updateStatusMutation.mutateAsync({
-          id: deletingItem.reportId,
-          status: "resolved",
-          resolutionNotes: "Listing permanently deleted by administrator.",
-        });
+        try {
+          await updateStatusMutation.mutateAsync({
+            id: deletingItem.reportId,
+            status: "resolved",
+            resolutionNotes: "Listing permanently deleted by administrator.",
+          });
+        } catch (reportErr) {
+          console.warn("Report resolution after listing deletion warning:", reportErr);
+        }
       }
 
       toast.success(`"${deletingItem.label}" has been permanently deleted.`);
       setDeletingItem(null);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to delete post:", err);
-      toast.error("Failed to delete listing. Please check permissions.");
+      const msg =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err && "message" in err
+            ? String((err as Record<string, unknown>).message)
+            : "Failed to delete listing. Please check permissions.";
+      toast.error(`Delete failed: ${msg}`);
     }
   };
 

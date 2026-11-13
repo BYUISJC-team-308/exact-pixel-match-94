@@ -201,18 +201,34 @@ export function useDealsQuery() {
   });
 }
 
-export async function deleteDeal(dealId: string): Promise<void> {
+export async function deleteDeal(dealId: string, reportId?: string): Promise<void> {
+  // 1. Try atomic security-definer RPC function first
+  const { error: rpcError } = await supabase.rpc("admin_delete_listing", {
+    p_item_type: "deal",
+    p_item_id: dealId,
+    p_report_id: reportId ?? null,
+  });
+
+  if (!rpcError) {
+    return;
+  }
+
+  // 2. Fallback to direct table deletion
   const { error } = await supabase.from("deals").delete().eq("id", dealId);
   if (error) {
-    console.error("Error deleting deal from Supabase:", error);
-    throw error;
+    console.error("Error deleting deal from Supabase:", error, rpcError);
+    throw new Error(error.message || rpcError.message || "Failed to delete deal");
   }
 }
 
 export function useDeleteDealMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (dealId: string) => deleteDeal(dealId),
+    mutationFn: (args: string | { id: string; reportId?: string }) => {
+      const dealId = typeof args === "string" ? args : args.id;
+      const reportId = typeof args === "string" ? undefined : args.reportId;
+      return deleteDeal(dealId, reportId);
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["deals_list"] });
       void queryClient.invalidateQueries({ queryKey: ["data_issue_reports"] });

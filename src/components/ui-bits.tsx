@@ -628,8 +628,14 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
                   toast.success("Listing deleted by administrator");
                   onClose();
                   window.location.reload();
-                } catch {
-                  toast.error("Could not delete listing. Check permissions.");
+                } catch (err: unknown) {
+                  const msg =
+                    err instanceof Error
+                      ? err.message
+                      : typeof err === "object" && err && "message" in err
+                        ? String((err as Record<string, unknown>).message)
+                        : "Could not delete listing. Check permissions.";
+                  toast.error(`Delete failed: ${msg}`);
                 }
               }
             }}
@@ -859,8 +865,14 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
                   toast.success("Event deleted by administrator");
                   onClose();
                   window.location.reload();
-                } catch {
-                  toast.error("Could not delete event. Check permissions.");
+                } catch (err: unknown) {
+                  const msg =
+                    err instanceof Error
+                      ? err.message
+                      : typeof err === "object" && err && "message" in err
+                        ? String((err as Record<string, unknown>).message)
+                        : "Could not delete event. Check permissions.";
+                  toast.error(`Delete failed: ${msg}`);
                 }
               }
             }}
