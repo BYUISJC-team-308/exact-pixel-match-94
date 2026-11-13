@@ -1,0 +1,60 @@
+{
+  "mobile": {
+    "engine": {
+      "name": "axe-core",
+      "version": "4.14.0"
+    },
+    "incomplete": [
+      {
+        "id": "color-contrast",
+        "targets": [
+          [
+            "#submissions-heading"
+          ],
+          [
+            ".mt-0\\.5"
+          ]
+        ]
+      },
+      {
+        "id": "label-content-name-mismatch",
+        "targets": [
+          [
+            "button[aria-label=\"Profile options\"]"
+          ]
+        ]
+      }
+    ],
+    "passes": 44,
+    "violations": []
+  },
+  "desktop": {
+    "engine": {
+      "name": "axe-core",
+      "version": "4.14.0"
+    },
+    "incomplete": [
+      {
+        "id": "color-contrast",
+        "targets": [
+          [
+            "#submissions-heading"
+          ],
+          [
+            ".mt-0\\.5"
+          ]
+        ]
+      },
+      {
+        "id": "label-content-name-mismatch",
+        "targets": [
+          [
+            "button[aria-label=\"Profile options\"]"
+          ]
+        ]
+      }
+    ],
+    "passes": 44,
+    "violations": []
+  }
+}

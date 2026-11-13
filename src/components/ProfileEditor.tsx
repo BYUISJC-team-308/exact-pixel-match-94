@@ -113,7 +113,7 @@ export function ProfileEditor({ initial }: { initial: User }) {
             {avatar ? (
               <img src={avatar} alt="Your profile photo" className="size-full object-cover" />
             ) : (
-              <span aria-label="No profile photo">{values.name[0] || "?"}</span>
+              <span role="img" aria-label="No profile photo">{values.name[0] || "?"}</span>
             )}
           </div>
           <div className="min-w-0 flex-1 basis-52">

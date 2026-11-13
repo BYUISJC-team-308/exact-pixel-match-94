@@ -86,7 +86,18 @@ export async function saveProfile(
   }
   const { data: identity, error: identityError } = await supabase.auth.getUser();
   const id = identity.user?.id;
-  if (identityError || !id) throw new Error("You're signed out. Sign in again, then retry.");
+  if (identityError) {
+    const expired =
+      identityError.name === "AuthSessionMissingError" ||
+      identityError.status === 401 ||
+      identityError.status === 403;
+    throw new Error(
+      expired
+        ? "You're signed out. Sign in again, then retry."
+        : "We couldn't verify your sign-in. Check your connection and retry.",
+    );
+  }
+  if (!id) throw new Error("You're signed out. Sign in again, then retry.");
   if (input.id && input.id !== id)
     throw new Error("Your account changed. Reload this page before saving.");
   const { data: old, error: readError } = await supabase

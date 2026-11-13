@@ -20,23 +20,27 @@ Applied `20261113000400_profile_avatar_storage.sql` to project `zwygwfcaollyotvf
 
 Replacement uploads a new object first, confirms the database reference, then deletes the previous owned storage object. Removal clears the reference before deleting its object. Known database rejections attempt to remove the unused new upload. Ambiguous transport failures retain the new object, because the write may have committed; users are told to retry or reload to check. Cleanup failure is reported rather than claiming storage deletion succeeded. This can leave private orphan objects needing support cleanup; no automatic orphan sweeper is claimed. Old objects/URLs outside the current user's owned bucket path are never deleted.
 
-Profile fields and photo references are stored in Supabase and loaded on a subsequent authenticated device/session. A separate-device demonstration still requires a second signed-in session.
+Profile fields and photo references are stored in Supabase and loaded on subsequent authenticated sessions. Independent local and production auth sessions were checked; a physical second-device demonstration remains.
 
 ## Validation evidence
 
-- All 147 tests passed across 27 test files. Production build passed.
+- All 148 tests passed across 27 test files. Production build passed.
 - Automated coverage includes file size/type rejection; signed-out/account-switch protection; upload failure; duplicate username and database rejection; ambiguous write response; photo removal and cleanup failure; legacy avatars; failed signed-link delivery; no accidental writes to provider/preference fields; form retry/cancel/saving state.
 - PostgreSQL/PGlite executes the actual migration twice and verifies owner reads/inserts/deletes, rejected cross-owner inserts, and denied object overwrites. Bucket MIME/size metadata is asserted.
 - Live Supabase transaction probe returned `own_visible=1`, `other_visible=0`; a cross-owner object insert was rejected by RLS. All probe object rows were rolled back.
 - Mobile layout evidence: [390px sample-data preview](evidence/p18-profile-mobile-preview.png).
 - Isolated browser layout fixture (sample data, not a signed-in end-to-end test): no horizontal overflow at 320, 390, 430, or 1280px. Name/username/phone fields fit, action buttons measure 44px high. Valid sample JPEG previews, SVG selection is rejected, and Cancel restores the prior state. Fixture is removed before commit.
-- A sign-in request is pending for the complete real-account browser save/reload/replacement/removal journey. Production rollout and live regression evidence are not yet completed. The card must remain open until those checks pass.
+- Signed-in real-account checks completed: changed full name, saved, reloaded and confirmed persistence; restored the original name. Uploaded a disposable JPEG, confirmed a signed private-storage URL loaded, reloaded, replaced the image, reloaded again, then removed it. A final Supabase read returned `name_restored=true`, `photo_removed=true`, `remaining_photo_objects=0` for the tested account. No original photo was replaced (the account initially had none).
+- Verified the temporary name change appeared in the independent production-site sign-in session, and restoration appeared there after reload. This tests remote persistence across separate origin/auth sessions; it is not a physical second-device demonstration.
+- Real offline browser test retained the entered name and allowed retry after reconnect. It revealed an incorrect signed-out message for transport errors, now fixed with an added service regression. Successful retry and restoration were verified.
+- axe-core 4.14.0 WCAG 2.0/2.1 A/AA and best-practice scans at 390px and 1280px returned zero automatic violations (44 passing rule groups). Fixed the profile OKR button contrast and gave the no-photo placeholder a valid image role. The report retains manual-review items for transparent submission-section contrast and the existing shared profile-icon name. See [audit output](evidence/p18-axe.json). This is not a Lighthouse score or full accessibility certification.
+- Production rollout and live regression checks are not yet completed. Keep the card open until release, physical-device acceptance and the team's numeric accessibility target are verified.
 - Repository-wide TypeScript checking has existing errors in MapCanvas, header, routes and other modules. New profile service/editor/test files introduce no TypeScript diagnostics; production compilation succeeds. No accessibility score of 90 is claimed without a measured audit.
 
 ## Final acceptance checklist
 
-1. Sign in to the preview. Change a supported field, save, reload, and verify the confirmed value. Restore the original value afterward if testing an existing real account.
-2. Upload a disposable sample photo, save and reload; replace it, then remove it. Confirm the header and profile update and that old storage objects are removed after confirmed writes. Do not replace a real existing photo without retaining a recoverable copy.
-3. Sign in on another device/browser and confirm profile values are loaded from Supabase.
-4. Use network failure simulation to verify retry behavior in addition to automated service tests; recheck expired-session recovery.
+1. **Passed:** signed-in name change, confirmation, reload, and restoration.
+2. **Passed:** private sample-photo upload, preview delivery, reload, replacement, reload, removal and zero remaining owned storage objects. Original no-photo state restored.
+3. **Passed for independent auth sessions:** local write visible in production after reload. Physical second-device check still to do.
+4. **Passed:** actual browser offline/reconnect/retry flow; expired-session branches covered by automated tests.
 5. Run the team's accessibility audit against the complete signed-in page (target ≥90), then merge/release and attach the PR, deployed commit, live `/profile` URL, viewports and real-account evidence. Record actual development time with the Trello timer; no historical timer duration is invented here.

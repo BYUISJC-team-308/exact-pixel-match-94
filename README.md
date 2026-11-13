@@ -1,6 +1,6 @@
 ## P18 profile editing
 
-`/profile` now has a dedicated editor for name, username, optional phone, and photo. Email is provider-owned; school/preferences and saved-item behavior remain in their existing features. Saved fields/photo references use Supabase, with explicit confirmation, cancel/retry, and private owner-scoped photo storage. Apply `supabase/migrations/20261113000400_profile_avatar_storage.sql` before enabling uploads on another environment; it is already applied to the team project. See [scope, recovery rules and acceptance evidence](docs/p18-profile-editing.md). Signed-in browser/device and live acceptance checks remain required before marking P18 done.
+`/profile` now has a dedicated editor for name, username, optional phone, and photo. Email is provider-owned; school/preferences and saved-item behavior remain in their existing features. Saved fields/photo references use Supabase, with explicit confirmation, cancel/retry, and private owner-scoped photo storage. Apply `supabase/migrations/20261113000400_profile_avatar_storage.sql` before enabling uploads on another environment; it is already applied to the team project. See [scope, recovery rules and acceptance evidence](docs/p18-profile-editing.md). Signed-in save/reload/photo replacement/removal and offline retry are verified, including persistence into a separate production auth session. Physical-device acceptance, the numeric accessibility target and post-release checks remain before marking P18 done.
 
 # Student Steals homepage
 

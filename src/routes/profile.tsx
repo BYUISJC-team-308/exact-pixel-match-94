@@ -88,7 +88,7 @@ function Profile() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setAnalyticsOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/25 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-4 py-2 text-sm font-semibold text-primary hover:bg-accent/25 transition-colors"
           >
             📊 Team OKRs
           </button>

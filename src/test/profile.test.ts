@@ -145,3 +145,16 @@ it("leaves photo references untouched when only profile fields change", async ()
   expect(m.upload).not.toHaveBeenCalled();
   expect(m.remove).not.toHaveBeenCalled();
 });
+it("distinguishes a network failure from an expired sign-in", async () => {
+  m.getUser.mockResolvedValueOnce({
+    data: { user: null },
+    error: { name: "AuthRetryableFetchError", status: 0 },
+  });
+  await expect(saveProfile(input)).rejects.toThrow(/Check your connection and retry/);
+  m.getUser.mockResolvedValueOnce({
+    data: { user: null },
+    error: { name: "AuthApiError", status: 401 },
+  });
+  await expect(saveProfile(input)).rejects.toThrow(/signed out/);
+  expect(m.update).not.toHaveBeenCalled();
+});
