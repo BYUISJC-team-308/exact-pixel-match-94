@@ -47,3 +47,7 @@ Replaced the blue app icon with the provider's current black card cover (October
 Replaced the retail photo with an original SVG discount tag, oversized percent symbol, subtle string/shadow and forest-green background. Decorative asset uses existing tile link/label; no functionality or other tile changes.
 
 Discount illustration validation: production build passed; browser checks at actual 390px and 1280px widths showed no document overflow. Saved phone and desktop screenshots; preview remains unmerged.
+
+## Inverted discovery tiles
+
+All three main discovery tiles now have forest-green content backgrounds, white headings, light supporting text and white action surfaces with green labels/arrows. Image regions and lower homepage panels retain their existing styling. Build passed; browser confirmed the three tile backgrounds/text colors and no overflow at 390px and 1280px. Still preview-only.

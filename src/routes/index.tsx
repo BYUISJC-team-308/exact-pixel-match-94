@@ -113,7 +113,7 @@ export function Index() {
               <Link
                 key={to}
                 to={to}
-                className={`group flex min-w-0 overflow-hidden rounded-3xl border-2 border-[#7b9a86] bg-white text-[#042f23] transition-shadow hover:shadow-lg md:flex-col ${focus}`}
+                className={`group flex min-w-0 overflow-hidden rounded-3xl border-2 border-[#7b9a86] bg-[#042f23] text-white transition-shadow hover:shadow-lg md:flex-col ${focus}`}
               >
                 <div className="relative w-24 shrink-0 overflow-hidden bg-[#e2eee1] min-[390px]:w-28 md:aspect-[16/10] md:w-full">
                   {to === "/starving-student" ? (
@@ -148,9 +148,9 @@ export function Index() {
                   <h3 className="font-sans text-base font-extrabold leading-snug md:text-xl">
                     {title}
                   </h3>
-                  <p className="mt-1 text-xs leading-relaxed text-[#2e503e] md:text-sm">{detail}</p>
-                  <span className="mt-2 text-[11px] font-medium text-[#2e503e]">{note}</span>
-                  <span className="mt-3 flex min-h-11 items-center justify-between gap-2 rounded-xl bg-[#042f23] px-3 py-2 text-xs font-bold text-white md:mt-4 md:text-sm">
+                  <p className="mt-1 text-xs leading-relaxed text-white/90 md:text-sm">{detail}</p>
+                  <span className="mt-2 text-[11px] font-medium text-white/80">{note}</span>
+                  <span className="mt-3 flex min-h-11 items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-xs font-bold text-[#042f23] md:mt-4 md:text-sm">
                     {action}
                     <ArrowRight
                       className="size-4 shrink-0 transition-transform motion-safe:group-hover:translate-x-1"
