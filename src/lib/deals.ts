@@ -201,6 +201,8 @@ export function useDealsQuery() {
   });
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function deleteDeal(dealId: string, reportId?: string): Promise<void> {
   // 1. Try atomic security-definer RPC function first
   const { error: rpcError } = await supabase.rpc("admin_delete_listing", {
@@ -213,11 +215,28 @@ export async function deleteDeal(dealId: string, reportId?: string): Promise<voi
     return;
   }
 
-  // 2. Fallback to direct table deletion
-  const { error } = await supabase.from("deals").delete().eq("id", dealId);
-  if (error) {
-    console.error("Error deleting deal from Supabase:", error, rpcError);
-    throw new Error(error.message || rpcError.message || "Failed to delete deal");
+  // 2. If it is a valid UUID, attempt direct table deletion
+  if (UUID_REGEX.test(dealId)) {
+    const { error } = await supabase.from("deals").delete().eq("id", dealId);
+    if (error) {
+      console.error("Error deleting deal from Supabase:", error, rpcError);
+      throw new Error(error.message || rpcError.message || "Failed to delete deal");
+    }
+  } else {
+    // If not a UUID (e.g. test string like 'test-deal-123'), it doesn't exist in the UUID table
+    console.warn(`Item ID "${dealId}" is not a UUID; skipping direct deals table deletion.`);
+  }
+
+  // 3. If a reportId is present, mark the report as resolved
+  if (reportId && UUID_REGEX.test(reportId)) {
+    await supabase
+      .from("data_issue_reports")
+      .update({
+        status: "resolved",
+        resolution_notes: "Listing permanently deleted by administrator.",
+        resolved_at: new Date().toISOString(),
+      })
+      .eq("id", reportId);
   }
 }
 

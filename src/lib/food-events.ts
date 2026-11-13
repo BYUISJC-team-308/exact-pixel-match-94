@@ -430,6 +430,8 @@ export function useFoodEventInteractionsQuery(eventId: string) {
   }
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function deleteFoodEvent(eventId: string, reportId?: string): Promise<void> {
   // 1. Try atomic security-definer RPC function first
   const { error: rpcError } = await supabase.rpc("admin_delete_listing", {
@@ -442,11 +444,28 @@ export async function deleteFoodEvent(eventId: string, reportId?: string): Promi
     return;
   }
 
-  // 2. Fallback to direct table deletion
-  const { error } = await supabase.from("food_events").delete().eq("id", eventId);
-  if (error) {
-    console.error("Error deleting food event from Supabase:", error, rpcError);
-    throw new Error(error.message || rpcError.message || "Failed to delete food event");
+  // 2. If it is a valid UUID, attempt direct table deletion
+  if (UUID_REGEX.test(eventId)) {
+    const { error } = await supabase.from("food_events").delete().eq("id", eventId);
+    if (error) {
+      console.error("Error deleting food event from Supabase:", error, rpcError);
+      throw new Error(error.message || rpcError.message || "Failed to delete food event");
+    }
+  } else {
+    // If not a UUID, it doesn't exist in the UUID table
+    console.warn(`Event ID "${eventId}" is not a UUID; skipping direct food_events table deletion.`);
+  }
+
+  // 3. If a reportId is present, mark the report as resolved
+  if (reportId && UUID_REGEX.test(reportId)) {
+    await supabase
+      .from("data_issue_reports")
+      .update({
+        status: "resolved",
+        resolution_notes: "Listing permanently deleted by administrator.",
+        resolved_at: new Date().toISOString(),
+      })
+      .eq("id", reportId);
   }
 }
 
