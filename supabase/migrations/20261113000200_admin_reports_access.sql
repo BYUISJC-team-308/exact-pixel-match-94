@@ -95,6 +95,29 @@ begin
       resolved_at = timezone('utc'::text, now())
   where item_id = p_item_id
     and status in ('open', 'reviewing');
+
+  -- 4. If no report ever existed for this item, archive a deletion record so it appears in Deleted Listings tab
+  if not exists (select 1 from public.data_issue_reports where item_id = p_item_id) then
+    insert into public.data_issue_reports (
+      item_type,
+      item_id,
+      item_label,
+      issue_type,
+      details,
+      status,
+      resolution_notes,
+      resolved_at
+    ) values (
+      p_item_type,
+      p_item_id,
+      concat(initcap(p_item_type), ' (', p_item_id, ')'),
+      'Listing permanently deleted by administrator',
+      'Removed by administrator via moderation dashboard.',
+      'resolved',
+      'Listing permanently deleted by administrator.',
+      timezone('utc'::text, now())
+    );
+  end if;
 end;
 $$;
 

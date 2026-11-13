@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 import {
   PageHeader,
   Modal,
@@ -139,10 +141,15 @@ function TypeBadge({ type }: { type: DataIssueReport["itemType"] }) {
 
 export function AdminPage() {
   const { user } = useStore();
-  const [activeTab, setActiveTab] = useState<"reports" | "disputed" | "health">("reports");
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<"reports" | "disputed" | "deleted" | "health">("reports");
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState<DataIssueReport["itemType"] | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Deleted listings search & filter state
+  const [deletedSearchQuery, setDeletedSearchQuery] = useState("");
+  const [deletedTypeFilter, setDeletedTypeFilter] = useState<DataIssueReport["itemType"] | "all">("all");
 
   // Report resolution modal state
   const [resolvingReport, setResolvingReport] = useState<DataIssueReport | null>(null);
@@ -176,15 +183,34 @@ export function AdminPage() {
   const deleteDealMutation = useDeleteDealMutation();
   const deleteFoodEventMutation = useDeleteFoodEventMutation();
 
-  // Metrics counts
-  const openCount = reports.filter((r) => r.status === "open").length;
-  const reviewingCount = reports.filter((r) => r.status === "reviewing").length;
-  const resolvedCount = reports.filter((r) => r.status === "resolved").length;
-  const dismissedCount = reports.filter((r) => r.status === "dismissed").length;
+  // Helper: determine if a report represents a permanently deleted listing
+  const isReportDeleted = (r: DataIssueReport) => {
+    return (
+      (r.resolutionNotes || "").toLowerCase().includes("deleted") ||
+      (r.issueType || "").toLowerCase().includes("deleted") ||
+      (r.issueType || "").toLowerCase().includes("removed") ||
+      (r.details || "").toLowerCase().includes("permanently deleted")
+    );
+  };
 
-  // Filtered reports
+  // Split reports into active submitted reports vs. deleted listings archive
+  const deletedReports = useMemo(() => {
+    return reports.filter(isReportDeleted);
+  }, [reports]);
+
+  const activeReports = useMemo(() => {
+    return reports.filter((r) => !isReportDeleted(r));
+  }, [reports]);
+
+  // Metrics counts
+  const openCount = activeReports.filter((r) => r.status === "open").length;
+  const reviewingCount = activeReports.filter((r) => r.status === "reviewing").length;
+  const resolvedCount = activeReports.filter((r) => r.status === "resolved").length;
+  const dismissedCount = activeReports.filter((r) => r.status === "dismissed").length;
+
+  // Filtered active reports
   const filteredReports = useMemo(() => {
-    return reports.filter((r) => {
+    return activeReports.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
       if (typeFilter !== "all" && r.itemType !== typeFilter) return false;
       if (searchQuery.trim()) {
@@ -197,7 +223,23 @@ export function AdminPage() {
       }
       return true;
     });
-  }, [reports, statusFilter, typeFilter, searchQuery]);
+  }, [activeReports, statusFilter, typeFilter, searchQuery]);
+
+  // Filtered deleted reports
+  const filteredDeletedReports = useMemo(() => {
+    return deletedReports.filter((r) => {
+      if (deletedTypeFilter !== "all" && r.itemType !== deletedTypeFilter) return false;
+      if (deletedSearchQuery.trim()) {
+        const q = deletedSearchQuery.toLowerCase();
+        const matchLabel = r.itemLabel.toLowerCase().includes(q);
+        const matchIssue = r.issueType.toLowerCase().includes(q);
+        const matchDetails = (r.details || "").toLowerCase().includes(q);
+        const matchNotes = (r.resolutionNotes || "").toLowerCase().includes(q);
+        if (!matchLabel && !matchIssue && !matchDetails && !matchNotes) return false;
+      }
+      return true;
+    });
+  }, [deletedReports, deletedTypeFilter, deletedSearchQuery]);
 
   // Flagged / Disputed community listings
   const disputedDeals = useMemo(() => {
@@ -221,9 +263,18 @@ export function AdminPage() {
       await updateStatusMutation.mutateAsync({
         id: report.id,
         status: newStatus,
-        resolutionNotes: notes,
+        resolutionNotes:
+          notes !== undefined
+            ? notes
+            : newStatus === "open"
+              ? "Reopened by administrator for review."
+              : (report.resolutionNotes || undefined),
       });
-      toast.success(`Report marked as ${newStatus}`);
+      toast.success(
+        newStatus === "open"
+          ? "Report reopened and moved to Active Reports"
+          : `Report marked as ${newStatus}`
+      );
     } catch (err) {
       console.error("Failed to update report status:", err);
       toast.error("Failed to update report status");
@@ -295,9 +346,29 @@ export function AdminPage() {
         } catch (reportErr) {
           console.warn("Report resolution after listing deletion warning:", reportErr);
         }
+      } else {
+        // If not associated with an existing report (e.g. deleted from Disputed tab),
+        // insert an audit record so it is archived in the Deleted Listings tab
+        try {
+          await supabase.from("data_issue_reports").insert({
+            item_type: deletingItem.type,
+            item_id: deletingItem.id,
+            item_label: deletingItem.label,
+            issue_type: "Listing permanently deleted by administrator",
+            details: "Removed by administrator via moderation dashboard.",
+            status: "resolved",
+            resolution_notes: "Listing permanently deleted by administrator.",
+            resolved_at: new Date().toISOString(),
+          });
+          void queryClient.invalidateQueries({ queryKey: ["data_issue_reports"] });
+        } catch (insertErr) {
+          console.warn("Audit report insertion warning:", insertErr);
+        }
       }
 
-      toast.success(`"${deletingItem.label}" has been permanently deleted.`);
+      toast.success(
+        `"${deletingItem.label}" permanently deleted and moved to Deleted Listings tab.`
+      );
       setDeletingItem(null);
     } catch (err: unknown) {
       console.error("Failed to delete post:", err);
@@ -376,8 +447,14 @@ export function AdminPage() {
       </div>
 
       {/* Key Metric Stat Cards */}
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div
+          onClick={() => {
+            setActiveTab("reports");
+            setStatusFilter("open");
+          }}
+          className="cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-amber-500/50"
+        >
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-medium">Open Reports</span>
             <Clock className="size-4 text-amber-500" />
@@ -388,7 +465,13 @@ export function AdminPage() {
           <p className="mt-0.5 text-[11px] text-muted-foreground">Needs review</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div
+          onClick={() => {
+            setActiveTab("reports");
+            setStatusFilter("reviewing");
+          }}
+          className="cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-sky-500/50"
+        >
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-medium">In Review</span>
             <Eye className="size-4 text-sky-500" />
@@ -399,7 +482,13 @@ export function AdminPage() {
           <p className="mt-0.5 text-[11px] text-muted-foreground">Being checked</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div
+          onClick={() => {
+            setActiveTab("reports");
+            setStatusFilter("resolved");
+          }}
+          className="cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-emerald-500/50"
+        >
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-medium">Resolved</span>
             <CheckCircle2 className="size-4 text-emerald-500" />
@@ -410,7 +499,24 @@ export function AdminPage() {
           <p className="mt-0.5 text-[11px] text-muted-foreground">Completed issues</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div
+          onClick={() => setActiveTab("deleted")}
+          className="cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-rose-500/50"
+        >
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-medium">Deleted Listings</span>
+            <Trash2 className="size-4 text-rose-500" />
+          </div>
+          <p className="mt-2 text-2xl font-black text-rose-600 dark:text-rose-400">
+            {deletedReports.length}
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">Permanently removed</p>
+        </div>
+
+        <div
+          onClick={() => setActiveTab("disputed")}
+          className="cursor-pointer rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-rose-500/50"
+        >
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-medium">Disputed Posts</span>
             <AlertTriangle className="size-4 text-rose-500" />
@@ -423,7 +529,7 @@ export function AdminPage() {
       </div>
 
       {/* Main Tabs Navigation */}
-      <div className="mb-6 flex border-b border-border/80">
+      <div className="mb-6 flex flex-wrap border-b border-border/80 gap-1 sm:gap-2">
         <button
           type="button"
           onClick={() => setActiveTab("reports")}
@@ -436,7 +542,7 @@ export function AdminPage() {
           <ShieldAlert className="size-4" />
           Submitted Reports
           <span className="rounded-full bg-primary/10 px-2 py-0.2 text-xs font-bold text-primary">
-            {reports.length}
+            {activeReports.length}
           </span>
         </button>
 
@@ -454,6 +560,24 @@ export function AdminPage() {
           {totalDisputed > 0 && (
             <span className="rounded-full bg-rose-500/15 px-2 py-0.2 text-xs font-bold text-rose-600 dark:text-rose-400">
               {totalDisputed}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("deleted")}
+          className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+            activeTab === "deleted"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Trash2 className="size-4 text-rose-500" />
+          Deleted Listings
+          {deletedReports.length > 0 && (
+            <span className="rounded-full bg-rose-500/15 px-2 py-0.2 text-xs font-bold text-rose-600 dark:text-rose-400">
+              {deletedReports.length}
             </span>
           )}
         </button>
@@ -495,7 +619,7 @@ export function AdminPage() {
                 onChange={(e) => setStatusFilter(e.target.value as ReportStatus | "all")}
                 className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold outline-none focus:border-primary"
               >
-                <option value="all">All Statuses ({reports.length})</option>
+                <option value="all">All Active Reports ({activeReports.length})</option>
                 <option value="open">Open ({openCount})</option>
                 <option value="reviewing">Reviewing ({reviewingCount})</option>
                 <option value="resolved">Resolved ({resolvedCount})</option>
@@ -517,7 +641,7 @@ export function AdminPage() {
               </select>
             </div>
 
-            {filteredReports.length !== reports.length && (
+            {filteredReports.length !== activeReports.length && (
               <button
                 type="button"
                 onClick={() => {
@@ -938,7 +1062,160 @@ export function AdminPage() {
         </section>
       )}
 
-      {/* TAB 3: SYSTEM HEALTH & MIGRATIONS */}
+      {/* TAB 3: DELETED LISTINGS ARCHIVE */}
+      {activeTab === "deleted" && (
+        <section aria-label="Permanently deleted listings archive">
+          <div className="mb-6 rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <Trash2 className="size-5 text-rose-500" />
+                  Deleted Listings & Moderation Archive ({deletedReports.length})
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Community deals, food alerts, and posts permanently removed by administrators. Kept here for audit history and tracking.
+                </p>
+              </div>
+              {deletedReports.length > 0 && (
+                <span className="inline-flex items-center rounded-full bg-rose-500/15 px-3 py-1 text-xs font-bold text-rose-600 dark:text-rose-400 self-start sm:self-auto">
+                  {deletedReports.length} {deletedReports.length === 1 ? "Listing Removed" : "Listings Removed"}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Search & Filters */}
+          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 flex-wrap items-center gap-2">
+              <div className="relative min-w-[200px] flex-1">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="search"
+                  value={deletedSearchQuery}
+                  onChange={(e) => setDeletedSearchQuery(e.target.value)}
+                  placeholder="Search deleted listings by title, notes, reason…"
+                  className="w-full rounded-full border border-border bg-background py-1.5 pl-9 pr-4 text-xs font-medium outline-none focus:border-primary"
+                />
+              </div>
+
+              <select
+                value={deletedTypeFilter}
+                onChange={(e) =>
+                  setDeletedTypeFilter(e.target.value as DataIssueReport["itemType"] | "all")
+                }
+                className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold outline-none focus:border-primary"
+              >
+                <option value="all">All Types ({deletedReports.length})</option>
+                <option value="deal">🏷️ Deals</option>
+                <option value="event">🍕 Free Food</option>
+                <option value="starving_student">💳 Starving Student</option>
+              </select>
+            </div>
+
+            {(deletedSearchQuery || deletedTypeFilter !== "all") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeletedSearchQuery("");
+                  setDeletedTypeFilter("all");
+                }}
+                className="text-xs font-semibold text-primary hover:underline"
+              >
+                Reset filters
+              </button>
+            )}
+          </div>
+
+          {/* Deleted Listings Content */}
+          {filteredDeletedReports.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border/80 bg-card p-12 text-center">
+              <div className="mx-auto grid size-12 place-items-center rounded-full bg-rose-500/10 text-rose-500">
+                <Trash2 className="size-6" />
+              </div>
+              <h3 className="mt-3 text-base font-bold text-foreground">
+                {deletedReports.length === 0
+                  ? "No listings have been permanently deleted yet."
+                  : "No deleted listings match your search criteria."}
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+                {deletedReports.length === 0
+                  ? "When an administrator takes down a community post or confirms a report deletion, it will automatically move here to keep the main reports page organized."
+                  : "Try clearing your search filters to view all deleted listings."}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredDeletedReports.map((report) => (
+                <article
+                  key={report.id}
+                  className="overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-sm transition-all hover:border-border"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <TypeBadge type={report.itemType} />
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:text-rose-400">
+                          <Trash2 className="size-3" /> Permanently Deleted
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {formatTimestamp(report.resolvedAt || report.createdAt)} ({timeAgo(report.resolvedAt || report.createdAt)})
+                        </span>
+                      </div>
+
+                      <h3 className="text-base font-bold text-foreground">
+                        {report.itemLabel}
+                      </h3>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-0.5 text-xs font-semibold text-foreground ring-1 ring-border">
+                          ⚠️ {report.issueType}
+                        </span>
+                        <span className="text-[11px] font-mono text-muted-foreground">
+                          Item ID: {report.itemId}
+                        </span>
+                      </div>
+
+                      {/* Details / Notes */}
+                      {report.details && (
+                        <div className="mt-2 rounded-xl bg-muted/60 p-3 text-xs text-foreground leading-relaxed">
+                          <span className="font-semibold text-muted-foreground block text-[11px] mb-0.5">
+                            Original Report Notes:
+                          </span>
+                          "{report.details}"
+                        </div>
+                      )}
+
+                      {/* Deletion Notes */}
+                      <div className="mt-2 rounded-xl bg-rose-500/10 border border-rose-500/20 p-2.5 text-xs text-rose-800 dark:text-rose-300">
+                        <span className="font-bold block text-[11px]">
+                          Admin Deletion Notes:
+                        </span>
+                        {report.resolutionNotes || "Listing permanently deleted by administrator."}
+                      </div>
+                    </div>
+
+                    {/* Actions on Deleted Item */}
+                    <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
+                      <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground ring-1 ring-border">
+                        Removed from Public
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void handleStatusChange(report, "open", "Reopened from deleted archive by administrator.")}
+                        className="rounded-full bg-secondary px-3.5 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-glass transition-colors text-foreground"
+                      >
+                        Reopen Report
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* TAB 4: SYSTEM HEALTH & MIGRATIONS */}
       {activeTab === "health" && (
         <section aria-label="System health and database configuration" className="space-y-4">
           <div className="rounded-2xl border border-border bg-card p-6">

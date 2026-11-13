@@ -265,4 +265,63 @@ describe("Admin Reports Dashboard (/admin)", () => {
     // DealDetail modal opens directly on the admin page
     expect(screen.getByText("Free W Eats")).toBeInTheDocument();
   });
+
+  it("moves deleted listings to the Deleted Listings tab and allows reopening", async () => {
+    const mockReportsWithDeleted: dataIssuesModule.DataIssueReport[] = [
+      ...mockReports,
+      {
+        id: "rep-deleted-1",
+        itemType: "deal",
+        itemId: "deal-deleted-999",
+        itemLabel: "Expired Burger Promo",
+        issueType: "Listing permanently deleted by administrator",
+        details: "Removed from community listings.",
+        pageUrl: null,
+        status: "resolved",
+        resolutionNotes: "Listing permanently deleted by administrator.",
+        resolvedAt: "2026-11-13T10:30:00.000Z",
+        createdAt: "2026-11-13T10:00:00.000Z",
+      },
+    ];
+
+    vi.spyOn(dataIssuesModule, "useDataIssueReportsQuery").mockReturnValue({
+      data: mockReportsWithDeleted,
+      isLoading: false,
+      isRefetching: false,
+      refetch: vi.fn(),
+      error: null,
+    } as any);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AdminPage />
+      </QueryClientProvider>
+    );
+
+    // Active reports list does NOT show the deleted listing
+    expect(screen.queryByText("Expired Burger Promo")).not.toBeInTheDocument();
+
+    // Click the Deleted Listings tab
+    const deletedTab = screen.getByRole("button", { name: /Deleted Listings/i });
+    expect(deletedTab).toBeInTheDocument();
+    fireEvent.click(deletedTab);
+
+    // Now the deleted listing is shown
+    expect(screen.getByText("Expired Burger Promo")).toBeInTheDocument();
+    expect(screen.getByText("Permanently Deleted")).toBeInTheDocument();
+    expect(screen.getAllByText(/Listing permanently deleted by administrator/i).length).toBeGreaterThan(0);
+
+    // Can reopen the report from the deleted tab
+    const reopenBtn = screen.getByRole("button", { name: "Reopen Report" });
+    fireEvent.click(reopenBtn);
+
+    await waitFor(() => {
+      expect(mockUpdateReport).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "rep-deleted-1",
+          status: "open",
+        })
+      );
+    });
+  });
 });
