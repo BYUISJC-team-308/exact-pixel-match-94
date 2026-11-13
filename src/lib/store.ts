@@ -17,6 +17,7 @@ export type User = {
   school: string;
   phone?: string;
   avatar?: string;
+  avatarPath?: string;
 };
 
 export type RecentMapSearch = {

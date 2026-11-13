@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { AccountForm } from "@/components/AccountForm";
+import { ProfileEditor } from "@/components/ProfileEditor";
 import { Btn, PageHeader, DealDetail } from "@/components/ui-bits";
 import { useStore } from "@/lib/store";
-import { signOut, updateProfile } from "@/lib/auth";
+import { signOut } from "@/lib/auth";
 import { AnalyticsDrawerModal } from "@/components/AnalyticsDrawerModal";
 import {
   useUserSubmittedDealsQuery,
@@ -28,7 +28,6 @@ export const Route = createFileRoute("/profile")({
 
 function Profile() {
   const { user, authReady } = useStore();
-  const [saved, setSaved] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
@@ -47,8 +46,7 @@ function Profile() {
       <div className="mx-auto max-w-md py-20 text-center">
         <h1 className="text-3xl font-semibold">Sign in to your profile</h1>
         <p className="mt-2 text-muted-foreground">
-          Sign in to view or edit your name, school, and photo. Saved offers and events currently
-          stay on this browser.
+          Sign in to edit your profile and photo, and view your saved offers and events.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link
@@ -118,18 +116,7 @@ function Profile() {
         </div>
       </PageHeader>
 
-      {saved && <p className="mb-3 text-sm font-medium text-primary">Profile changes saved.</p>}
-      <AccountForm
-        initial={user}
-        submitLabel="Save changes"
-        onSubmit={async (u) => {
-          setSaved(false);
-          const err = await updateProfile(u);
-          if (err) return err;
-          setSaved(true);
-          return null;
-        }}
-      />
+      <ProfileEditor key={user.id} initial={user} />
 
       {/* User Submission History Section */}
       <section className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-sm" aria-labelledby="submissions-heading">

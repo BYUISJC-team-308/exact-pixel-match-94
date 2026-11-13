@@ -3,39 +3,20 @@ import { actions, getStoreState, type User } from "@/lib/store";
 import { endActivityVisit, logActivityEvent, signupActivityMetadata } from "@/lib/analytics";
 import { syncAndMergeGuestSaves } from "@/lib/saved";
 
-type ProfileRow = {
-  username: string;
-  full_name: string | null;
-  email: string | null;
-  school: string;
-  phone: string | null;
-  avatar_url: string | null;
-};
+import { profileUser, saveProfile, type PhotoChange, type ProfileRow } from "@/lib/profile";
 
-function toUser(p: ProfileRow, id?: string): User {
-  return {
-    ...(id ? { id } : {}),
-    username: p.username,
-    name: p.full_name ?? p.username,
-    email: p.email ?? "",
-    school: p.school,
-    ...(p.phone ? { phone: p.phone } : {}),
-    ...(p.avatar_url ? { avatar: p.avatar_url } : {}),
-  };
-}
-
-async function syncUser(authUserId: string | null) {
+async function syncUser(authUserId: string | null, email?: string) {
   if (!authUserId) {
     actions.setUser(null);
   } else {
     const { data } = await supabase.from("profiles").select("*").eq("id", authUserId).maybeSingle();
-    actions.setUser(data ? toUser(data as ProfileRow, authUserId) : null);
+    actions.setUser(data ? await profileUser(data as ProfileRow, authUserId, email) : null);
     try {
       const currentState = getStoreState();
       const merged = await syncAndMergeGuestSaves(
         authUserId,
         currentState.savedDeals,
-        currentState.savedEvents
+        currentState.savedEvents,
       );
       actions.setSavedItems(merged);
     } catch (err) {
@@ -58,7 +39,7 @@ export function initAuth() {
       if (account && (event === "INITIAL_SESSION" || event === "SIGNED_IN")) {
         void logActivityEvent("session_start", {}, account);
       }
-      void syncUser(account ?? null);
+      void syncUser(account ?? null, session?.user.email);
     }, 0);
   });
 }
@@ -96,21 +77,18 @@ export async function signOut() {
   actions.clearSavedItems();
 }
 
-export async function updateProfile(u: User): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
-  const id = data.session?.user.id;
-  if (!id) return "You're signed out. Please sign in again.";
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      username: u.username,
-      full_name: u.name,
-      school: u.school,
-      phone: u.phone ?? null,
-      avatar_url: u.avatar ?? null,
-    })
-    .eq("id", id);
-  if (error) return error.code === "23505" ? "That username is already taken." : error.message;
-  actions.setUser({ ...u });
-  return null;
+export async function updateProfile(
+  u: User,
+  change: PhotoChange = {},
+): Promise<{ error?: string; warning?: string; user?: User }> {
+  try {
+    const result = await saveProfile(u, change);
+    // A sign-out/account switch during the request must not restore the previous identity.
+    if (getStoreState().user?.id === result.user.id) actions.setUser(result.user);
+    return { ...(result.warning ? { warning: result.warning } : {}), user: result.user };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "We couldn't save your profile. Try again.",
+    };
+  }
 }
