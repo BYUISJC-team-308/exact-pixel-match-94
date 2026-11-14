@@ -201,3 +201,12 @@ footer { padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
   --border: #9bb29f;
   --ring: #042f23;
 }
+
+/* Hide scrollbars for clean horizontal pill bars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -188,11 +188,9 @@ it("explains signed-out profile access and requires sign-in for editing", () => 
   expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
 });
 
-it("focuses mobile search, closes the menu, and submits the first result with Enter", () => {
+it("focuses mobile search and submits the first result with Enter", () => {
   render(<SiteHeader />);
-  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
   fireEvent.click(screen.getByRole("button", { name: "Open site search" }));
-  expect(screen.queryByRole("navigation", { name: "Main navigation" })).not.toBeInTheDocument();
   const search = screen.getByRole("textbox", { name: "Search the site" });
   expect(search).toHaveFocus();
   fireEvent.change(search, { target: { value: "calendar" } });
@@ -209,16 +207,15 @@ it("returns focus on Escape and keeps account access separate from navigation", 
   fireEvent.click(screen.getByRole("button", { name: "Open site search" }));
   fireEvent.keyDown(screen.getByRole("textbox", { name: "Search the site" }), { key: "Escape" });
   expect(screen.getByRole("button", { name: "Open site search" })).toHaveFocus();
-  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
   expect(screen.getByRole("navigation", { name: "Main navigation" })).toHaveTextContent("Calendar");
   fireEvent.click(screen.getByRole("button", { name: "Sign in or create account" }));
-  expect(screen.queryByRole("navigation", { name: "Main navigation" })).not.toBeInTheDocument();
+  expect(screen.getByRole("navigation", { name: "Account options" })).toBeInTheDocument();
   fireEvent.keyDown(document, { key: "Escape" });
   expect(screen.getByRole("button", { name: "Sign in or create account" })).toHaveFocus();
   expect(screen.queryByRole("navigation", { name: "Account options" })).not.toBeInTheDocument();
 });
 
-it("signs out through the existing auth flow and dismisses navigation with Escape", async () => {
+it("signs out through the existing auth flow and keeps navigation accessible", async () => {
   mocks.store.mockReturnValue({ user: { name: "Lot" }, authReady: true });
   mocks.signOut.mockResolvedValue(undefined);
   render(<SiteHeader />);
@@ -228,8 +225,5 @@ it("signs out through the existing auth flow and dismisses navigation with Escap
     expect(screen.queryByRole("navigation", { name: "Account options" })).not.toBeInTheDocument(),
   );
   expect(mocks.signOut).toHaveBeenCalledOnce();
-  fireEvent.click(screen.getByRole("button", { name: "Menu", exact: true }));
-  fireEvent.keyDown(document, { key: "Escape" });
-  expect(screen.queryByRole("navigation", { name: "Main navigation" })).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Menu", exact: true })).toHaveFocus();
+  expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeInTheDocument();
 });

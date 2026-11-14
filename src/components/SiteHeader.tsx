@@ -9,65 +9,32 @@ import { initAuth, signOut } from "@/lib/auth";
 import {
   Search,
   X,
-  House,
-  Tag,
-  CreditCard,
-  Utensils,
-  CalendarDays,
-  MapPin,
-  Menu,
   UserRound,
   LogOut,
 } from "lucide-react";
 
-const nav = [
-  { to: "/", label: "Home", icon: House },
-  {
-    to: "/discounts",
-    label: "Discounts",
-    icon: Tag,
-  },
-  {
-    to: "/starving-student",
-    label: "Starving Student Card",
-    icon: CreditCard,
-  },
-  {
-    to: "/free-food",
-    label: "Free Food",
-    icon: Utensils,
-  },
-  {
-    to: "/calendar",
-    label: "Calendar",
-    icon: CalendarDays,
-  },
-  { to: "/map", label: "Map", icon: MapPin },
+const navItems = [
+  { to: "/discounts", label: "Discount Dashboard" },
+  { to: "/starving-student", label: "Starving Student Card" },
+  { to: "/free-food", label: "Free Food" },
+  { to: "/calendar", label: "Calendar" },
+  { to: "/map", label: "Map" },
 ] as const;
-
-const navPill =
-  "inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
-const activePill = {
-  className: "ring-2 ring-primary ring-offset-2",
-  "aria-current": "page" as const,
-};
 
 export function SiteHeader() {
   const { user, authReady } = useStore();
   const [q, setQ] = useState("");
-  const [menu, setMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [accountError, setAccountError] = useState("");
   const headerRef = useRef<HTMLElement>(null);
   const accountToggle = useRef<HTMLButtonElement>(null);
-  const menuToggle = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
     const dismissOutside = (event: PointerEvent) => {
       if (!headerRef.current?.contains(event.target as Node)) {
         setAccountOpen(false);
-        setMenu(false);
         setSearchOpen(false);
         setQ("");
       }
@@ -76,9 +43,6 @@ export function SiteHeader() {
       if (event.key === "Escape" && accountOpen) {
         setAccountOpen(false);
         accountToggle.current?.focus();
-      } else if (event.key === "Escape" && menu) {
-        setMenu(false);
-        menuToggle.current?.focus();
       }
     };
     document.addEventListener("pointerdown", dismissOutside);
@@ -87,13 +51,16 @@ export function SiteHeader() {
       document.removeEventListener("pointerdown", dismissOutside);
       document.removeEventListener("keydown", dismissEscape);
     };
-  }, [accountOpen, menu]);
+  }, [accountOpen]);
+
   const navigate = useNavigate();
   const searchInput = useRef<HTMLInputElement>(null);
   const searchToggle = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
     if (searchOpen) searchInput.current?.focus();
   }, [searchOpen]);
+
   useEffect(() => {
     initAuth();
   }, []);
@@ -128,18 +95,43 @@ export function SiteHeader() {
       ref={headerRef}
       className="student-steals-theme sticky top-0 z-40 border-b border-[#042f23] bg-[#042f23] shadow-md"
     >
-      <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:gap-3 sm:px-6">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
+        {/* Brand / Logo */}
         <Link
           to="/"
           aria-label="Student Steals home"
-          className="flex min-w-0 items-center gap-2 text-white"
+          className="order-1 flex min-w-0 items-center gap-2 text-white shrink-0"
         >
-          <StudentStealsMark className="size-9 shrink-0 sm:size-11" />
+          <StudentStealsMark className="size-9 shrink-0 sm:size-10" />
           <span className="font-sans text-base font-bold leading-[1.05] tracking-tight sm:text-xl">
             Student<span className="block sm:inline"> Steals</span>
           </span>
         </Link>
-        <div className="ml-auto flex items-center gap-2">
+
+        {/* Top Navigation Bar (Option 1: In-header pills, responsive scrollable on mobile) */}
+        <nav
+          id="main-navigation"
+          aria-label="Main navigation"
+          className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center gap-1.5 overflow-x-auto px-4 py-1 no-scrollbar sm:-mx-6 sm:w-[calc(100%+3rem)] sm:px-6 lg:order-2 lg:mx-auto lg:w-auto lg:px-0 lg:py-0"
+        >
+          {navItems.map((n) => (
+            <Link
+              key={n.to}
+              to={n.to}
+              className="inline-flex min-h-9 items-center justify-center rounded-full px-3.5 py-1 text-xs font-medium text-white/80 transition-colors hover:bg-white/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white whitespace-nowrap sm:text-sm"
+              activeProps={{
+                className:
+                  "bg-white text-[#042f23] font-semibold shadow-sm hover:bg-white hover:text-[#042f23]",
+                "aria-current": "page",
+              }}
+            >
+              {n.label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Right Controls: Search & Profile */}
+        <div className="order-2 flex items-center gap-2 shrink-0 lg:order-3 ml-auto lg:ml-0">
           <button
             type="button"
             ref={searchToggle}
@@ -148,7 +140,6 @@ export function SiteHeader() {
             aria-controls="site-search"
             onClick={() => {
               setSearchOpen(!searchOpen);
-              setMenu(false);
               setAccountOpen(false);
               setQ("");
             }}
@@ -160,6 +151,7 @@ export function SiteHeader() {
               <Search className="size-4" aria-hidden="true" />
             )}
           </button>
+
           <div
             id="site-search"
             className={
@@ -217,6 +209,7 @@ export function SiteHeader() {
               </div>
             )}
           </div>
+
           <div className="relative">
             {authReady ? (
               <button
@@ -227,7 +220,6 @@ export function SiteHeader() {
                 aria-controls="account-options"
                 onClick={() => {
                   setAccountOpen(!accountOpen);
-                  setMenu(false);
                   setSearchOpen(false);
                   setQ("");
                 }}
@@ -316,45 +308,8 @@ export function SiteHeader() {
               </nav>
             )}
           </div>
-          <button
-            ref={menuToggle}
-            type="button"
-            aria-controls="main-navigation"
-            onClick={() => {
-              setMenu(!menu);
-              setSearchOpen(false);
-              setAccountOpen(false);
-              setQ("");
-            }}
-            className="grid size-11 shrink-0 place-items-center rounded-full border border-[#759b83] bg-white text-[#042f23] hover:bg-[#edf4ed]"
-            aria-label="Menu"
-            aria-expanded={menu}
-          >
-            <Menu className="size-5" aria-hidden="true" />
-          </button>
         </div>
       </div>
-      {menu && (
-        <nav
-          id="main-navigation"
-          aria-label="Main navigation"
-          className="mx-auto grid max-h-[60dvh] max-w-7xl grid-cols-2 gap-2 overflow-y-auto px-4 pb-4 pt-1 sm:grid-cols-3 sm:px-6"
-        >
-          {nav.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              onClick={() => setMenu(false)}
-              className={`${navPill} rounded-xl border-[#dce9df] bg-[#f4f8f3] text-[#042f23]`}
-              activeOptions={{ exact: true }}
-              activeProps={activePill}
-            >
-              <n.icon className="size-4 shrink-0" aria-hidden="true" />
-              {n.label}
-            </Link>
-          ))}
-        </nav>
-      )}
     </header>
   );
 }
