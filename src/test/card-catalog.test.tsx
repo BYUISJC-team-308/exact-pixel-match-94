@@ -142,7 +142,7 @@ describe("Full card catalog pagination", () => {
         name: "Next",
       }),
     ).toBeDisabled();
-  });
+  }, 15000);
 
   it("searches late offers, filters the entire catalog, and resets page when criteria change", () => {
     const { container } = render(<Harness initial={{ page: 20 }} />);

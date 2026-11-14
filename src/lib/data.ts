@@ -75,6 +75,7 @@ export type FoodEvent = {
   date?: string;
   room: string;
   details: string;
+  requirements?: string;
   x: number;
   y: number;
   address?: string;

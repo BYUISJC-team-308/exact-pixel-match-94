@@ -780,6 +780,14 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
         <div><dt className="font-semibold">Hosted by</dt><dd className="text-muted-foreground">{event.host || "Not provided"}</dd></div>
         <div><dt className="font-semibold">Where</dt><dd className="text-muted-foreground">{event.building || "Not provided"}</dd></div>
         <div><dt className="font-semibold">Room</dt><dd className="text-muted-foreground">{roomLabel(event.room) || "Not provided"}</dd></div>
+        {event.requirements && (
+          <div className="sm:col-span-2">
+            <dt className="font-semibold text-foreground">Requirements</dt>
+            <dd className="font-medium text-amber-700 dark:text-amber-400">
+              ⚠️ {event.requirements}
+            </dd>
+          </div>
+        )}
         {event.submitterUsername && (
           <div className="sm:col-span-2">
             <dt className="font-semibold text-foreground">Shared by</dt>
@@ -862,7 +870,9 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
         </div>
       </div>
 
-      <p className="mt-4 whitespace-pre-line break-words text-sm text-muted-foreground">{event.details}</p>
+      <p className="mt-4 whitespace-pre-line break-words text-sm text-muted-foreground">
+        {event.details ? event.details.replace(/(?:^|\n+)Source:\s*https:\/\/[^\s]+/g, "").trim() : "No extra details provided."}
+      </p>
       {sourceUrl && (
         <a href={sourceUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex min-h-11 items-center rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border">
           View event / register on Handshake ↗

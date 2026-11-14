@@ -85,6 +85,99 @@ function formatTimeString(timeStr: string): string {
   return timeStr;
 }
 
+/**
+ * Extracts and cleans requirements / eligibility from event details or notes.
+ * Removes boilerplate like "Additional attendance restrictions are not stated."
+ */
+export function extractRequirements(details?: string | null): string | null {
+  if (!details) return null;
+  const match = details.match(/(?:Requirements|Eligibility):\s*([^\n]+)/i);
+  if (!match) return null;
+
+  const raw = match[1]
+    .replace(/Additional attendance restrictions are not stated\.?/i, "")
+    .replace(/Other attendance restrictions are not stated\.?/i, "")
+    .replace(/Specific major, membership or ID restrictions are not stated\.?/i, "")
+    .replace(/Attendance restrictions are not stated\.?/i, "")
+    .trim();
+
+  if (!raw || /^(none|not stated|open to all)\b/i.test(raw)) {
+    return null;
+  }
+  return raw;
+}
+
+/**
+ * Standardizes event descriptions into clean, readable copy:
+ * - Keeps the natural event description/summary.
+ * - Formats known requirements (e.g. "Requirements: Open to CS, IS and Math students").
+ * - Formats registration instructions ("Registration: Go to Handshake to register.").
+ * - Drops robotic disclaimers, timestamps, audit statements, and unneeded cost text.
+ */
+export function standardizeEventDescription(raw?: string | null): string {
+  if (!raw) return "No extra details provided.";
+
+  const text = raw.trim();
+
+  // If text doesn't contain disjointed Handshake metadata keywords, clean basic HTML and return
+  if (!/(?:Eligibility|Registration|Cost|Food serving time|Organizer statement|Checked \d{4}):/i.test(text)) {
+    return text.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s\s+/g, " ").trim();
+  }
+
+  // Extract sections from disjointed text
+  const parts = text.split(/\n\s*\n/);
+  let summary = "";
+  let requirements = "";
+  let registration = "";
+  let cost = "";
+  let sourceUrl = "";
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (/^Eligibility:/i.test(trimmed)) {
+      let val = trimmed.replace(/^Eligibility:\s*/i, "").trim();
+      val = val
+        .replace(/Additional attendance restrictions are not stated\.?/i, "")
+        .replace(/Other attendance restrictions are not stated\.?/i, "")
+        .replace(/Specific major, membership or ID restrictions are not stated\.?/i, "")
+        .replace(/Attendance restrictions are not stated\.?/i, "")
+        .trim();
+      if (val && !/^(none|not stated|open to all)\b/i.test(val)) {
+        requirements = val;
+      }
+    } else if (/^Registration:/i.test(trimmed)) {
+      if (/register/i.test(trimmed)) {
+        registration = "Go to Handshake to register.";
+      }
+    } else if (/^Cost:/i.test(trimmed)) {
+      const val = trimmed.replace(/^Cost:\s*/i, "").trim();
+      if (!/no price is stated|free|check the source/i.test(val) && /\$\d+/.test(val)) {
+        cost = val;
+      }
+    } else if (/^Source:\s*(https:\/\/[^\s]+)/i.test(trimmed)) {
+      sourceUrl = trimmed.match(/^Source:\s*(https:\/\/[^\s]+)/i)?.[1] || "";
+    } else if (/^(Food serving time|Checked \d|Times are|Organizer statement)/i.test(trimmed)) {
+      // Discard disclaimer / audit lines
+      continue;
+    } else {
+      if (!summary) {
+        summary = trimmed;
+      } else {
+        summary += " " + trimmed;
+      }
+    }
+  }
+
+  const output: string[] = [];
+  if (summary) output.push(summary);
+  if (requirements) output.push(`Requirements: ${requirements}`);
+  if (registration) output.push(`Registration: ${registration}`);
+  if (cost) output.push(`Cost: ${cost}`);
+  if (sourceUrl) output.push(`Source: ${sourceUrl}`);
+
+  return output.join("\n\n");
+}
+
 export function normalizeFoodEvent(row: DbFoodEvent, now = new Date()): NormalizedFoodEvent {
   const today = campusCalendarDate(now);
 
@@ -116,7 +209,8 @@ export function normalizeFoodEvent(row: DbFoodEvent, now = new Date()): Normaliz
     campusId: row.campus_id || undefined,
     date: row.event_date || undefined,
     room: row.room || "",
-    details: row.details || "No extra details provided.",
+    details: standardizeEventDescription(row.details),
+    requirements: extractRequirements(row.details) || undefined,
     address: row.address || undefined,
     latitude: Number.isFinite(Number(row.latitude)) ? Number(row.latitude) : undefined,
     longitude: Number.isFinite(Number(row.longitude)) ? Number(row.longitude) : undefined,

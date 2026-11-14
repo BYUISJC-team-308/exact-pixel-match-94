@@ -59,6 +59,28 @@ export function sourceUuid(sourceId) {
 export function toRow(event, building, checkedAt) {
   if (!building?.id || !building.campus_id || building.code !== event.building_code)
     throw new Error(`Unresolved building ${event.building_code}`);
+
+  const cleanEligibility = (event.eligibility || "")
+    .replace(/Additional attendance restrictions are not stated\.?/i, "")
+    .replace(/Other attendance restrictions are not stated\.?/i, "")
+    .replace(/Specific major, membership or ID restrictions are not stated\.?/i, "")
+    .replace(/Attendance restrictions are not stated\.?/i, "")
+    .trim();
+
+  const detailsParts = [event.summary];
+  if (cleanEligibility && !/^(none|not stated|open to all)\b/i.test(cleanEligibility)) {
+    detailsParts.push(`Requirements: ${cleanEligibility}`);
+  }
+  if (event.registration && /register/i.test(event.registration)) {
+    detailsParts.push("Registration: Go to Handshake to register.");
+  }
+  if (event.cost && !/no price is stated|free|check the source/i.test(event.cost) && /\$\d+/.test(event.cost)) {
+    detailsParts.push(`Cost: ${event.cost}`);
+  }
+  if (event.source_url) {
+    detailsParts.push(`Source: ${event.source_url}`);
+  }
+
   return {
     id: sourceUuid(event.source_id),
     title: event.title,
@@ -74,15 +96,7 @@ export function toRow(event, building, checkedAt) {
     latitude: building.latitude,
     longitude: building.longitude,
     location_note: "Handshake organizer listing; building pin, not exact room",
-    details: [
-      event.summary,
-      `Eligibility: ${event.eligibility}`,
-      `Registration: ${event.registration}`,
-      `Cost: ${event.cost}`,
-      "Food serving time, quantities and dietary options are not stated.",
-      `Source: ${event.source_url}`,
-      `Checked ${checkedAt}. Times are America/Denver. Organizer statement: "${event.food_evidence}"`,
-    ].join("\n\n"),
+    details: detailsParts.join("\n\n"),
   };
 }
 

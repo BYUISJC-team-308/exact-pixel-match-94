@@ -41,7 +41,9 @@ it("preserves provenance and unknown requirements and requires a real building",
   );
   expect(row.details).toContain(e.source_url);
   expect(row.food).toContain("menu not specified");
-  expect(row.details).toContain("Whether registration is required");
+  expect(row.details).toContain("Registration: Go to Handshake to register.");
+  expect(row.details).not.toContain("Whether registration is required");
+  expect(row.details).not.toContain("Food serving time, quantities and dietary options");
   expect(row.building_id).toBe("building-id");
   expect(row.room).toBe("2107");
 });
