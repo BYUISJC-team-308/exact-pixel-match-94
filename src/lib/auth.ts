@@ -1,11 +1,52 @@
 import { supabase } from "@/lib/supabase";
 import { actions, getStoreState, type User } from "@/lib/store";
 import { endActivityVisit, logActivityEvent, signupActivityMetadata } from "@/lib/analytics";
-import { syncAndMergeGuestSaves } from "@/lib/saved";
+import {
+  syncAndMergeGuestSaves,
+  subscribeToUserSavedChanges,
+  fetchUserSavedDeals,
+  fetchUserSavedEvents,
+  isUuid,
+} from "@/lib/saved";
+
+let activeRealtimeUnsub: (() => void) | null = null;
+let lastSyncTimestamp = 0;
+
+/**
+ * Re-syncs the active authenticated user's saved items from Supabase.
+ * Useful on window focus or visibilitychange (e.g. mobile tab wake-up).
+ */
+export async function syncActiveUserSaves(userId?: string) {
+  const accountId = userId || getStoreState().user?.id;
+  if (!accountId) return;
+  const now = Date.now();
+  if (now - lastSyncTimestamp < 2000) return;
+  lastSyncTimestamp = now;
+
+  try {
+    const [remoteDeals, remoteEvents] = await Promise.all([
+      fetchUserSavedDeals(accountId),
+      fetchUserSavedEvents(accountId),
+    ]);
+    const current = getStoreState();
+    const nonUuidDeals = current.savedDeals.filter((id) => !isUuid(id));
+    const nonUuidEvents = current.savedEvents.filter((id) => !isUuid(id));
+    actions.setSavedItems({
+      deals: Array.from(new Set([...remoteDeals, ...nonUuidDeals])),
+      events: Array.from(new Set([...remoteEvents, ...nonUuidEvents])),
+    });
+  } catch (err) {
+    console.warn("Visibility re-sync error:", err);
+  }
+}
 
 import { profileUser, saveProfile, type PhotoChange, type ProfileRow } from "@/lib/profile";
 
 async function syncUser(authUserId: string | null, email?: string) {
+  if (activeRealtimeUnsub) {
+    activeRealtimeUnsub();
+    activeRealtimeUnsub = null;
+  }
   if (!authUserId) {
     actions.setUser(null);
   } else {
@@ -22,6 +63,17 @@ async function syncUser(authUserId: string | null, email?: string) {
     } catch (err) {
       console.warn("Could not sync saved items on sign-in:", err);
     }
+
+    // Subscribe to live multi-device database changes
+    activeRealtimeUnsub = subscribeToUserSavedChanges(authUserId, (remoteItems) => {
+      const current = getStoreState();
+      const nonUuidDeals = current.savedDeals.filter((id) => !isUuid(id));
+      const nonUuidEvents = current.savedEvents.filter((id) => !isUuid(id));
+      actions.setSavedItems({
+        deals: Array.from(new Set([...remoteItems.deals, ...nonUuidDeals])),
+        events: Array.from(new Set([...remoteItems.events, ...nonUuidEvents])),
+      });
+    });
   }
   actions.setAuthReady();
 }
@@ -30,6 +82,21 @@ let started = false;
 export function initAuth() {
   if (started || typeof window === "undefined") return;
   started = true;
+
+  // Multi-device visibility and focus re-sync (e.g. mobile tab wake-up)
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        void syncActiveUserSaves();
+      }
+    });
+  }
+  if (typeof window !== "undefined") {
+    window.addEventListener("focus", () => {
+      void syncActiveUserSaves();
+    });
+  }
+
   // Fires once on load with the saved session, then on every sign-in / sign-out.
   // Deferred so we never await Supabase calls inside the callback itself.
   supabase.auth.onAuthStateChange((event, session) => {
@@ -72,6 +139,10 @@ export async function signIn(email: string, password: string): Promise<string | 
 }
 
 export async function signOut() {
+  if (activeRealtimeUnsub) {
+    activeRealtimeUnsub();
+    activeRealtimeUnsub = null;
+  }
   await supabase.auth.signOut();
   actions.setUser(null);
   actions.clearSavedItems();

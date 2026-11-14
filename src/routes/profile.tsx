@@ -153,6 +153,7 @@ function Profile() {
           <div className="col-span-2 rounded-xl border border-border/70 bg-secondary/40 p-3.5 sm:col-span-1">
             <span className="text-xs font-medium text-muted-foreground">Cloud Sync</span>
             <p className="mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400">✓ Supabase Active</p>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">Live multi-device sync</p>
           </div>
         </div>
       </section>

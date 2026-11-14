@@ -161,3 +161,68 @@ export async function syncAndMergeGuestSaves(
     return { deals: localDeals, events: localEvents };
   }
 }
+
+/**
+ * Subscribes to live database changes on saved_deals and saved_events
+ * for the authenticated userId across all devices.
+ * Invokes onUpdate with the refreshed list of deal and event IDs whenever
+ * another device saves or removes an item.
+ */
+export function subscribeToUserSavedChanges(
+  userId: string,
+  onUpdate: (items: { deals: string[]; events: string[] }) => void
+): () => void {
+  if (
+    !userId ||
+    typeof window === "undefined" ||
+    !supabase ||
+    typeof supabase.channel !== "function"
+  ) {
+    return () => {};
+  }
+
+  const handleDbChange = async () => {
+    try {
+      const [remoteDeals, remoteEvents] = await Promise.all([
+        fetchUserSavedDeals(userId),
+        fetchUserSavedEvents(userId),
+      ]);
+      onUpdate({ deals: remoteDeals, events: remoteEvents });
+    } catch (err) {
+      console.warn("Realtime saved items sync error:", err);
+    }
+  };
+
+  const channel = supabase
+    .channel(`saved-items-${userId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "saved_deals",
+        filter: `user_id=eq.${userId}`,
+      },
+      handleDbChange
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "saved_events",
+        filter: `user_id=eq.${userId}`,
+      },
+      handleDbChange
+    );
+
+  if (channel && typeof channel.subscribe === "function") {
+    channel.subscribe();
+  }
+
+  return () => {
+    if (supabase && typeof supabase.removeChannel === "function") {
+      void supabase.removeChannel(channel);
+    }
+  };
+}
