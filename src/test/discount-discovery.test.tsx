@@ -13,8 +13,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: unknown) => options,
   useNavigate: () => vi.fn(),
-  Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
-    <a href={to} {...props}>
+  Link: ({ to, hash, children, ...props }: { to: string; hash?: string; children: React.ReactNode }) => (
+    <a href={hash ? `${to}#${hash}` : to} {...props}>
       {children}
     </a>
   ),
@@ -271,5 +271,28 @@ describe("Discount Dashboard Discovery & Layout Unification (P21)", () => {
     expect(screen.getByText("Apple")).toBeInTheDocument();
     expect(screen.getByText("Zupas")).toBeInTheDocument();
     expect(screen.getByText("Subway")).toBeInTheDocument();
+  });
+
+  it("displays 'Go to My Hub →' link on saved deal cards and list rows", () => {
+    mocks.store.mockReturnValue({
+      user: null,
+      authReady: true,
+      savedDeals: ["deal-2"],
+    });
+
+    render(<Discounts />);
+
+    // In grid view, saved deal (Zupas) should show "Go to My Hub →" link pointing to "/#my-hub"
+    const hubLinks = screen.getAllByRole("link", { name: /Go to My Hub/i });
+    expect(hubLinks.length).toBeGreaterThan(0);
+    expect(hubLinks[0]).toHaveAttribute("href", "/#my-hub");
+
+    // Switch to list view
+    const listBtn = screen.getByRole("button", { name: /List/i });
+    fireEvent.click(listBtn);
+
+    const listHubLinks = screen.getAllByRole("link", { name: /My Hub/i });
+    expect(listHubLinks.length).toBeGreaterThan(0);
+    expect(listHubLinks[0]).toHaveAttribute("href", "/#my-hub");
   });
 });

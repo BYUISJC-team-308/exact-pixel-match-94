@@ -613,9 +613,19 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-6 flex flex-wrap items-center gap-2">
         <a href={deal.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Go to provider →</a>
         <Btn variant="soft" onClick={() => actions.toggleDeal(deal.id, { company: deal.company, title: deal.title })}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
+        {saved && (
+          <Link
+            to="/"
+            hash="my-hub"
+            onClick={onClose}
+            className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-4 py-2 text-sm font-semibold text-primary ring-1 ring-primary/30 hover:bg-primary hover:text-primary-foreground transition-all shadow-xs"
+          >
+            Go to My Hub →
+          </Link>
+        )}
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
         <ReportIssueButton itemType="deal" itemId={deal.id} itemLabel={`${deal.company}: ${deal.title}`} />
@@ -878,8 +888,18 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
           View event / register on Handshake ↗
         </a>
       )}
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-6 flex flex-wrap items-center gap-2">
         <Btn onClick={() => actions.toggleEvent(event.id, { title: event.title })}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
+        {saved && (
+          <Link
+            to="/"
+            hash="my-hub"
+            onClick={onClose}
+            className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-4 py-2 text-sm font-semibold text-primary ring-1 ring-primary/30 hover:bg-primary hover:text-primary-foreground transition-all shadow-xs"
+          >
+            Go to My Hub →
+          </Link>
+        )}
         <a
           href={makeGoogleCalendarUrl(event)}
           target="_blank"

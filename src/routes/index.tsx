@@ -1,6 +1,6 @@
 import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRight, Bookmark, CalendarDays } from "lucide-react";
 import type { Deal } from "@/lib/data";
 import { useStore, actions } from "@/lib/store";
@@ -69,6 +69,19 @@ export function Index() {
   const events = eventsQuery.data ?? [];
   const today = events.filter((item) => item.isToday);
   const savedCount = savedDeals.length + savedEvents.length;
+
+  // Smooth scroll to My Hub when arriving with #my-hub hash
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#my-hub") {
+      const scroll = () => {
+        const el = document.getElementById("my-hub");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      };
+      scroll();
+      const timer = setTimeout(scroll, 200);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const savedEventsList = events.filter((item) => savedEvents.includes(item.id));
   const pastEvents = savedEventsList.filter(

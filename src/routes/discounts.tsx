@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Deal, DealCategory } from "@/lib/data";
@@ -405,13 +405,25 @@ function Discounts() {
         </div>
 
         {/* Footer */}
-        <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/50">
-          <button
-            onClick={() => setOpen(d)}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-          >
-            View redemption details →
-          </button>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border/50">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setOpen(d)}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            >
+              View redemption details →
+            </button>
+            {saved && (
+              <Link
+                to="/"
+                hash="my-hub"
+                className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-semibold text-primary ring-1 ring-primary/30 hover:bg-primary hover:text-primary-foreground transition-all shadow-xs"
+                title="Open this saved deal in My Hub on the homepage"
+              >
+                Go to My Hub →
+              </Link>
+            )}
+          </div>
           {d.url && (
             <a
               href={d.url}
@@ -497,8 +509,19 @@ function Discounts() {
           </div>
         </button>
 
-        {/* Right Actions: Upvote, Save, Details */}
+        {/* Right Actions: Upvote, Save, Go to My Hub, Details */}
         <div className="flex items-center gap-2.5 shrink-0 ml-auto sm:ml-0">
+          {saved && (
+            <Link
+              to="/"
+              hash="my-hub"
+              className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary ring-1 ring-primary/30 hover:bg-primary hover:text-primary-foreground transition-all shadow-xs"
+              title="Open this saved deal in My Hub on the homepage"
+            >
+              My Hub →
+            </Link>
+          )}
+
           <DealCardUpvoteButton
             deal={d}
             onRequireAuth={(act) => {
