@@ -90,9 +90,11 @@ function RootComponent() {
           <div className="absolute top-1/4 -right-24 h-[30rem] w-[30rem] rounded-full bg-primary/10 blur-3xl" />
           <div className="absolute bottom-0 left-1/3 h-[26rem] w-[26rem] rounded-full bg-primary/10 blur-3xl" />
         </div>
-        <div className="relative">
+        <div className="relative flex min-h-screen flex-col">
           <SiteHeader />
-          <main id="main-content" className="app-main mx-auto w-full min-w-0 max-w-7xl"><Outlet /></main>
+          <main id="main-content" className="app-main mx-auto w-full min-w-0 max-w-7xl flex-1 flex flex-col pb-12">
+            <Outlet />
+          </main>
           <Toaster richColors position="bottom-right" />
           <SiteFooter />
         </div>

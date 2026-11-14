@@ -136,7 +136,7 @@ function FreeFood() {
   const todayCount = futureEvents.filter((e) => e.dayOffset === 0).length;
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       <PageHeader
         eyebrow={
           isLoading
@@ -244,17 +244,29 @@ function FreeFood() {
       {!isLoading && !isError && (
         <div className="rise mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredEvents.length === 0 ? (
-            <div className="col-span-full glass p-10 text-center">
+            <div className="col-span-full glass my-auto p-10 text-center">
               <div className="text-3xl">🍕</div>
               <h4 className="mt-2 text-base font-semibold">No free food events found</h4>
               <p className="mt-1 text-xs text-muted-foreground">
                 {timeFilter === "today"
-                  ? "Nothing is listed for today. Try This Week or share an event."
+                  ? "Nothing is listed for today. Check upcoming events this week or share one with campus!"
                   : "No events match this filter."}
               </p>
-              <Btn variant="soft" onClick={() => setIsSubmitOpen(true)} className="mt-4 text-xs">
-                + Share Free Food
-              </Btn>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                {timeFilter === "today" && (
+                  <Btn variant="primary" onClick={() => setTimeFilter("week")} className="text-xs">
+                    View This Week
+                  </Btn>
+                )}
+                {timeFilter !== "all" && timeFilter !== "week" && (
+                  <Btn variant="secondary" onClick={() => setTimeFilter("all")} className="text-xs">
+                    View All Upcoming
+                  </Btn>
+                )}
+                <Btn variant="soft" onClick={() => setIsSubmitOpen(true)} className="text-xs">
+                  + Share Free Food
+                </Btn>
+              </div>
             </div>
           ) : (
             filteredEvents.map((e) => {
@@ -365,6 +377,6 @@ function FreeFood() {
         onClose={() => setAuthOpen(false)}
         action={authAction}
       />
-    </>
+    </div>
   );
 }
