@@ -275,6 +275,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
           .setDOMContent(content)
           .addTo(map);
       };
+      let selectedBuildingId: string | number | undefined;
       map.on("load", () => {
         if (!map || cancelled) return;
         const { places, showInactiveBuildings, focusPlaceId } = latest.current;
@@ -334,7 +335,11 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
             "text-font": ["Roboto Regular", "Noto Sans Regular"],
             "text-size": 12, "text-offset": [0, 1], "text-anchor": "top", "text-optional": true,
           }, paint: { "text-color": campus?.primaryColor || "#082e4f", "text-halo-color": campus?.secondaryColor || "#f8f4e8", "text-halo-width": 2.5 } });
-          let selectedBuildingId: string | number | undefined;
+          if (focusedPlace) {
+            selectedBuildingId = focusedPlace.id;
+            map?.setFeatureState({ source: "buildings", id: focusedPlace.id }, { selected: true });
+            showPlacePopup(focusedPlace, [focusedPlace.lng, focusedPlace.lat]);
+          }
           for (const layer of ["building-points", "building-labels"]) {
             map.on("click", layer, (event) => {
               if (map?.queryRenderedFeatures(event.point, { layers: ["place-points"] }).length) return;
@@ -426,7 +431,13 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
           }
           map.setFilter("selected-place-halo", ["all", ["!", ["has", "point_count"]], ["==", ["get", "id"], current.focusPlaceId || "__none__"]]);
           const focused = focusChanged && findPlace(current.focusPlaceId);
-          if (focused) map.easeTo({ center: [focused.lng, focused.lat], zoom: Math.max(map.getZoom(), 16.2), duration: 500 });
+          if (focused) {
+            if (selectedBuildingId !== undefined) map?.setFeatureState({ source: "buildings", id: selectedBuildingId }, { selected: false });
+            selectedBuildingId = focused.id;
+            map?.setFeatureState({ source: "buildings", id: focused.id }, { selected: true });
+            map.easeTo({ center: [focused.lng, focused.lat], zoom: Math.max(map.getZoom(), 16.2), duration: 500 });
+            showPlacePopup(focused, [focused.lng, focused.lat]);
+          }
         };
         let renderedPlaces = places;
         let renderedInactive = showInactiveBuildings;

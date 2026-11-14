@@ -22,7 +22,6 @@ import {
   useVoteFoodEventMutation,
   useToggleFoodEventUpvoteMutation,
   deleteFoodEvent,
-  detectLocationCategory,
 } from "@/lib/food-events";
 import { deleteDeal } from "@/lib/deals";
 
@@ -617,16 +616,6 @@ export function DealDetail({ deal, onClose }: { deal: Deal | null; onClose: () =
       <div className="mt-6 flex flex-wrap gap-2">
         <a href={deal.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Go to provider →</a>
         <Btn variant="soft" onClick={() => actions.toggleDeal(deal.id, { company: deal.company, title: deal.title })}>{saved ? "★ Saved to hub" : "☆ Save to hub"}</Btn>
-        {Number.isFinite(deal.latitude) && Number.isFinite(deal.longitude) && (
-          <Link
-            to="/map"
-            search={{ dealId: deal.id, view: "area" }}
-            onClick={onClose}
-            className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border hover:bg-glass transition-colors"
-          >
-            <span>📍</span> See on map
-          </Link>
-        )}
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
         <ReportIssueButton itemType="deal" itemId={deal.id} itemLabel={`${deal.company}: ${deal.title}`} />
@@ -895,8 +884,6 @@ export function EventDetail({ event, onClose }: { event: FoodEvent | null; onClo
             eventId: event.id,
             date: event.date || (event.dayOffset !== undefined ? campusDateTime(eventDate(event)).date : undefined),
             buildingId: event.buildingId,
-            campus: event.campusId,
-            view: (("category" in event && event.category === "off_campus") || detectLocationCategory(event.building) === "off_campus") ? "area" : "campus",
           }}
           onClick={onClose}
           className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border hover:bg-glass transition-colors"
@@ -1136,16 +1123,6 @@ export function SSDetail({ deal, onClose }: { deal: SSDeal | null; onClose: () =
           >
             Directions &rarr;
           </a>
-        )}
-        {deal.locations.length > 0 && Number.isFinite(deal.locations[0]?.lat) && Number.isFinite(deal.locations[0]?.lng) && (
-          <Link
-            to="/map"
-            search={{ offerId: deal.id, view: "area" }}
-            onClick={onClose}
-            className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-medium ring-1 ring-border hover:bg-glass transition-colors"
-          >
-            <span>📍</span> See on map
-          </Link>
         )}
       </div>
       <div className="mt-4 border-t border-border pt-3"><ReportIssueButton itemType="starving_student" itemId={deal.id} itemLabel={`${deal.company}: ${deal.item}`} /></div>

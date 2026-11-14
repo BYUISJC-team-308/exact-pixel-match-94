@@ -20,22 +20,14 @@ import { supabase } from "@/lib/supabase";
 export type MapSearch = {
   eventId?: string;
   buildingId?: string;
-  dealId?: string;
-  offerId?: string;
   date?: string;
-  campus?: string;
-  view?: "area" | "campus";
 };
 
 export const Route = createFileRoute("/map")({
   validateSearch: (search: Record<string, unknown>): MapSearch => ({
     eventId: typeof search.eventId === "string" ? search.eventId : undefined,
     buildingId: typeof search.buildingId === "string" ? search.buildingId : undefined,
-    dealId: typeof search.dealId === "string" ? search.dealId : undefined,
-    offerId: typeof search.offerId === "string" ? search.offerId : undefined,
     date: typeof search.date === "string" ? search.date : undefined,
-    campus: typeof search.campus === "string" ? search.campus : undefined,
-    view: search.view === "area" || search.view === "campus" ? search.view : undefined,
   }),
   loader: async () => {
     const [offers, eventRows, dealRows, campusBuildingRows, campuses] = await Promise.all([getStarvingStudentOffers(), getMapFoodEvents(), getMapDeals(), getMapCampusBuildings(), getMapCampuses()]);
@@ -91,14 +83,7 @@ function MapPage() {
     return search?.eventId ? eventRows.find((r) => r.id === search.eventId) : undefined;
   }, [search?.eventId, eventRows]);
 
-  const initialView: View = useMemo(() => {
-    if (search?.view === "area" || search?.view === "campus") return search.view;
-    if (search?.dealId || search?.offerId) return "area";
-    if (targetEventRow) {
-      return detectLocationCategory(targetEventRow.building) === "off_campus" ? "area" : "campus";
-    }
-    return "area";
-  }, [search?.view, search?.dealId, search?.offerId, targetEventRow]);
+  const initialView: View = search?.eventId || search?.buildingId ? "campus" : "area";
 
   const [view, setView] = useState<View>(initialView);
   const [filter, setFilter] = useState<Filter>("all");
@@ -186,11 +171,7 @@ function MapPage() {
     const searchKey = [
       search?.eventId,
       search?.buildingId,
-      search?.dealId,
-      search?.offerId,
       search?.date,
-      search?.campus,
-      search?.view,
     ]
       .filter(Boolean)
       .join(":");
@@ -218,64 +199,30 @@ function MapPage() {
         return;
       }
 
-      if (target.campus_id) {
-        const matchingCampus = campuses.find((c) => c.id === target.campus_id);
-        if (matchingCampus && campusSlug !== matchingCampus.slug) {
-          setCampusSlug(matchingCampus.slug);
-          return;
-        }
-      }
+      if (view !== "campus") setView("campus");
 
-      const isOffCampus =
-        search.view === "area" ||
-        detectLocationCategory(target.building) === "off_campus";
+      const targetBuildingId =
+        search.buildingId ||
+        target.building_id ||
+        findCampusBuilding(target.building, campusBuildingRowsForSelection)?.id;
 
-      if (isOffCampus) {
-        if (view !== "area") setView("area");
-        const allEventPlaces = eventPlaces(
-          eventRows.map((r) => normalizeFoodEvent(r, now)),
-          campusBuildingRows
-        );
-        const place = allEventPlaces.find(
-          (p) =>
-            p.events.some((e) => e.id === target.id) ||
-            (Number.isFinite(target.latitude) &&
-              Number.isFinite(target.longitude) &&
-              Math.abs(p.lat - Number(target.latitude)) < 0.0001 &&
-              Math.abs(p.lng - Number(target.longitude)) < 0.0001)
-        );
-        if (place) {
-          choosePlace(place);
-          handledSearchRef.current = searchKey;
-        } else {
-          toast.info("Location coordinates not available for this event.");
-          handledSearchRef.current = searchKey;
-        }
+      const place = buildings.find(
+        (b) =>
+          b.events.some((e) => e.id === target.id) ||
+          (targetBuildingId &&
+            (b.id === `building-${targetBuildingId}` ||
+              b.code?.toLowerCase() === targetBuildingId.toLowerCase())) ||
+          (findCampusBuilding(target.building, campusBuildingRowsForSelection) &&
+            b.title.toLowerCase() ===
+              findCampusBuilding(target.building, campusBuildingRowsForSelection)?.name.toLowerCase())
+      );
+
+      if (place) {
+        choosePlace(place);
+        handledSearchRef.current = searchKey;
       } else {
-        if (view !== "campus") setView("campus");
-        const targetBuildingId =
-          search.buildingId ||
-          target.building_id ||
-          findCampusBuilding(target.building, campusBuildingRowsForSelection)?.id;
-
-        const place = buildings.find(
-          (b) =>
-            b.events.some((e) => e.id === target.id) ||
-            (targetBuildingId &&
-              (b.id === `building-${targetBuildingId}` ||
-                b.code?.toLowerCase() === targetBuildingId.toLowerCase())) ||
-            (findCampusBuilding(target.building, campusBuildingRowsForSelection) &&
-              b.title.toLowerCase() ===
-                findCampusBuilding(target.building, campusBuildingRowsForSelection)?.name.toLowerCase())
-        );
-
-        if (place) {
-          choosePlace(place);
-          handledSearchRef.current = searchKey;
-        } else {
-          toast.info("Location coordinates not available for this event.");
-          handledSearchRef.current = searchKey;
-        }
+        toast.info("Location coordinates not available for this event.");
+        handledSearchRef.current = searchKey;
       }
       return;
     }
@@ -297,53 +244,13 @@ function MapPage() {
       }
       return;
     }
-
-    // 3. Discount Deep Link
-    if (search?.dealId) {
-      if (view !== "area") setView("area");
-      const place = discounts.find(
-        (p) =>
-          p.id === `discount-${search.dealId}` ||
-          p.deals.some((d) => d.id === search.dealId)
-      );
-      if (place) {
-        choosePlace(place);
-        handledSearchRef.current = searchKey;
-      } else {
-        toast.info("Location coordinates not available for this deal.");
-        handledSearchRef.current = searchKey;
-      }
-      return;
-    }
-
-    // 4. Starving Student Card Offer Deep Link
-    if (search?.offerId) {
-      if (view !== "area") setView("area");
-      const place = cards.find((p) =>
-        p.cardOffers.some((o) => o.id === search.offerId)
-      );
-      if (place) {
-        choosePlace(place);
-        handledSearchRef.current = searchKey;
-      } else {
-        toast.info("Location coordinates not available for this card offer.");
-        handledSearchRef.current = searchKey;
-      }
-      return;
-    }
   }, [
     search,
     campusDate,
-    campusSlug,
     view,
     eventRows,
     buildings,
-    campusBuildingRows,
     campusBuildingRowsForSelection,
-    campuses,
-    cards,
-    discounts,
-    now,
   ]);
 
   return (
@@ -466,21 +373,15 @@ function MapPage() {
               <div className="mt-4 space-y-2">
                 {selected.kind === "building" && selected.events.length === 0 && <p className="text-sm text-muted-foreground">No upcoming free food events at this building.</p>}
                 {selected.cardOffers.map((offer) => (
-                  <button key={offer.id} type="button" onClick={() => setOpenOffer(offer)} className={`w-full rounded-2xl border-l-4 ${search?.offerId === offer.id ? "border-primary bg-primary/10 ring-2 ring-primary/40" : "border-primary bg-secondary"} p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md`}>
-                    <div className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary"><CreditCard className="size-3.5" />Starving Student Card</span>
-                      {search?.offerId === offer.id && <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">Selected</span>}
-                    </div>
+                  <button key={offer.id} type="button" onClick={() => setOpenOffer(offer)} className="w-full rounded-2xl border-l-4 border-primary bg-secondary p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary"><CreditCard className="size-3.5" />Starving Student Card</span>
                     <strong className="mt-1 block text-sm">{offer.item}</strong>
                     <span className="text-xs text-muted-foreground">{offer.value} · View details →</span>
                   </button>
                 ))}
                 {selected.deals.map((deal) => (
-                  <button key={deal.id} type="button" onClick={() => setOpenDeal(deal)} className={`w-full rounded-2xl border-l-4 ${search?.dealId === deal.id ? "border-violet-600 bg-violet-600/10 ring-2 ring-violet-600/40" : "border-violet-600 bg-secondary"} p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md`}>
-                    <div className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700"><BadgePercent className="size-3.5" />Student discount</span>
-                      {search?.dealId === deal.id && <span className="rounded-full bg-violet-600/20 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-300">Selected</span>}
-                    </div>
+                  <button key={deal.id} type="button" onClick={() => setOpenDeal(deal)} className="w-full rounded-2xl border-l-4 border-violet-600 bg-secondary p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700"><BadgePercent className="size-3.5" />Student discount</span>
                     <strong className="mt-1 block text-sm">{deal.title}</strong>
                     <span className="text-xs text-muted-foreground">{deal.value} · View details →</span>
                   </button>

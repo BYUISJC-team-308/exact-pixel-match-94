@@ -75,11 +75,7 @@ describe("Map Deep Linking and Search Validation", () => {
     const raw = {
       eventId: "event-123",
       buildingId: "WSC",
-      dealId: "deal-456",
-      offerId: "offer-789",
       date: "2026-11-15",
-      campus: "byu-provo",
-      view: "campus",
       extraGarbage: 12345,
     };
 
@@ -87,26 +83,15 @@ describe("Map Deep Linking and Search Validation", () => {
     expect(parsed).toEqual({
       eventId: "event-123",
       buildingId: "WSC",
-      dealId: "deal-456",
-      offerId: "offer-789",
       date: "2026-11-15",
-      campus: "byu-provo",
-      view: "campus",
     });
 
     const emptyParsed = validate({});
     expect(emptyParsed).toEqual({
       eventId: undefined,
       buildingId: undefined,
-      dealId: undefined,
-      offerId: undefined,
       date: undefined,
-      campus: undefined,
-      view: undefined,
     });
-
-    const invalidView = validate({ view: "invalid_view" });
-    expect(invalidView.view).toBeUndefined();
   });
 
   it("normalizeFoodEvent outputs date and campusId", () => {
@@ -157,38 +142,10 @@ describe("Map Deep Linking and Search Validation", () => {
     expect(searchData.eventId).toBe("event-wsc-1");
     expect(searchData.date).toBe("2026-11-20");
     expect(searchData.buildingId).toBe("WSC");
-    expect(searchData.campus).toBe("byu-provo");
-    expect(searchData.view).toBe("campus");
   });
 
-  it("renders 'See on map' link in EventDetail with view 'area' for off-campus events", () => {
-    const offCampusEvent = normalizeFoodEvent({
-      id: "event-off-1",
-      title: "Community BBQ",
-      host: "Provo Youth",
-      food: "Burgers",
-      event_date: "2026-11-22",
-      start_time: "18:00:00",
-      end_time: "20:00:00",
-      building: "Downtown Provo City Park",
-      address: "500 W Center St, Provo, UT",
-      latitude: 40.2338,
-      longitude: -111.6685,
-      details: "Open BBQ for the community.",
-    });
-
-    renderWithClient(<EventDetail event={offCampusEvent} onClose={vi.fn()} />);
-
-    const mapLink = screen.getByRole("link", { name: /see on map/i });
-    expect(mapLink).toBeDefined();
-
-    const searchData = JSON.parse(mapLink.getAttribute("data-search") || "{}");
-    expect(searchData.eventId).toBe("event-off-1");
-    expect(searchData.view).toBe("area");
-  });
-
-  it("renders 'See on map' link in DealDetail when coordinates exist", () => {
-    const dealWithCoords: Deal = {
+  it("does not render 'See on map' link in DealDetail or SSDetail", () => {
+    const deal: Deal = {
       id: "deal-1",
       company: "Slab Pizza",
       title: "10% Student Discount",
@@ -205,16 +162,6 @@ describe("Map Deep Linking and Search Validation", () => {
       city: "Provo",
     };
 
-    renderWithClient(<DealDetail deal={dealWithCoords} onClose={vi.fn()} />);
-
-    const mapLink = screen.getByRole("link", { name: /see on map/i });
-    expect(mapLink).toBeDefined();
-    const searchData = JSON.parse(mapLink.getAttribute("data-search") || "{}");
-    expect(searchData.dealId).toBe("deal-1");
-    expect(searchData.view).toBe("area");
-  });
-
-  it("renders 'See on map' link in SSDetail when locations exist", () => {
     const ssDeal: SSDeal = {
       id: "ss-deal-1",
       company: "Jamba",
@@ -233,12 +180,12 @@ describe("Map Deep Linking and Search Validation", () => {
       ],
     };
 
-    renderWithClient(<SSDetail deal={ssDeal} onClose={vi.fn()} />);
+    renderWithClient(<DealDetail deal={deal} onClose={vi.fn()} />);
+    expect(screen.queryByRole("link", { name: /see on map/i })).toBeNull();
 
-    const mapLink = screen.getByRole("link", { name: /see on map/i });
-    expect(mapLink).toBeDefined();
-    const searchData = JSON.parse(mapLink.getAttribute("data-search") || "{}");
-    expect(searchData.offerId).toBe("ss-deal-1");
-    expect(searchData.view).toBe("area");
+    cleanup();
+
+    renderWithClient(<SSDetail deal={ssDeal} onClose={vi.fn()} />);
+    expect(screen.queryByRole("link", { name: /see on map/i })).toBeNull();
   });
 });
