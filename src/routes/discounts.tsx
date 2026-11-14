@@ -440,7 +440,7 @@ function Discounts() {
     );
   };
 
-  // Render Deal as Compact List Row (matching modern responsive card-row layout)
+  // Render Deal as Compact List Row (responsive columnar table layout for desktop & mobile)
   const renderListRow = (d: Deal, isCommunity = false) => {
     const saved = savedDeals.includes(d.id);
     const score = calculateVerificationScore(d.realVotesCount, d.fakeVotesCount);
@@ -450,71 +450,73 @@ function Discounts() {
         key={d.id}
         id={`deal-${d.id}`}
         data-deal-id={d.id}
-        className="glass group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:gap-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm border border-border/70 hover:border-border rounded-xl"
+        className="glass group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 sm:gap-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm border border-border/70 hover:border-border rounded-xl"
       >
-        <div className="flex items-start gap-3 min-w-0 flex-1">
-          {/* Company Logo */}
-          <CompanyLogo company={d.company} url={d.url} size={36} />
-
-          {/* Deal Info (Opens detail modal) */}
-          <button
-            onClick={() => setOpen(d)}
-            className="min-w-0 flex-1 text-left rounded-md focus-visible:outline-2 focus-visible:outline-primary"
-            aria-label={`View details for ${d.title} at ${d.company}`}
-          >
-            {/* Company & Title */}
-            <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2">
-              <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
+        {/* Deal Info (Opens detail modal) */}
+        <button
+          onClick={() => setOpen(d)}
+          className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0 flex-1 text-left rounded-lg focus-visible:outline-2 focus-visible:outline-primary"
+          aria-label={`View details for ${d.title} at ${d.company}`}
+        >
+          {/* Column 1: Company Logo + Name + Category (Fixed width on desktop for perfect vertical alignment) */}
+          <div className="flex items-center gap-3 sm:w-48 lg:w-56 shrink-0 min-w-0">
+            <CompanyLogo company={d.company} url={d.url} size={40} />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors truncate">
                 {d.company}
               </h3>
-              <span className="text-sm font-semibold text-foreground/80 line-clamp-1">
-                — {d.title}
-              </span>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground/75 truncate">{d.category}</span>
+                {d.isNew && (
+                  <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    New
+                  </span>
+                )}
+              </div>
             </div>
+          </div>
 
-            {/* Value Pill & Badges */}
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-0.5 text-xs font-bold text-accent ring-1 ring-accent/30 shrink-0">
-                🏷️ {d.value}
-              </span>
+          {/* Column 2: Value Badge (Consistent width/alignment on desktop, inline on mobile) */}
+          <div className="shrink-0 sm:w-36 lg:w-40 flex items-center">
+            <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-1 text-xs sm:text-sm font-bold text-accent ring-1 ring-accent/30 text-center truncate max-w-full">
+              🏷️ {d.value}
+            </span>
+          </div>
+
+          {/* Column 3: Title, Badges & Description (Fills remaining horizontal space) */}
+          <div className="min-w-0 flex-1 pr-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <h4 className="text-sm font-bold text-foreground/90 line-clamp-1">
+                {d.title}
+              </h4>
               {isCommunity ? (
-                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-accent">
+                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-accent shrink-0">
                   👥 Community
                 </span>
               ) : (
-                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
                   ✓ Verified
                 </span>
               )}
               {score.hasVotes && (
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${score.badgeColor}`}>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${score.badgeColor} shrink-0`}>
                   {score.percentage}% Real
                 </span>
               )}
-              {d.isNew && (
-                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                  New
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1 leading-relaxed">
+              {d.description}
+              {isCommunity && d.submitterUsername && (
+                <span className="ml-1 text-muted-foreground/70 hidden lg:inline">
+                  • by @{d.submitterUsername}
                 </span>
               )}
-            </div>
+            </p>
+          </div>
+        </button>
 
-            {/* Category & Description */}
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground/75">{d.category}</span>
-              <span>•</span>
-              <span className="line-clamp-2 leading-relaxed">{d.description}</span>
-              {isCommunity && d.submitterUsername && (
-                <>
-                  <span>•</span>
-                  <span>by @{d.submitterUsername}</span>
-                </>
-              )}
-            </div>
-          </button>
-        </div>
-
-        {/* Right / Bottom Actions: Upvote, Save, Go to My Hub, Details */}
-        <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-0 border-border/40">
+        {/* Column 4: Right Actions (Upvote, Save, My Hub, Details) */}
+        <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-0 border-border/40 sm:w-48">
           <div className="flex items-center gap-2">
             {saved && (
               <Link
@@ -523,7 +525,7 @@ function Discounts() {
                 className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary ring-1 ring-primary/30 hover:bg-primary hover:text-primary-foreground transition-all shadow-xs"
                 title="Open this saved deal in My Hub on the homepage"
               >
-                My Hub →
+                Go to My Hub →
               </Link>
             )}
 
@@ -889,8 +891,19 @@ function Discounts() {
                     {verifiedList.map((d) => renderCard(d, false))}
                   </div>
                 ) : (
-                  <div className="mt-4 grid gap-3">
-                    {verifiedList.map((d) => renderListRow(d, false))}
+                  <div className="mt-4 space-y-1.5">
+                    {/* Desktop Column Header */}
+                    <div className="hidden sm:flex items-center justify-between px-4 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <div className="flex items-center gap-4 flex-1">
+                        <span className="w-48 lg:w-56 shrink-0">Company</span>
+                        <span className="w-36 lg:w-40 shrink-0">Discount</span>
+                        <span className="flex-1">Deal Details</span>
+                      </div>
+                      <span className="w-48 shrink-0 text-right pr-3">Actions</span>
+                    </div>
+                    <div className="grid gap-3">
+                      {verifiedList.map((d) => renderListRow(d, false))}
+                    </div>
                   </div>
                 )}
               </section>
@@ -920,8 +933,19 @@ function Discounts() {
                     {communityList.map((d) => renderCard(d, true))}
                   </div>
                 ) : (
-                  <div className="mt-4 grid gap-3">
-                    {communityList.map((d) => renderListRow(d, true))}
+                  <div className="mt-4 space-y-1.5">
+                    {/* Desktop Column Header */}
+                    <div className="hidden sm:flex items-center justify-between px-4 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <div className="flex items-center gap-4 flex-1">
+                        <span className="w-48 lg:w-56 shrink-0">Company</span>
+                        <span className="w-36 lg:w-40 shrink-0">Discount</span>
+                        <span className="flex-1">Deal Details</span>
+                      </div>
+                      <span className="w-48 shrink-0 text-right pr-3">Actions</span>
+                    </div>
+                    <div className="grid gap-3">
+                      {communityList.map((d) => renderListRow(d, true))}
+                    </div>
                   </div>
                 )
               ) : (
