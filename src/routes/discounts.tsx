@@ -459,7 +459,7 @@ function Discounts() {
           aria-label={`View details for ${d.title} at ${d.company}`}
         >
           {/* Column 1: Company Logo + Name + Category (Fixed width on desktop for perfect vertical alignment) */}
-          <div className="flex items-center gap-3 sm:w-48 lg:w-56 shrink-0 min-w-0">
+          <div className="flex items-center gap-3 sm:w-44 lg:w-52 shrink-0 min-w-0">
             <CompanyLogo company={d.company} url={d.url} size={40} />
             <div className="min-w-0 flex-1">
               <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors truncate">
@@ -476,15 +476,15 @@ function Discounts() {
             </div>
           </div>
 
-          {/* Column 2: Value Badge (Consistent width/alignment on desktop, inline on mobile) */}
-          <div className="shrink-0 sm:w-36 lg:w-40 flex items-center">
-            <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-1 text-xs sm:text-sm font-bold text-accent ring-1 ring-accent/30 text-center truncate max-w-full">
+          {/* Column 2: Value Badge (Sufficient width on desktop so long values don't truncate, inline on mobile) */}
+          <div className="shrink-0 sm:w-52 lg:w-60 flex items-center">
+            <span className="inline-flex items-center rounded-lg bg-accent/15 px-3 py-1 text-xs sm:text-sm font-bold text-accent ring-1 ring-accent/30 text-center whitespace-nowrap">
               🏷️ {d.value}
             </span>
           </div>
 
           {/* Column 3: Title, Badges & Description (Fills remaining horizontal space) */}
-          <div className="min-w-0 flex-1 pr-2">
+          <div className="min-w-0 flex-1 pr-3">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <h4 className="text-sm font-bold text-foreground/90 line-clamp-1">
                 {d.title}
@@ -516,13 +516,13 @@ function Discounts() {
         </button>
 
         {/* Column 4: Right Actions (Upvote, Save, My Hub, Details) */}
-        <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-0 border-border/40 sm:w-48">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-0 border-border/40 whitespace-nowrap">
+          <div className="flex items-center gap-1.5 shrink-0">
             {saved && (
               <Link
                 to="/"
                 hash="my-hub"
-                className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary ring-1 ring-primary/30 hover:bg-primary hover:text-primary-foreground transition-all shadow-xs"
+                className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary ring-1 ring-primary/30 hover:bg-primary hover:text-primary-foreground transition-all shadow-xs whitespace-nowrap shrink-0"
                 title="Open this saved deal in My Hub on the homepage"
               >
                 Go to My Hub →
@@ -532,13 +532,13 @@ function Discounts() {
             <button
               type="button"
               onClick={() => setOpen(d)}
-              className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-glass"
+              className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-glass whitespace-nowrap shrink-0"
             >
               Details →
             </button>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 shrink-0">
             <DealCardUpvoteButton
               deal={d}
               onRequireAuth={(act) => {
@@ -553,7 +553,7 @@ function Discounts() {
                 actions.toggleDeal(d.id, { company: d.company, title: d.title });
               }}
               aria-label={saved ? "Unsave deal" : "Save deal"}
-              className={`text-2xl transition-transform active:scale-125 ${
+              className={`text-2xl transition-transform active:scale-125 shrink-0 ${
                 saved ? "text-gold" : "text-muted-foreground/50 hover:text-gold"
               }`}
             >
@@ -895,11 +895,11 @@ function Discounts() {
                     {/* Desktop Column Header */}
                     <div className="hidden sm:flex items-center justify-between px-4 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                       <div className="flex items-center gap-4 flex-1">
-                        <span className="w-48 lg:w-56 shrink-0">Company</span>
-                        <span className="w-36 lg:w-40 shrink-0">Discount</span>
+                        <span className="w-44 lg:w-52 shrink-0">Company</span>
+                        <span className="w-52 lg:w-60 shrink-0">Discount</span>
                         <span className="flex-1">Deal Details</span>
                       </div>
-                      <span className="w-48 shrink-0 text-right pr-3">Actions</span>
+                      <span className="shrink-0 text-right pr-3 min-w-[200px]">Actions</span>
                     </div>
                     <div className="grid gap-3">
                       {verifiedList.map((d) => renderListRow(d, false))}
@@ -937,11 +937,11 @@ function Discounts() {
                     {/* Desktop Column Header */}
                     <div className="hidden sm:flex items-center justify-between px-4 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                       <div className="flex items-center gap-4 flex-1">
-                        <span className="w-48 lg:w-56 shrink-0">Company</span>
-                        <span className="w-36 lg:w-40 shrink-0">Discount</span>
+                        <span className="w-44 lg:w-52 shrink-0">Company</span>
+                        <span className="w-52 lg:w-60 shrink-0">Discount</span>
                         <span className="flex-1">Deal Details</span>
                       </div>
-                      <span className="w-48 shrink-0 text-right pr-3">Actions</span>
+                      <span className="shrink-0 text-right pr-3 min-w-[200px]">Actions</span>
                     </div>
                     <div className="grid gap-3">
                       {communityList.map((d) => renderListRow(d, true))}
