@@ -319,6 +319,12 @@ export const COMPANY_CATALOG = {
     whatTheyDo: 'Swig is Utah’s home of custom dirty sodas, refreshing energy infusions, and fresh-baked cookies.',
     category: 'Food',
   },
+  'brick oven': {
+    tagline: 'Hearth-Baked Pizza & Pasta in Provo',
+    whatTheyDo: 'Brick Oven is a beloved Provo pizzeria right across from BYU campus known for its hearth-baked pizzas, pasta buffet, and student discounts.',
+    category: 'Food',
+    categories: ['Food'],
+  },
   'slab pizza': {
     tagline: 'Giant Slice Campus Pizza in Provo',
     whatTheyDo: 'Slab Pizza crafts oversized, uniquely topped square pizza slabs right near the BYU campus.',

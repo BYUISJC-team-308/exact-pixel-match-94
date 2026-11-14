@@ -136,6 +136,7 @@ const KNOWN_COMPANY_DOMAINS: Record<string, string> = {
   "mattress firm": "mattressfirm.com",
 
   // Food & Dining (including Slab Pizza)
+  "brick oven": "brickovenrestaurants.com",
   "slab pizza": "theslabpizza.com",
   "the wall byu": "byu.edu",
   "cupbop korean bbq": "cupbop.com",
