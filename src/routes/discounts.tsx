@@ -637,11 +637,35 @@ function Discounts() {
 
         {/* Row 2: Category & Unified Sort */}
         <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-border/40">
-          <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+          {/* Desktop Category Chips (hidden on mobile, visible on sm+) */}
+          <div className="hidden sm:flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
             <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
               Category:
             </span>
             <FilterChips options={discountCategories} value={cat} onChange={setCat} />
+          </div>
+
+          {/* Mobile Category Dropdown (visible on mobile, hidden on sm+) */}
+          <div className="flex sm:hidden items-center gap-1.5 flex-1 min-w-[140px]">
+            <label
+              htmlFor="mobile-discount-category"
+              className="shrink-0 font-semibold text-muted-foreground uppercase tracking-wider text-[11px]"
+            >
+              Category:
+            </label>
+            <select
+              id="mobile-discount-category"
+              aria-label="Filter discounts by category"
+              value={cat}
+              onChange={(e) => setCat(e.target.value)}
+              className="min-h-11 w-full rounded-full bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer"
+            >
+              {discountCategories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex min-w-0 flex-wrap items-center gap-2">
