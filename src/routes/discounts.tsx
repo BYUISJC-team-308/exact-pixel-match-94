@@ -440,7 +440,7 @@ function Discounts() {
     );
   };
 
-  // Render Deal as Compact List Row (matching Starving Student row format)
+  // Render Deal as Compact List Row (matching modern responsive card-row layout)
   const renderListRow = (d: Deal, isCommunity = false) => {
     const saved = savedDeals.includes(d.id);
     const score = calculateVerificationScore(d.realVotesCount, d.fakeVotesCount);
@@ -450,106 +450,114 @@ function Discounts() {
         key={d.id}
         id={`deal-${d.id}`}
         data-deal-id={d.id}
-        className="glass group relative flex flex-wrap items-center gap-3 p-4 sm:flex-nowrap sm:gap-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm border border-border/70 hover:border-border"
+        className="glass group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:gap-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm border border-border/70 hover:border-border rounded-xl"
       >
-        {/* Value Badge on the left */}
-        <span
-          className="grid size-14 shrink-0 place-items-center rounded-xl font-display text-xs sm:text-sm font-bold text-center px-1 leading-tight bg-accent/15 text-accent ring-1 ring-accent/30"
-        >
-          {d.value}
-        </span>
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          {/* Company Logo */}
+          <CompanyLogo company={d.company} url={d.url} size={36} />
 
-        {/* Deal Info (Opens detail modal) */}
-        <button
-          onClick={() => setOpen(d)}
-          className="min-w-0 flex-1 text-left rounded-md focus-visible:outline-2 focus-visible:outline-primary"
-          aria-label={`View details for ${d.title} at ${d.company}`}
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <CompanyLogo company={d.company} url={d.url} size={28} />
-            <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
-              {d.company}
-            </h3>
-            <span className="text-sm font-semibold text-foreground/80 truncate">
-              — {d.title}
-            </span>
-
-            {/* Badges */}
-            {isCommunity ? (
-              <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-semibold text-accent">
-                👥 Community
-              </span>
-            ) : (
-              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                ✓ Verified
-              </span>
-            )}
-            {score.hasVotes && (
-              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${score.badgeColor}`}>
-                {score.percentage}% Real
-              </span>
-            )}
-            {d.isNew && (
-              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                New
-              </span>
-            )}
-          </div>
-
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground/75">{d.category}</span>
-            <span>•</span>
-            <span className="line-clamp-1">{d.description}</span>
-            {isCommunity && d.submitterUsername && (
-              <>
-                <span>•</span>
-                <span>by @{d.submitterUsername}</span>
-              </>
-            )}
-          </div>
-        </button>
-
-        {/* Right Actions: Upvote, Save, Go to My Hub, Details */}
-        <div className="flex items-center gap-2.5 shrink-0 ml-auto sm:ml-0">
-          {saved && (
-            <Link
-              to="/"
-              hash="my-hub"
-              className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary ring-1 ring-primary/30 hover:bg-primary hover:text-primary-foreground transition-all shadow-xs"
-              title="Open this saved deal in My Hub on the homepage"
-            >
-              My Hub →
-            </Link>
-          )}
-
-          <DealCardUpvoteButton
-            deal={d}
-            onRequireAuth={(act) => {
-              setAuthAction(act);
-              setAuthOpen(true);
-            }}
-          />
-
+          {/* Deal Info (Opens detail modal) */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              actions.toggleDeal(d.id, { company: d.company, title: d.title });
-            }}
-            aria-label={saved ? "Unsave deal" : "Save deal"}
-            className={`text-2xl transition-transform active:scale-125 ${
-              saved ? "text-gold" : "text-muted-foreground/50 hover:text-gold"
-            }`}
-          >
-            {saved ? "★" : "☆"}
-          </button>
-
-          <button
-            type="button"
             onClick={() => setOpen(d)}
-            className="hidden sm:inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-glass"
+            className="min-w-0 flex-1 text-left rounded-md focus-visible:outline-2 focus-visible:outline-primary"
+            aria-label={`View details for ${d.title} at ${d.company}`}
           >
-            Details →
+            {/* Company & Title */}
+            <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2">
+              <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                {d.company}
+              </h3>
+              <span className="text-sm font-semibold text-foreground/80 line-clamp-1">
+                — {d.title}
+              </span>
+            </div>
+
+            {/* Value Pill & Badges */}
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-0.5 text-xs font-bold text-accent ring-1 ring-accent/30 shrink-0">
+                🏷️ {d.value}
+              </span>
+              {isCommunity ? (
+                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-accent">
+                  👥 Community
+                </span>
+              ) : (
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  ✓ Verified
+                </span>
+              )}
+              {score.hasVotes && (
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${score.badgeColor}`}>
+                  {score.percentage}% Real
+                </span>
+              )}
+              {d.isNew && (
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  New
+                </span>
+              )}
+            </div>
+
+            {/* Category & Description */}
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground/75">{d.category}</span>
+              <span>•</span>
+              <span className="line-clamp-2 leading-relaxed">{d.description}</span>
+              {isCommunity && d.submitterUsername && (
+                <>
+                  <span>•</span>
+                  <span>by @{d.submitterUsername}</span>
+                </>
+              )}
+            </div>
           </button>
+        </div>
+
+        {/* Right / Bottom Actions: Upvote, Save, Go to My Hub, Details */}
+        <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-0 border-border/40">
+          <div className="flex items-center gap-2">
+            {saved && (
+              <Link
+                to="/"
+                hash="my-hub"
+                className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary ring-1 ring-primary/30 hover:bg-primary hover:text-primary-foreground transition-all shadow-xs"
+                title="Open this saved deal in My Hub on the homepage"
+              >
+                My Hub →
+              </Link>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setOpen(d)}
+              className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-glass"
+            >
+              Details →
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <DealCardUpvoteButton
+              deal={d}
+              onRequireAuth={(act) => {
+                setAuthAction(act);
+                setAuthOpen(true);
+              }}
+            />
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                actions.toggleDeal(d.id, { company: d.company, title: d.title });
+              }}
+              aria-label={saved ? "Unsave deal" : "Save deal"}
+              className={`text-2xl transition-transform active:scale-125 ${
+                saved ? "text-gold" : "text-muted-foreground/50 hover:text-gold"
+              }`}
+            >
+              {saved ? "★" : "☆"}
+            </button>
+          </div>
         </div>
       </div>
     );
