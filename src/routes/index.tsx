@@ -306,7 +306,7 @@ export function Index() {
               )}
             </div>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Saved items currently stay on this browser.
+              Your saved discounts and campus events, all in one place.
             </p>
             {!authReady ? (
               <p role="status" className="py-5 text-sm text-muted-foreground">

@@ -82,7 +82,7 @@ describe("Homepage discovery and saved-item journeys", () => {
     expect(
       screen.queryByRole("navigation", { name: "Homepage shortcuts" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText(/Saved items currently stay on this browser/)).toBeInTheDocument();
+    expect(screen.getByText(/Your saved discounts and campus events, all in one place/)).toBeInTheDocument();
     expect(screen.queryByText("Verified Discounts")).not.toBeInTheDocument();
   });
 
