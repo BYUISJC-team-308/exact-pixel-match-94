@@ -1190,5 +1190,3 @@ export function FilterChips<T extends string>({ options, value, onChange }: { op
     </div>
   );
 }
-
-export { CategoryFilterBar, type CategoryFilterBarProps } from "./CategoryFilterBar";

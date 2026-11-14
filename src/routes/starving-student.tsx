@@ -12,7 +12,6 @@ import {
   SSDetail,
   SearchInput,
 } from "@/components/ui-bits";
-import { CategoryFilterBar } from "@/components/CategoryFilterBar";
 
 import {
   CARD_PAGE_SIZE,
@@ -93,8 +92,6 @@ function CatalogError() {
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
-  "All categories": "🏷️",
-  All: "🏷️",
   Freebies: "🎁",
   "Treats & Drinks": "🥤",
   "Burgers & Sandwiches": "🍔",
@@ -134,18 +131,6 @@ export function CardHub({
     () => ["All categories", ...new Set(ssDeals.map((deal) => deal.category))],
     [ssDeals],
   );
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      "All categories": ssDeals.length,
-      All: ssDeals.length,
-    };
-    for (const d of ssDeals) {
-      if (d.category) {
-        counts[d.category] = (counts[d.category] || 0) + 1;
-      }
-    }
-    return counts;
-  }, [ssDeals]);
   const { view: viewMode, type: typeFilter, category: cat, status: statusFilter, sort, q } = search;
   const change = (patch: Partial<CardSearch>, replace = false) =>
     onSearchChange({ ...search, ...patch }, replace);
@@ -466,71 +451,31 @@ export function CardHub({
         </div>
       </div>
 
-      {/* Primary Category Rail */}
-      <div className="mt-4">
-        <CategoryFilterBar
-          categories={cats}
-          selectedCategory={cat}
-          onChange={setCat}
-          icons={CATEGORY_ICONS}
-          counts={categoryCounts}
-          ariaLabel="Filter card offers by category"
-        />
-      </div>
+      {/* Filter and View Layout Controls */}
+      <div className="space-y-3" aria-label="Filter card offers">
+        {/* Row 1: Deal Type & Card Status & Layout View Toggle */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+                Type:
+              </span>
+              <FilterChips options={discountTypes} value={typeFilter} onChange={setTypeFilter} />
+            </div>
 
-      {/* Secondary Controls Toolbar: Type, Status, Sort, View Toggle */}
-      <div
-        className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border/40 text-xs"
-        aria-label="Filter card offers"
-      >
-        {/* Left: Facet Filters (Type & Status) */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
-              Type:
-            </span>
-            <FilterChips options={discountTypes} value={typeFilter} onChange={setTypeFilter} />
+            <div className="h-4 w-px bg-border hidden sm:block" />
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+                Status:
+              </span>
+              <FilterChips
+                options={statusFilters}
+                value={statusFilter}
+                onChange={setStatusFilter}
+              />
+            </div>
           </div>
-
-          <div className="h-4 w-px bg-border hidden sm:block" />
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
-              Status:
-            </span>
-            <FilterChips
-              options={statusFilters}
-              value={statusFilter}
-              onChange={setStatusFilter}
-            />
-          </div>
-        </div>
-
-        {/* Right: Sort Dropdown & View Mode Switcher */}
-        <div className="flex flex-wrap items-center gap-3 ml-auto sm:ml-0">
-          <div className="flex items-center gap-1.5">
-            <label
-              htmlFor="card-sort"
-              className="shrink-0 whitespace-nowrap font-semibold text-muted-foreground uppercase tracking-wider text-[11px]"
-            >
-              Sort:
-            </label>
-            <select
-              id="card-sort"
-              aria-label="Sort card offers"
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortOption)}
-              className="min-h-9 rounded-full bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer hover:bg-secondary/90 transition-colors"
-            >
-              {sortOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="h-4 w-px bg-border hidden sm:block" />
 
           {/* View Mode Toggle Button Group */}
           <div className="flex items-center gap-1 rounded-full bg-secondary p-1 ring-1 ring-border">
@@ -560,6 +505,38 @@ export function CardHub({
               <span>⊞</span>
               <span>Discounts Grid</span>
             </button>
+          </div>
+        </div>
+
+        {/* Row 2: Category & Sort */}
+        <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-border/40">
+          <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+              Category:
+            </span>
+            <FilterChips options={cats} value={cat} onChange={setCat} />
+          </div>
+
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <label
+              htmlFor="card-sort"
+              className="shrink-0 whitespace-nowrap font-semibold text-muted-foreground uppercase tracking-wider text-[11px]"
+            >
+              Sort:
+            </label>
+            <select
+              id="card-sort"
+              aria-label="Sort card offers"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortOption)}
+              className="min-h-11 max-w-full rounded-full bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer"
+            >
+              {sortOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

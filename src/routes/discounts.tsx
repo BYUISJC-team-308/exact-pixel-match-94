@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import type { Deal, DealCategory } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
@@ -12,7 +12,6 @@ import {
   Btn,
   CompanyLogo,
 } from "@/components/ui-bits";
-import { CategoryFilterBar } from "@/components/CategoryFilterBar";
 import { useDealsQuery, getDealScore } from "@/lib/deals";
 import { SubmitDealModal } from "@/components/SubmitDealModal";
 import { AuthRequiredModal } from "@/components/AuthRequiredModal";
@@ -45,19 +44,6 @@ export const discountCategories = [
   "Travel",
 ] as const;
 export type DiscountCategory = (typeof discountCategories)[number];
-
-export const DISCOUNT_CATEGORY_ICONS: Record<string, string> = {
-  "All categories": "🏷️",
-  All: "🏷️",
-  Apparel: "👕",
-  Tech: "💻",
-  Fitness: "🏋️",
-  Food: "🍕",
-  AI: "🤖",
-  Subscription: "🔁",
-  Groceries: "🛒",
-  Travel: "✈️",
-};
 
 export const discountSortOptions = [
   { value: "best", label: "Best Deals (Score)" },
@@ -207,27 +193,6 @@ function Discounts() {
     refetch,
   } = useDealsQuery();
   const isLoading = isPending ?? initialFetchLoading;
-
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      "All categories": deals.length,
-      All: deals.length,
-    };
-    for (const d of deals) {
-      const primary = d.category;
-      if (primary) {
-        counts[primary] = (counts[primary] || 0) + 1;
-      }
-      if (d.categories) {
-        for (const c of d.categories) {
-          if (c !== primary) {
-            counts[c] = (counts[c] || 0) + 1;
-          }
-        }
-      }
-    }
-    return counts;
-  }, [deals]);
 
   // Auto-open deal when directed via ?dealId= query parameter
   useEffect(() => {
@@ -613,71 +578,31 @@ function Discounts() {
         </div>
       </PageHeader>
 
-      {/* Primary Category Rail */}
-      <div className="mt-5">
-        <CategoryFilterBar
-          categories={discountCategories}
-          selectedCategory={cat}
-          onChange={setCat}
-          icons={DISCOUNT_CATEGORY_ICONS}
-          counts={categoryCounts}
-          ariaLabel="Filter discounts by category"
-        />
-      </div>
+      {/* Filter and View Layout Controls */}
+      <div className="mt-4 space-y-3" aria-label="Filter discounts">
+        {/* Row 1: Deal Type & Card Status & Layout View Toggle */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+                Type:
+              </span>
+              <FilterChips options={discountTypes} value={typeFilter} onChange={setTypeFilter} />
+            </div>
 
-      {/* Secondary Controls Toolbar: Type, Status, Sort, View Toggle */}
-      <div
-        className="mt-3 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border/40 text-xs"
-        aria-label="Filter discounts"
-      >
-        {/* Left: Facet Filters (Type & Status) */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
-              Type:
-            </span>
-            <FilterChips options={discountTypes} value={typeFilter} onChange={setTypeFilter} />
+            <div className="h-4 w-px bg-border hidden sm:block" />
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+                Status:
+              </span>
+              <FilterChips
+                options={discountStatusFilters}
+                value={statusFilter}
+                onChange={setStatusFilter}
+              />
+            </div>
           </div>
-
-          <div className="h-4 w-px bg-border hidden sm:block" />
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
-              Status:
-            </span>
-            <FilterChips
-              options={discountStatusFilters}
-              value={statusFilter}
-              onChange={setStatusFilter}
-            />
-          </div>
-        </div>
-
-        {/* Right: Sort Dropdown & View Mode Switcher */}
-        <div className="flex flex-wrap items-center gap-3 ml-auto sm:ml-0">
-          <div className="flex items-center gap-1.5">
-            <label
-              htmlFor="discount-sort"
-              className="shrink-0 whitespace-nowrap font-semibold text-muted-foreground uppercase tracking-wider text-[11px]"
-            >
-              Sort:
-            </label>
-            <select
-              id="discount-sort"
-              aria-label="Sort verified discounts"
-              value={sort}
-              onChange={(e) => setSort(e.target.value as DiscountSortOption)}
-              className="min-h-9 rounded-full bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer hover:bg-secondary/90 transition-colors"
-            >
-              {discountSortOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="h-4 w-px bg-border hidden sm:block" />
 
           {/* View Mode Toggle Button Group */}
           <div className="flex items-center gap-1 rounded-full bg-secondary p-1 ring-1 ring-border">
@@ -707,6 +632,38 @@ function Discounts() {
               <span>⊞</span>
               <span>Discounts Grid</span>
             </button>
+          </div>
+        </div>
+
+        {/* Row 2: Category & Unified Sort */}
+        <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-border/40">
+          <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+              Category:
+            </span>
+            <FilterChips options={discountCategories} value={cat} onChange={setCat} />
+          </div>
+
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <label
+              htmlFor="discount-sort"
+              className="shrink-0 whitespace-nowrap font-semibold text-muted-foreground uppercase tracking-wider text-[11px]"
+            >
+              Sort:
+            </label>
+            <select
+              id="discount-sort"
+              aria-label="Sort verified discounts"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as DiscountSortOption)}
+              className="min-h-11 max-w-full rounded-full bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer"
+            >
+              {discountSortOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
