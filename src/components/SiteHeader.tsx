@@ -108,20 +108,20 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        {/* Top Navigation Bar (Option 1: In-header pills, responsive scrollable on mobile) */}
+        {/* Top Navigation Bar: Mobile horizontal slider / Desktop centered pills */}
         <nav
           id="main-navigation"
           aria-label="Main navigation"
-          className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center gap-1.5 overflow-x-auto px-4 py-1 no-scrollbar sm:-mx-6 sm:w-[calc(100%+3rem)] sm:px-6 lg:order-2 lg:mx-auto lg:w-auto lg:px-0 lg:py-0"
+          className="order-3 -mx-4 flex basis-full items-center gap-2 overflow-x-auto px-4 py-1 no-scrollbar touch-pan-x after:block after:w-2 after:shrink-0 after:content-[''] sm:-mx-6 sm:px-6 lg:order-2 lg:mx-auto lg:basis-auto lg:px-0 lg:py-0 lg:after:hidden"
         >
           {navItems.map((n) => (
             <Link
               key={n.to}
               to={n.to}
-              className="inline-flex min-h-9 items-center justify-center rounded-full px-3.5 py-1 text-xs font-medium text-white/80 transition-colors hover:bg-white/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white whitespace-nowrap sm:text-sm"
+              className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/90 ring-1 ring-white/15 transition-all hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white whitespace-nowrap sm:text-sm"
               activeProps={{
                 className:
-                  "bg-white text-[#042f23] font-semibold shadow-sm hover:bg-white hover:text-[#042f23]",
+                  "!bg-white !text-[#042f23] font-semibold !ring-white shadow-sm hover:!bg-white hover:!text-[#042f23]",
                 "aria-current": "page",
               }}
             >
