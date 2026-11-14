@@ -6,7 +6,9 @@ import {
   saveUserEvent,
   unsaveUserEvent,
   syncAndMergeGuestSaves,
+  subscribeToUserSavedChanges,
 } from "@/lib/saved";
+import { syncActiveUserSaves } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { actions, getStoreState } from "@/lib/store";
 import { toast } from "sonner";
@@ -307,6 +309,101 @@ describe("Account-Backed Saves - Resilience & Stress Tests", () => {
       const state = getStoreState();
       expect(state.savedDeals).toEqual(["deal-from-other-tab"]);
       expect(state.savedEvents).toEqual(["event-from-other-tab"]);
+    });
+  });
+
+  describe("6. Multi-Device Real-Time Sync & WebSocket Channels", () => {
+    it("subscribes to postgres_changes on saved_deals and saved_events and updates on change", async () => {
+      let dealChangeHandler: () => Promise<void> = async () => {};
+      let eventChangeHandler: () => Promise<void> = async () => {};
+
+      const mockChannel = {
+        on: vi.fn().mockImplementation((type, config, handler) => {
+          if (config.table === "saved_deals") dealChangeHandler = handler;
+          if (config.table === "saved_events") eventChangeHandler = handler;
+          return mockChannel;
+        }),
+        subscribe: vi.fn(),
+      };
+
+      vi.spyOn(supabase, "channel").mockReturnValue(
+        mockChannel as unknown as ReturnType<typeof supabase.channel>
+      );
+      const removeSpy = vi
+        .spyOn(supabase, "removeChannel")
+        .mockResolvedValue("ok" as unknown as ReturnType<typeof supabase.removeChannel>);
+
+      const updateCallback = vi.fn();
+      const unsub = subscribeToUserSavedChanges("user-uuid-1", updateCallback);
+
+      expect(supabase.channel).toHaveBeenCalledWith("saved-items-user-uuid-1");
+      expect(mockChannel.on).toHaveBeenCalledTimes(2);
+      expect(mockChannel.subscribe).toHaveBeenCalled();
+
+      // Mock remote DB response when change event fires
+      vi.spyOn(supabase, "from").mockImplementation((table: string) => {
+        if (table === "saved_deals") {
+          return {
+            select: () => ({
+              eq: () => Promise.resolve({ data: [{ deal_id: "deal-from-device-2" }] }),
+            }),
+          } as unknown as ReturnType<typeof supabase.from>;
+        }
+        if (table === "saved_events") {
+          return {
+            select: () => ({
+              eq: () => Promise.resolve({ data: [{ event_id: "event-from-device-2" }] }),
+            }),
+          } as unknown as ReturnType<typeof supabase.from>;
+        }
+        return {} as unknown as ReturnType<typeof supabase.from>;
+      });
+
+      // Simulate a change event received from Device 2
+      await dealChangeHandler();
+
+      expect(updateCallback).toHaveBeenCalledWith({
+        deals: ["deal-from-device-2"],
+        events: ["event-from-device-2"],
+      });
+
+      // Cleanup
+      unsub();
+      expect(removeSpy).toHaveBeenCalledWith(mockChannel);
+    });
+
+    it("syncActiveUserSaves fetches remote items and updates store on window focus / visibility change", async () => {
+      actions.setUser({
+        id: "user-uuid-1",
+        username: "jacob",
+        name: "Jacob",
+        email: "j@byu.edu",
+        school: "BYU",
+      });
+
+      vi.spyOn(supabase, "from").mockImplementation((table: string) => {
+        if (table === "saved_deals") {
+          return {
+            select: () => ({
+              eq: () => Promise.resolve({ data: [{ deal_id: "deal-remote-sync" }] }),
+            }),
+          } as unknown as ReturnType<typeof supabase.from>;
+        }
+        if (table === "saved_events") {
+          return {
+            select: () => ({
+              eq: () => Promise.resolve({ data: [{ event_id: "event-remote-sync" }] }),
+            }),
+          } as unknown as ReturnType<typeof supabase.from>;
+        }
+        return {} as unknown as ReturnType<typeof supabase.from>;
+      });
+
+      await syncActiveUserSaves("user-uuid-1");
+
+      const state = getStoreState();
+      expect(state.savedDeals).toContain("deal-remote-sync");
+      expect(state.savedEvents).toContain("event-remote-sync");
     });
   });
 });
