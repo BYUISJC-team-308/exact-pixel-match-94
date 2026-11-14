@@ -36,3 +36,8 @@ dist-ssr
 
 # Licensed catalog snapshot; keep out of public GitHub
 src/lib/starving-student-offers.json
+
+# Handshake session & scraped data
+handshake_session/
+data/handshake/
+

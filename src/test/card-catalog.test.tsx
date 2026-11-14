@@ -70,6 +70,23 @@ vi.mock("@/components/ui-bits", () => ({
       ))}
     </>
   ),
+  CategoryFilterBar: ({
+    categories,
+    selectedCategory,
+    onChange,
+  }: {
+    categories: string[];
+    selectedCategory: string;
+    onChange: (value: string) => void;
+  }) => (
+    <div>
+      {categories.map((c) => (
+        <button key={c} aria-label={c} aria-pressed={selectedCategory === c} onClick={() => onChange(c)}>
+          {c}
+        </button>
+      ))}
+    </div>
+  ),
   CompanyLogo: () => null,
   Modal: ({ children }: { children: ReactNode }) => <div role="dialog">{children}</div>,
   SSDetail: ({ deal, onClose }: { deal: SSDeal | null; onClose: () => void }) =>
