@@ -26,6 +26,19 @@ export type CardSearch = {
 };
 export function validateCardSearch(search: Record<string, unknown>): CardSearch {
   const page = Number(search["page"]);
+  let view: "compact" | "grid" = "compact";
+  if (search["view"] === "grid") {
+    view = "grid";
+  } else if (search["view"] === "compact") {
+    view = "compact";
+  } else if (search["view"] === undefined && typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("studeats_catalog_view");
+      if (stored === "grid" || stored === "compact") {
+        view = stored;
+      }
+    } catch {}
+  }
   return {
     q: typeof search["q"] === "string" ? search["q"] : "",
     category: typeof search["category"] === "string" ? search["category"] : "All categories",
@@ -38,7 +51,7 @@ export function validateCardSearch(search: Record<string, unknown>): CardSearch 
     sort: sortOptions.some((item) => item.value === search["sort"])
       ? (search["sort"] as SortOption)
       : "company-asc",
-    view: search["view"] === "grid" ? "grid" : "compact",
+    view,
     page: Number.isSafeInteger(page) && page > 0 ? page : 1,
   };
 }

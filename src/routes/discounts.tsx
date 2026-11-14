@@ -21,9 +21,62 @@ import {
   useDealInteractionsQuery,
 } from "@/lib/deal-verification";
 
+export const discountTypes = [
+  "All Deals",
+  "Percent off",
+  "Free / Trials",
+  "Fixed price",
+] as const;
+export type DiscountType = (typeof discountTypes)[number];
+
+export const discountStatusFilters = ["All", "Saved", "New"] as const;
+export type DiscountStatusFilter = (typeof discountStatusFilters)[number];
+
+export const discountCategories = [
+  "All categories",
+  "Apparel",
+  "Tech",
+  "Fitness",
+  "Food",
+  "AI",
+  "Subscription",
+  "Groceries",
+  "Travel",
+] as const;
+export type DiscountCategory = (typeof discountCategories)[number];
+
+export const discountSortOptions = [
+  { value: "best", label: "Best Deals (Score)" },
+  { value: "company-asc", label: "Company (A–Z)" },
+  { value: "company-desc", label: "Company (Z–A)" },
+  { value: "upvotes", label: "Most Upvoted" },
+  { value: "free-first", label: "Free Deals First" },
+  { value: "newest", label: "Newest Added" },
+] as const;
+export type DiscountSortOption = (typeof discountSortOptions)[number]["value"];
+
 export const Route = createFileRoute("/discounts")({
   validateSearch: (search: Record<string, unknown>) => ({
     dealId: typeof search.dealId === "string" ? search.dealId : undefined,
+    q: typeof search.q === "string" ? search.q : undefined,
+    type:
+      typeof search.type === "string" && (discountTypes as readonly string[]).includes(search.type)
+        ? (search.type as DiscountType)
+        : undefined,
+    status:
+      typeof search.status === "string" &&
+      (discountStatusFilters as readonly string[]).includes(search.status)
+        ? (search.status as DiscountStatusFilter)
+        : undefined,
+    category: typeof search.category === "string" ? search.category : undefined,
+    sort:
+      typeof search.sort === "string" && discountSortOptions.some((o) => o.value === search.sort)
+        ? (search.sort as DiscountSortOption)
+        : undefined,
+    view:
+      search.view === "grid" || search.view === "compact"
+        ? (search.view as "grid" | "compact")
+        : undefined,
   }),
   head: () => ({
     meta: [
@@ -42,23 +95,6 @@ export const Route = createFileRoute("/discounts")({
   }),
   component: Discounts,
 });
-
-const cats = [
-  "All",
-  "New",
-  "Saved",
-  "Apparel",
-  "Tech",
-  "Fitness",
-  "Food",
-  "AI",
-  "Subscription",
-  "Groceries",
-  "Travel",
-  "Free",
-  "Percent off",
-] as const;
-type Cat = (typeof cats)[number];
 
 function DealCardUpvoteButton({
   deal,
@@ -109,16 +145,45 @@ function DealCardUpvoteButton({
 }
 
 function Discounts() {
-  const search = typeof Route.useSearch === "function" ? Route.useSearch() : undefined;
+  let search: ReturnType<typeof Route.useSearch> | undefined;
+  try {
+    search = typeof Route.useSearch === "function" ? Route.useSearch() : undefined;
+  } catch {
+    search = undefined;
+  }
+
   const { savedDeals } = useStore();
-  const [cat, setCat] = useState<Cat>("All");
-  const [q, setQ] = useState("");
-  const [sort, setSort] = useState<"best" | "company">("best");
-  const [communitySort, setCommunitySort] = useState<"upvotes" | "newest" | "rating">("upvotes");
+  const [q, setQ] = useState(search?.q ?? "");
+  const [typeFilter, setTypeFilter] = useState<DiscountType>(search?.type ?? "All Deals");
+  const [statusFilter, setStatusFilter] = useState<DiscountStatusFilter>(search?.status ?? "All");
+  const [cat, setCat] = useState<string>(search?.category ?? "All categories");
+  const [sort, setSort] = useState<DiscountSortOption>(search?.sort ?? "best");
+  const [viewMode, setViewMode] = useState<"compact" | "grid">(search?.view ?? "grid");
   const [open, setOpen] = useState<Deal | null>(null);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authAction, setAuthAction] = useState("upvote deals");
+
+  // Sync viewMode with localStorage on mount if not specified in URL query
+  useEffect(() => {
+    if (!search?.view && typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("studeats_catalog_view");
+        if (stored === "compact" || stored === "grid") {
+          setViewMode(stored);
+        }
+      } catch {}
+    }
+  }, [search?.view]);
+
+  const handleViewModeChange = (mode: "compact" | "grid") => {
+    setViewMode(mode);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("studeats_catalog_view", mode);
+      } catch {}
+    }
+  };
 
   const {
     data: deals = [],
@@ -143,48 +208,86 @@ function Discounts() {
     }
   }, [search?.dealId, deals]);
 
-  const t = q.toLowerCase();
+  const t = q.trim().toLowerCase();
   const filtered = deals.filter((d) => {
-    if (cat === "New" && !d.isNew) return false;
-    if (cat === "Saved" && !savedDeals.includes(d.id)) return false;
-    if ((cat === "Free" || cat === "Percent off") && d.type !== cat) return false;
-    if (!["All", "New", "Saved", "Free", "Percent off"].includes(cat)) {
+    // 1. Status Filter
+    if (statusFilter === "New" && !d.isNew) return false;
+    if (statusFilter === "Saved" && !savedDeals.includes(d.id)) return false;
+
+    // 2. Type Filter
+    if (typeFilter === "Percent off" && d.type !== "Percent off") return false;
+    if (typeFilter === "Free / Trials" && d.type !== "Free") return false;
+    if (typeFilter === "Fixed price" && d.type !== "Fixed price") return false;
+
+    // 3. Category Filter
+    if (cat !== "All" && cat !== "All categories") {
       const match =
         d.category === cat || (d.categories && d.categories.includes(cat as DealCategory));
       if (!match) return false;
     }
-    const catStr = d.categories ? d.categories.join(" ") : d.category;
-    return !t || (d.title + d.company + d.description + catStr).toLowerCase().includes(t);
+
+    // 4. Search Filter
+    if (t) {
+      const catStr = d.categories ? d.categories.join(" ") : d.category;
+      const searchable = `${d.title} ${d.company} ${d.description} ${catStr} ${d.city || ""} ${d.howTo || ""}`.toLowerCase();
+      if (!searchable.includes(t)) return false;
+    }
+    return true;
   });
 
   // Separate into Verified Deals vs Community Deals
   const rawVerified = filtered.filter((d) => d.verificationStatus !== "community");
   const rawCommunity = filtered.filter((d) => d.verificationStatus === "community");
 
-  let verifiedList = [...rawVerified];
-  if (sort === "best") {
-    verifiedList.sort(
-      (a, b) => getDealScore(b) - getDealScore(a) || a.company.localeCompare(b.company),
-    );
-  } else if (sort === "company") {
-    verifiedList.sort((a, b) => a.company.localeCompare(b.company));
-  }
+  const sortDeals = (list: Deal[]) => {
+    return [...list].sort((a, b) => {
+      if (sort === "best") {
+        const scoreA = getDealScore(a);
+        const scoreB = getDealScore(b);
+        return scoreB - scoreA || a.company.localeCompare(b.company);
+      }
+      if (sort === "company-asc") {
+        return a.company.localeCompare(b.company) || a.title.localeCompare(b.title);
+      }
+      if (sort === "company-desc") {
+        return b.company.localeCompare(a.company) || b.title.localeCompare(a.title);
+      }
+      if (sort === "upvotes") {
+        const upvotesA = a.upvotesCount ?? 0;
+        const upvotesB = b.upvotesCount ?? 0;
+        return upvotesB - upvotesA || a.company.localeCompare(b.company);
+      }
+      if (sort === "free-first") {
+        const isFreeA = a.type === "Free" ? 0 : 1;
+        const isFreeB = b.type === "Free" ? 0 : 1;
+        if (isFreeA !== isFreeB) return isFreeA - isFreeB;
+        return a.company.localeCompare(b.company);
+      }
+      if (sort === "newest") {
+        const dateA = a.createdAt || "";
+        const dateB = b.createdAt || "";
+        if (dateA !== dateB) return dateB.localeCompare(dateA);
+        const isNewA = a.isNew ? 1 : 0;
+        const isNewB = b.isNew ? 1 : 0;
+        if (isNewA !== isNewB) return isNewB - isNewA;
+        return a.company.localeCompare(b.company);
+      }
+      return 0;
+    });
+  };
 
-  const communityList = [...rawCommunity].sort((a, b) => {
-    if (communitySort === "upvotes") {
-      return (b.upvotesCount ?? 0) - (a.upvotesCount ?? 0) || (b.createdAt || "").localeCompare(a.createdAt || "");
-    }
-    if (communitySort === "newest") {
-      return (b.createdAt || "").localeCompare(a.createdAt || "");
-    }
-    if (communitySort === "rating") {
-      const scoreA = calculateVerificationScore(a.realVotesCount, a.fakeVotesCount);
-      const scoreB = calculateVerificationScore(b.realVotesCount, b.fakeVotesCount);
-      return scoreB.percentage - scoreA.percentage || (b.upvotesCount ?? 0) - (a.upvotesCount ?? 0);
-    }
-    return 0;
-  });
+  const verifiedList = sortDeals(rawVerified);
+  const communityList = sortDeals(rawCommunity);
 
+  const resetFilters = () => {
+    setQ("");
+    setTypeFilter("All Deals");
+    setStatusFilter("All");
+    setCat("All categories");
+    setSort("best");
+  };
+
+  // Render Deal as Grid Card
   const renderCard = (d: Deal, isCommunity = false) => {
     const saved = savedDeals.includes(d.id);
     const score = calculateVerificationScore(d.realVotesCount, d.fakeVotesCount);
@@ -192,6 +295,7 @@ function Discounts() {
       <div
         key={d.id}
         id={`deal-${d.id}`}
+        data-deal-id={d.id}
         className="glass group relative flex flex-col justify-between overflow-hidden p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-float border border-border/70 hover:border-border"
       >
         <div>
@@ -239,7 +343,7 @@ function Discounts() {
 
           {/* Main Card Content */}
           <div className="mt-3.5">
-            {/* 1. Company Name & Logo at the Top */}
+            {/* Company Name & Logo */}
             <button
               onClick={() => setOpen(d)}
               className="flex items-center gap-3 w-full text-left focus:outline-none"
@@ -255,7 +359,7 @@ function Discounts() {
               </div>
             </button>
 
-            {/* 2. Value Pill & Interactive Upvote / Real Status */}
+            {/* Value Pill & Interactive Upvote / Real Status */}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <span className="inline-flex items-center rounded-lg bg-accent/15 px-2.5 py-1 text-sm font-bold text-accent ring-1 ring-accent/30">
                 🏷️ {d.value}
@@ -285,12 +389,15 @@ function Discounts() {
               </p>
             )}
 
-            {/* 3. Description */}
+            {/* Deal Title & Description */}
             <button
               onClick={() => setOpen(d)}
               className="mt-2.5 block w-full text-left focus:outline-none"
             >
-              <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+              <h4 className="text-sm font-bold text-foreground/90 line-clamp-1">
+                {d.title}
+              </h4>
+              <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                 {d.description}
               </p>
             </button>
@@ -321,6 +428,110 @@ function Discounts() {
     );
   };
 
+  // Render Deal as Compact List Row (matching Starving Student row format)
+  const renderListRow = (d: Deal, isCommunity = false) => {
+    const saved = savedDeals.includes(d.id);
+    const score = calculateVerificationScore(d.realVotesCount, d.fakeVotesCount);
+
+    return (
+      <div
+        key={d.id}
+        id={`deal-${d.id}`}
+        data-deal-id={d.id}
+        className="glass group relative flex flex-wrap items-center gap-3 p-4 sm:flex-nowrap sm:gap-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm border border-border/70 hover:border-border"
+      >
+        {/* Value Badge on the left */}
+        <span
+          className="grid size-14 shrink-0 place-items-center rounded-xl font-display text-xs sm:text-sm font-bold text-center px-1 leading-tight bg-accent/15 text-accent ring-1 ring-accent/30"
+        >
+          {d.value}
+        </span>
+
+        {/* Deal Info (Opens detail modal) */}
+        <button
+          onClick={() => setOpen(d)}
+          className="min-w-0 flex-1 text-left rounded-md focus-visible:outline-2 focus-visible:outline-primary"
+          aria-label={`View details for ${d.title} at ${d.company}`}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <CompanyLogo company={d.company} url={d.url} size={28} />
+            <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
+              {d.company}
+            </h3>
+            <span className="text-sm font-semibold text-foreground/80 truncate">
+              — {d.title}
+            </span>
+
+            {/* Badges */}
+            {isCommunity ? (
+              <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-semibold text-accent">
+                👥 Community
+              </span>
+            ) : (
+              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                ✓ Verified
+              </span>
+            )}
+            {score.hasVotes && (
+              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${score.badgeColor}`}>
+                {score.percentage}% Real
+              </span>
+            )}
+            {d.isNew && (
+              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                New
+              </span>
+            )}
+          </div>
+
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground/75">{d.category}</span>
+            <span>•</span>
+            <span className="line-clamp-1">{d.description}</span>
+            {isCommunity && d.submitterUsername && (
+              <>
+                <span>•</span>
+                <span>by @{d.submitterUsername}</span>
+              </>
+            )}
+          </div>
+        </button>
+
+        {/* Right Actions: Upvote, Save, Details */}
+        <div className="flex items-center gap-2.5 shrink-0 ml-auto sm:ml-0">
+          <DealCardUpvoteButton
+            deal={d}
+            onRequireAuth={(act) => {
+              setAuthAction(act);
+              setAuthOpen(true);
+            }}
+          />
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              actions.toggleDeal(d.id, { company: d.company, title: d.title });
+            }}
+            aria-label={saved ? "Unsave deal" : "Save deal"}
+            className={`text-2xl transition-transform active:scale-125 ${
+              saved ? "text-gold" : "text-muted-foreground/50 hover:text-gold"
+            }`}
+          >
+            {saved ? "★" : "☆"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOpen(d)}
+            className="hidden sm:inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold ring-1 ring-border hover:bg-glass"
+          >
+            Details →
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <PageHeader
@@ -341,42 +552,139 @@ function Discounts() {
             + Share a Deal
           </Btn>
           <SearchInput value={q} onChange={setQ} placeholder="Search company, deal, category" />
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as "best" | "company")}
-            aria-label="Sort verified discounts"
-            className="h-10 rounded-full bg-secondary px-3 text-sm ring-1 ring-border font-medium cursor-pointer"
-          >
-            <option value="best">Sort: Best deals</option>
-            <option value="company">Sort: Alphabetical (A–Z)</option>
-          </select>
         </div>
       </PageHeader>
-      <FilterChips options={cats} value={cat} onChange={setCat} />
 
-      {isLoading && (
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="glass animate-pulse p-5">
-              <div className="flex items-center justify-between">
-                <div className="h-4 w-20 rounded-full bg-muted" />
-                <div className="h-5 w-5 rounded bg-muted" />
-              </div>
-              <div className="mt-4 flex items-center gap-3">
-                <div className="h-11 w-11 rounded-xl bg-muted" />
-                <div className="space-y-1.5 flex-1">
-                  <div className="h-5 w-32 rounded bg-muted" />
-                  <div className="h-3 w-20 rounded bg-muted" />
-                </div>
-              </div>
-              <div className="mt-3.5 h-6 w-28 rounded-lg bg-muted" />
-              <div className="mt-2.5 h-4 w-full rounded bg-muted" />
-              <div className="mt-1.5 h-4 w-3/4 rounded bg-muted" />
+      {/* Filter and View Layout Controls */}
+      <div className="mt-4 space-y-3" aria-label="Filter discounts">
+        {/* Row 1: Deal Type & Card Status & Layout View Toggle */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+                Type:
+              </span>
+              <FilterChips options={discountTypes} value={typeFilter} onChange={setTypeFilter} />
             </div>
-          ))}
+
+            <div className="h-4 w-px bg-border hidden sm:block" />
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+                Status:
+              </span>
+              <FilterChips
+                options={discountStatusFilters}
+                value={statusFilter}
+                onChange={setStatusFilter}
+              />
+            </div>
+          </div>
+
+          {/* View Mode Toggle Button Group */}
+          <div className="flex items-center gap-1 rounded-full bg-secondary p-1 ring-1 ring-border">
+            <button
+              type="button"
+              onClick={() => handleViewModeChange("compact")}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                viewMode === "compact"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="Compact rows view"
+            >
+              <span>☰</span>
+              <span>List</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewModeChange("grid")}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                viewMode === "grid"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title="Discounts grid view"
+            >
+              <span>⊞</span>
+              <span>Discounts Grid</span>
+            </button>
+          </div>
         </div>
+
+        {/* Row 2: Category & Unified Sort */}
+        <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-border/40">
+          <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+              Category:
+            </span>
+            <FilterChips options={discountCategories} value={cat} onChange={setCat} />
+          </div>
+
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <label
+              htmlFor="discount-sort"
+              className="shrink-0 whitespace-nowrap font-semibold text-muted-foreground uppercase tracking-wider text-[11px]"
+            >
+              Sort:
+            </label>
+            <select
+              id="discount-sort"
+              aria-label="Sort verified discounts"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as DiscountSortOption)}
+              className="min-h-11 max-w-full rounded-full bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer"
+            >
+              {discountSortOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Loading Skeleton */}
+      {isLoading && (
+        viewMode === "grid" ? (
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="glass animate-pulse p-5">
+                <div className="flex items-center justify-between">
+                  <div className="h-4 w-20 rounded-full bg-muted" />
+                  <div className="h-5 w-5 rounded bg-muted" />
+                </div>
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-xl bg-muted" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-5 w-32 rounded bg-muted" />
+                    <div className="h-3 w-20 rounded bg-muted" />
+                  </div>
+                </div>
+                <div className="mt-3.5 h-6 w-28 rounded-lg bg-muted" />
+                <div className="mt-2.5 h-4 w-full rounded bg-muted" />
+                <div className="mt-1.5 h-4 w-3/4 rounded bg-muted" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-8 grid gap-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="glass animate-pulse p-4 flex items-center gap-4">
+                <div className="size-14 rounded-xl bg-muted shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 w-48 rounded bg-muted" />
+                  <div className="h-3 w-32 rounded bg-muted" />
+                </div>
+                <div className="h-8 w-16 rounded-full bg-muted shrink-0" />
+              </div>
+            ))}
+          </div>
+        )
       )}
 
+      {/* Error State */}
       {isError && (
         <div role="alert" className="glass mt-8 p-8 text-center">
           <p className="font-semibold text-destructive">
@@ -395,23 +703,24 @@ function Discounts() {
             <h4 className="mt-3 text-lg font-semibold">
               {q
                 ? "No matching discounts found"
-                : cat === "Saved"
+                : statusFilter === "Saved"
                   ? "No saved discounts yet"
-                  : "No discounts in this category yet"}
+                  : statusFilter === "New"
+                    ? "No new discounts currently"
+                    : typeFilter !== "All Deals"
+                      ? `No ${typeFilter.toLowerCase()} discounts found`
+                      : "No discounts in this category yet"}
             </h4>
             <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
               {q
                 ? `No discounts match "${q}". Try a different search or clear the filters.`
-                : cat === "Saved"
+                : statusFilter === "Saved"
                   ? "Tap a discount’s star to save it here on this browser."
-                  : "No discounts are listed here right now. Try another category or check the provider directly."}
+                  : "No discounts match your selected filters right now. Try resetting filters or check provider terms."}
             </p>
-            {(q || cat !== "All") && (
+            {(q || cat !== "All categories" || typeFilter !== "All Deals" || statusFilter !== "All") && (
               <button
-                onClick={() => {
-                  setQ("");
-                  setCat("All");
-                }}
+                onClick={resetFilters}
                 className="mt-4 inline-flex items-center rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20"
               >
                 Reset filters
@@ -439,9 +748,15 @@ function Discounts() {
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {verifiedList.map((d) => renderCard(d, false))}
-                </div>
+                {viewMode === "grid" ? (
+                  <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {verifiedList.map((d) => renderCard(d, false))}
+                  </div>
+                ) : (
+                  <div className="mt-4 grid gap-3">
+                    {verifiedList.map((d) => renderListRow(d, false))}
+                  </div>
+                )}
               </section>
             )}
 
@@ -461,27 +776,18 @@ function Discounts() {
                     User-submitted discounts awaiting review or verified by student votes.
                   </p>
                 </div>
-
-                {/* Community Sorting Controls */}
-                <div className="flex items-center gap-1.5 text-xs font-medium">
-                  <span className="text-muted-foreground">Sort:</span>
-                  <select
-                    value={communitySort}
-                    onChange={(e) => setCommunitySort(e.target.value as "upvotes" | "newest" | "rating")}
-                    aria-label="Sort community deals"
-                    className="h-8 rounded-lg bg-secondary px-2.5 text-xs ring-1 ring-border font-medium cursor-pointer"
-                  >
-                    <option value="upvotes">Most Upvoted</option>
-                    <option value="newest">Newest</option>
-                    <option value="rating">Highest Verification Rating</option>
-                  </select>
-                </div>
               </div>
 
               {communityList.length > 0 ? (
-                <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {communityList.map((d) => renderCard(d, true))}
-                </div>
+                viewMode === "grid" ? (
+                  <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {communityList.map((d) => renderCard(d, true))}
+                  </div>
+                ) : (
+                  <div className="mt-4 grid gap-3">
+                    {communityList.map((d) => renderListRow(d, true))}
+                  </div>
+                )
               ) : (
                 <div className="mt-4 rounded-xl border border-dashed border-border/80 p-8 text-center">
                   <p className="text-sm font-medium text-foreground">No community-submitted deals yet in this filter.</p>

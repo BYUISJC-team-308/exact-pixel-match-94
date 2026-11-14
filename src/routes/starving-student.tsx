@@ -139,7 +139,14 @@ export function CardHub({
   const setStatusFilter = (status: CardSearch["status"]) => change({ status, page: 1 });
   const setCat = (category: string) => change({ category, page: 1 });
   const setSort = (sort: SortOption) => change({ sort, page: 1 });
-  const setViewMode = (view: CardSearch["view"]) => change({ view });
+  const setViewMode = (view: CardSearch["view"]) => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("studeats_catalog_view", view);
+      } catch {}
+    }
+    change({ view });
+  };
   const resultsRef = useRef<HTMLHeadingElement>(null);
   const [open, setOpen] = useState<SSDeal | null>(null);
 
