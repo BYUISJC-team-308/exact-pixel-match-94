@@ -66,15 +66,24 @@ export function SiteHeader() {
     const el = navRef.current;
     if (!el) return;
     const { scrollLeft, scrollWidth, clientWidth } = el;
-    setCanScrollLeft(scrollLeft > 6);
-    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 6);
+    if (scrollWidth <= clientWidth + 10) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+      return;
+    }
+    setCanScrollLeft(scrollLeft > 15);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 15);
   };
 
   const scrollNav = (direction: "left" | "right") => {
     const el = navRef.current;
     if (!el) return;
-    const delta = direction === "left" ? -170 : 170;
-    el.scrollBy({ left: delta, behavior: "smooth" });
+    if (direction === "right") {
+      el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
+    } else {
+      el.scrollTo({ left: 0, behavior: "smooth" });
+    }
+    setTimeout(checkScroll, 350);
   };
 
   useEffect(() => {
@@ -88,7 +97,8 @@ export function SiteHeader() {
       if (activeEl) {
         activeEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
       }
-      checkScroll();
+      setTimeout(checkScroll, 100);
+      setTimeout(checkScroll, 400);
     }
     const handleResize = () => checkScroll();
     window.addEventListener("resize", handleResize);
@@ -147,7 +157,7 @@ export function SiteHeader() {
           {/* Left Gradient & Arrow Hint */}
           {canScrollLeft && (
             <div
-              className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-10 bg-gradient-to-r from-[#042f23] to-transparent lg:hidden"
+              className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-14 bg-gradient-to-r from-[#042f23] via-[#042f23]/90 to-transparent lg:hidden"
               aria-hidden="true"
             />
           )}
@@ -156,7 +166,7 @@ export function SiteHeader() {
               type="button"
               onClick={() => scrollNav("left")}
               aria-label="Scroll navigation left"
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 flex size-7 items-center justify-center rounded-full bg-white/25 text-white backdrop-blur-md shadow-md ring-1 ring-white/40 hover:bg-white/35 active:scale-95 transition-all lg:hidden"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 flex size-8 items-center justify-center rounded-full bg-white/25 text-white backdrop-blur-md shadow-md ring-1 ring-white/40 hover:bg-white/35 active:scale-95 transition-all lg:hidden"
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
             </button>
@@ -168,7 +178,7 @@ export function SiteHeader() {
             id="main-navigation"
             aria-label="Main navigation"
             onScroll={checkScroll}
-            className="flex w-full items-center gap-2 overflow-x-auto px-4 py-1 no-scrollbar touch-pan-x after:block after:w-4 after:shrink-0 after:content-[''] sm:px-6 lg:w-auto lg:px-0 lg:py-0 lg:after:hidden"
+            className="flex w-full items-center gap-2 overflow-x-auto px-4 py-1 no-scrollbar touch-pan-x after:block after:w-6 after:shrink-0 after:content-[''] sm:px-6 lg:w-auto lg:px-0 lg:py-0 lg:after:hidden"
           >
             {navItems.map((n) => (
               <Link
@@ -189,7 +199,7 @@ export function SiteHeader() {
           {/* Right Gradient & Arrow Hint */}
           {canScrollRight && (
             <div
-              className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-l from-[#042f23] to-transparent lg:hidden"
+              className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-14 bg-gradient-to-l from-[#042f23] via-[#042f23]/90 to-transparent lg:hidden"
               aria-hidden="true"
             />
           )}
@@ -198,7 +208,7 @@ export function SiteHeader() {
               type="button"
               onClick={() => scrollNav("right")}
               aria-label="Scroll navigation right"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 flex size-7 items-center justify-center rounded-full bg-white/25 text-white backdrop-blur-md shadow-md ring-1 ring-white/40 hover:bg-white/35 active:scale-95 transition-all lg:hidden"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 flex size-8 items-center justify-center rounded-full bg-white/25 text-white backdrop-blur-md shadow-md ring-1 ring-white/40 hover:bg-white/35 active:scale-95 transition-all lg:hidden"
             >
               <ChevronRight className="size-4" aria-hidden="true" />
             </button>
