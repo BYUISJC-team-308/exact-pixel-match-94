@@ -11,6 +11,8 @@ import {
   X,
   UserRound,
   LogOut,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const navItems = [
@@ -56,10 +58,42 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const searchInput = useRef<HTMLInputElement>(null);
   const searchToggle = useRef<HTMLButtonElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    const el = navRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 6);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 6);
+  };
+
+  const scrollNav = (direction: "left" | "right") => {
+    const el = navRef.current;
+    if (!el) return;
+    const delta = direction === "left" ? -170 : 170;
+    el.scrollBy({ left: delta, behavior: "smooth" });
+  };
 
   useEffect(() => {
     if (searchOpen) searchInput.current?.focus();
   }, [searchOpen]);
+
+  useEffect(() => {
+    const el = navRef.current;
+    if (el) {
+      const activeEl = el.querySelector<HTMLElement>('[aria-current="page"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+      checkScroll();
+    }
+    const handleResize = () => checkScroll();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     initAuth();
@@ -108,27 +142,68 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        {/* Top Navigation Bar: Mobile horizontal slider / Desktop centered pills */}
-        <nav
-          id="main-navigation"
-          aria-label="Main navigation"
-          className="order-3 -mx-4 flex basis-full items-center gap-2 overflow-x-auto px-4 py-1 no-scrollbar touch-pan-x after:block after:w-2 after:shrink-0 after:content-[''] sm:-mx-6 sm:px-6 lg:order-2 lg:mx-auto lg:basis-auto lg:px-0 lg:py-0 lg:after:hidden"
-        >
-          {navItems.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/90 ring-1 ring-white/15 transition-all hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white whitespace-nowrap sm:text-sm"
-              activeProps={{
-                className:
-                  "!bg-white !text-[#042f23] font-semibold !ring-white shadow-sm hover:!bg-white hover:!text-[#042f23]",
-                "aria-current": "page",
-              }}
+        {/* Top Navigation Bar: Mobile horizontal slider with scroll arrows / Desktop centered pills */}
+        <div className="order-3 relative -mx-4 flex basis-full items-center overflow-hidden sm:-mx-6 lg:order-2 lg:mx-auto lg:basis-auto lg:overflow-visible">
+          {/* Left Gradient & Arrow Hint */}
+          {canScrollLeft && (
+            <div
+              className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-10 bg-gradient-to-r from-[#042f23] to-transparent lg:hidden"
+              aria-hidden="true"
+            />
+          )}
+          {canScrollLeft && (
+            <button
+              type="button"
+              onClick={() => scrollNav("left")}
+              aria-label="Scroll navigation left"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 flex size-7 items-center justify-center rounded-full bg-white/25 text-white backdrop-blur-md shadow-md ring-1 ring-white/40 hover:bg-white/35 active:scale-95 transition-all lg:hidden"
             >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+              <ChevronLeft className="size-4" aria-hidden="true" />
+            </button>
+          )}
+
+          {/* Navigation Bar */}
+          <nav
+            ref={navRef}
+            id="main-navigation"
+            aria-label="Main navigation"
+            onScroll={checkScroll}
+            className="flex w-full items-center gap-2 overflow-x-auto px-4 py-1 no-scrollbar touch-pan-x after:block after:w-4 after:shrink-0 after:content-[''] sm:px-6 lg:w-auto lg:px-0 lg:py-0 lg:after:hidden"
+          >
+            {navItems.map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/90 ring-1 ring-white/15 transition-all hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white whitespace-nowrap sm:text-sm"
+                activeProps={{
+                  className:
+                    "!bg-white !text-[#042f23] font-semibold !ring-white shadow-sm hover:!bg-white hover:!text-[#042f23]",
+                  "aria-current": "page",
+                }}
+              >
+                {n.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Right Gradient & Arrow Hint */}
+          {canScrollRight && (
+            <div
+              className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-12 bg-gradient-to-l from-[#042f23] to-transparent lg:hidden"
+              aria-hidden="true"
+            />
+          )}
+          {canScrollRight && (
+            <button
+              type="button"
+              onClick={() => scrollNav("right")}
+              aria-label="Scroll navigation right"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 flex size-7 items-center justify-center rounded-full bg-white/25 text-white backdrop-blur-md shadow-md ring-1 ring-white/40 hover:bg-white/35 active:scale-95 transition-all lg:hidden"
+            >
+              <ChevronRight className="size-4" aria-hidden="true" />
+            </button>
+          )}
+        </div>
 
         {/* Right Controls: Search & Profile */}
         <div className="order-2 flex items-center gap-2 shrink-0 lg:order-3 ml-auto lg:ml-0">
