@@ -453,9 +453,42 @@ export function CardHub({
 
       {/* Filter and View Layout Controls */}
       <div className="space-y-3" aria-label="Filter card offers">
-        {/* Row 1: Deal Type & Card Status & Layout View Toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-4">
+        {/* Mobile View Mode Toggle (Top Left) & Desktop Row 1 Container */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+          {/* View Mode Toggle: Top-left on mobile (order-first), right-aligned on desktop (sm:order-last) */}
+          <div className="order-first sm:order-last flex items-center justify-start sm:justify-end">
+            <div className="flex items-center gap-1 rounded-full bg-secondary p-1 ring-1 ring-border">
+              <button
+                type="button"
+                onClick={() => setViewMode("compact")}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  viewMode === "compact"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Compact rows view"
+              >
+                <span>☰</span>
+                <span>List</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  viewMode === "grid"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Discounts page grid cards view"
+              >
+                <span>⊞</span>
+                <span>Discounts Grid</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop Row 1: Type & Status FilterChips (hidden on mobile, visible on sm+) */}
+          <div className="hidden sm:flex flex-wrap items-center gap-4">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
                 Type:
@@ -476,62 +509,24 @@ export function CardHub({
               />
             </div>
           </div>
-
-          {/* View Mode Toggle Button Group */}
-          <div className="flex items-center gap-1 rounded-full bg-secondary p-1 ring-1 ring-border">
-            <button
-              type="button"
-              onClick={() => setViewMode("compact")}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                viewMode === "compact"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              title="Compact rows view"
-            >
-              <span>☰</span>
-              <span>List</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("grid")}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                viewMode === "grid"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              title="Discounts page grid cards view"
-            >
-              <span>⊞</span>
-              <span>Discounts Grid</span>
-            </button>
-          </div>
         </div>
 
-        {/* Row 2: Category & Sort */}
-        <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-border/40">
-          {/* Desktop Category Chips (hidden on mobile, visible on sm+) */}
-          <div className="hidden sm:flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
-            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
-              Category:
-            </span>
-            <FilterChips options={cats} value={cat} onChange={setCat} />
-          </div>
-
-          {/* Mobile Category Dropdown (visible on mobile, hidden on sm+) */}
-          <div className="flex sm:hidden items-center gap-1.5 flex-1 min-w-[140px]">
+        {/* Mobile 2x2 Dropdown Grid: Category, Sort, Type, Status (visible on mobile, hidden on sm+) */}
+        <div className="grid grid-cols-2 gap-2.5 sm:hidden pt-2 border-t border-border/40">
+          {/* 1. Category */}
+          <div className="flex flex-col gap-1 min-w-0">
             <label
               htmlFor="mobile-card-category"
-              className="shrink-0 font-semibold text-muted-foreground uppercase tracking-wider text-[11px]"
+              className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate"
             >
-              Category:
+              Category
             </label>
             <select
               id="mobile-card-category"
-              aria-label="Filter card offers by category"
+              aria-label="Filter card offers by category mobile"
               value={cat}
               onChange={(e) => setCat(e.target.value)}
-              className="min-h-11 w-full rounded-full bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer"
+              className="min-h-11 w-full rounded-xl bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer truncate"
             >
               {cats.map((c) => (
                 <option key={c} value={c}>
@@ -539,6 +534,85 @@ export function CardHub({
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* 2. Sort */}
+          <div className="flex flex-col gap-1 min-w-0">
+            <label
+              htmlFor="mobile-card-sort"
+              className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate"
+            >
+              Sort
+            </label>
+            <select
+              id="mobile-card-sort"
+              aria-label="Sort card offers mobile"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortOption)}
+              className="min-h-11 w-full rounded-xl bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer truncate"
+            >
+              {sortOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 3. Type */}
+          <div className="flex flex-col gap-1 min-w-0">
+            <label
+              htmlFor="mobile-card-type"
+              className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate"
+            >
+              Type
+            </label>
+            <select
+              id="mobile-card-type"
+              aria-label="Filter card offers by type mobile"
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as CardSearch["type"])}
+              className="min-h-11 w-full rounded-xl bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer truncate"
+            >
+              {discountTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 4. Status */}
+          <div className="flex flex-col gap-1 min-w-0">
+            <label
+              htmlFor="mobile-card-status"
+              className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate"
+            >
+              Status
+            </label>
+            <select
+              id="mobile-card-status"
+              aria-label="Filter card offers by status mobile"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as CardSearch["status"])}
+              className="min-h-11 w-full rounded-xl bg-secondary px-3 text-xs font-medium ring-1 ring-border outline-none cursor-pointer truncate"
+            >
+              {statusFilters.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Desktop Row 2: Category & Sort (hidden on mobile, visible on sm+) */}
+        <div className="hidden sm:flex flex-wrap items-center gap-3 pt-1 border-t border-border/40">
+          <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+            <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
+              Category:
+            </span>
+            <FilterChips options={cats} value={cat} onChange={setCat} />
           </div>
 
           <div className="flex min-w-0 flex-wrap items-center gap-2">
