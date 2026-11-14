@@ -40,7 +40,7 @@ export function extractRoom(rawLocation) {
   if (!rawLocation) return null;
   const roomMatch =
     rawLocation.match(/\b(?:room\s*)?([A-Z]?\d{3,4}[A-Z]?)\b/i) ||
-    rawLocation.match(/(garden court|varsity theat(?:er|re)|center stage|assembly hall|gallery|west parking lot)/i);
+    rawLocation.match(/(event space|garden court|varsity theat(?:er|re)|center stage|assembly hall|main ballroom|ballroom|auditorium|atrium|lobby|gallery|terrace|second floor|first floor|third floor|software training lab)/i);
   return roomMatch ? roomMatch[0].trim() : null;
 }
 

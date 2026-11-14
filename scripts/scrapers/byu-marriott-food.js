@@ -87,7 +87,7 @@ export async function scrapeByuMarriottFood(monthsAhead = 3) {
         start_time: '17:00:00',
         end_time: '19:00:00',
         building: locInfo.building || 'Tanner Building',
-        room: locInfo.room || 'TNRB',
+        room: locInfo.room || null,
         building_id: locInfo.building_id || 'TNRB',
         latitude: locInfo.latitude || 40.2503985,
         longitude: locInfo.longitude || -111.6523905,
