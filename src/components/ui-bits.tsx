@@ -289,6 +289,12 @@ export function getCompanyDomain(company: string, url?: string): string {
   return stripped ? `${stripped}.com` : "example.com";
 }
 
+const CUSTOM_BRAND_LOGOS: Record<string, string> = {
+  "7-eleven": "/images/7-eleven-logo.svg",
+  "7-11": "/images/7-eleven-logo.svg",
+  "7 eleven": "/images/7-eleven-logo.svg",
+};
+
 export function CompanyLogo({
   company,
   url,
@@ -300,21 +306,31 @@ export function CompanyLogo({
   size?: number;
   className?: string;
 }) {
+  const cleanCompany = (company || "").toLowerCase().trim();
+  const customLogo =
+    CUSTOM_BRAND_LOGOS[cleanCompany] ||
+    (cleanCompany.includes("7-eleven") || cleanCompany.includes("7-11")
+      ? "/images/7-eleven-logo.svg"
+      : null);
+
   const domain = getCompanyDomain(company, url);
   const [sourceIndex, setSourceIndex] = useState(0);
 
   // Reset source index if company or domain changes
   useEffect(() => {
     setSourceIndex(0);
-  }, [domain]);
+  }, [domain, customLogo]);
 
   const isInvalidDomain = !domain || domain === "example.com";
 
   // Multi-tier icon resolution:
+  // Tier 0: Custom verified local brand logo (e.g. 7-Eleven)
   // Tier 1: Google S2 Favicons (128px high-res)
   // Tier 2: DuckDuckGo icon service (.ico)
   // Tier 3: Clear, prominent discount tag emoji placeholder (🏷️)
-  const sources = isInvalidDomain
+  const sources = customLogo
+    ? [customLogo]
+    : isInvalidDomain
     ? []
     : [
         `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
