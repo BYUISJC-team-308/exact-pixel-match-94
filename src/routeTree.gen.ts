@@ -21,6 +21,7 @@ import { Route as HelpRouteImport } from './routes/help'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as StarvingStudentRouteImport } from './routes/starving-student'
 import { Route as TermsRouteImport } from './routes/terms'
@@ -85,6 +86,11 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SigninRoute = SigninRouteImport.update({
   id: '/signin',
   path: '/signin',
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signin': typeof SigninRoute
   '/starving-student': typeof StarvingStudentRoute
   '/terms': typeof TermsRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signin': typeof SigninRoute
   '/starving-student': typeof StarvingStudentRoute
   '/terms': typeof TermsRoute
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/signin': typeof SigninRoute
   '/starving-student': typeof StarvingStudentRoute
   '/terms': typeof TermsRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/privacy'
     | '/profile'
+    | '/reset-password'
     | '/signin'
     | '/starving-student'
     | '/terms'
@@ -185,6 +195,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/privacy'
     | '/profile'
+    | '/reset-password'
     | '/signin'
     | '/starving-student'
     | '/terms'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/privacy'
     | '/profile'
+    | '/reset-password'
     | '/signin'
     | '/starving-student'
     | '/terms'
@@ -220,6 +232,7 @@ export interface RootRouteChildren {
   MapRoute: typeof MapRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SigninRoute: typeof SigninRoute
   StarvingStudentRoute: typeof StarvingStudentRoute
   TermsRoute: typeof TermsRoute
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signin': {
       id: '/signin'
       path: '/signin'
@@ -348,6 +368,7 @@ const rootRouteChildren: RootRouteChildren = {
   MapRoute: MapRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SigninRoute: SigninRoute,
   StarvingStudentRoute: StarvingStudentRoute,
   TermsRoute: TermsRoute,

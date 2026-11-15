@@ -31,7 +31,7 @@ function Account() {
       </PageHeader>
       <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
         An account lets you save your profile details. You can browse without signing in. Saved
-        offers, events, and card-use tracking currently stay on this browser.
+        discounts and events sync to your account. Card punches stay on this browser.
       </p>
       <AccountForm
         submitLabel="Create account"

@@ -136,6 +136,7 @@ it("restores browser saves after hydration, ignores legacy local identity, and w
   localStorage.setItem(
     "studeats-state",
     JSON.stringify({
+      savedItemsAccount: null,
       savedDeals: ["real-offer"],
       preferredCampus: "uvu",
       user: { name: "Untrusted local user" },
