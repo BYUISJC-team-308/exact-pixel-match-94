@@ -107,7 +107,13 @@ const mockDeals: Deal[] = [
 describe("Discount Dashboard Discovery & Layout Unification (P21)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
+    const values = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, String(value)),
+      removeItem: (key: string) => values.delete(key),
+      clear: () => values.clear(),
+    });
     mocks.store.mockReturnValue({
       user: null,
       authReady: true,
@@ -118,6 +124,7 @@ describe("Discount Dashboard Discovery & Layout Unification (P21)", () => {
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
   });
 
   it("renders both List and Discounts Grid view mode toggles and switches layout", () => {

@@ -289,6 +289,7 @@ describe("Account-Backed Saves - Resilience & Stress Tests", () => {
 
       // Simulate another browser tab saving a deal into localStorage
       const updatedStorage = {
+        savedItemsAccount: null,
         savedDeals: ["deal-from-other-tab"],
         savedEvents: ["event-from-other-tab"],
         recentMapSearches: [],

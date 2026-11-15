@@ -62,9 +62,7 @@ function Help() {
         <section className="rounded-2xl border border-border bg-white/60 p-5">
           <h2 className="text-xl font-semibold">Your saved finds</h2>
           <p className="mt-2 text-sm leading-relaxed">
-            Tap the save icon on a discount or event, then open My Hub on the home page. Saved items
-            and card-use tracking currently stay on this browser; they do not yet sync between
-            devices or accounts.
+            Tap the save icon on a discount or event, then open My Hub on the home page. Sign in to see your saved discounts and events on your devices. Card punches stay on this browser.
           </p>
           <a
             href="/#my-hub"

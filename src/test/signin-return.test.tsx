@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: object) => ({ ...options, useSearch: () => mocks.search }),
   useNavigate: () => mocks.navigate,
+  Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
 }));
 vi.mock("@/lib/auth", () => ({ signIn: mocks.signIn }));
 vi.mock("@/components/SignInForm", () => ({

@@ -1,3 +1,9 @@
+## Account recovery and activity tracking
+
+Use **Forgot your password?** on the sign-in page. Supabase emails a link to `/reset-password`, where the app accepts a verified recovery session for the active account. For each supported hostname, add its exact `/reset-password` URL to Supabase Auth URL Configuration. The production URL is already listed. Test real mailbox delivery with a disposable account before marking recovery verified.
+
+Eligible account saves emit activity after Supabase confirms the write. Timestamp tracking uses the authenticated account and server timestamps. The live signup trigger is enabled. The November 14 audit found four non-team accounts in the 30-day cohort, one with signup metadata and a recorded signup session. The other three lack signup metadata, so the dashboard leaves incomplete cohort metrics blank.
+
 ## P18 profile editing
 
 `/profile` now has a dedicated editor for name, username, optional phone, and photo. Email is provider-owned; school/preferences and saved-item behavior remain in their existing features. Saved fields/photo references use Supabase, with explicit confirmation, cancel/retry, and private owner-scoped photo storage. Apply `supabase/migrations/20261113000400_profile_avatar_storage.sql` before enabling uploads on another environment; it is already applied to the team project. See [scope, recovery rules and acceptance evidence](docs/p18-profile-editing.md). Signed-in save/reload/photo replacement/removal and offline retry are verified, including persistence into a separate production auth session. Physical-device acceptance, the numeric accessibility target and post-release checks remain before marking P18 done.
@@ -14,7 +20,7 @@ Read Me
 # Student copy (P28)
 
 - Counts distinguish loading, failed reads, and successful empty results on Discounts, Free Food, and Calendar. Retry actions remain visible.
-- Account/profile/help copy explains actual profile benefits and browser-local saved items; guest/member account labels match their destinations.
+- Account/profile/help copy explains profile benefits, account-synced saves, and browser-local card punches; guest/member account labels match their destinations.
 - Room labels are consistent across Home, Calendar, List, Map, popups, and details. Missing organizer, food, and location fields are described as missing.
 - Unsupported verified/daily/lifetime/sync claims and generic business taglines are replaced with factual guidance. Offer eligibility/source terms and the AI automation remain intact.
 - Proposed wording, evidence, ownership boundaries, and Product Owner/new-tester acceptance checklist: [copy inventory](docs/student-copy-review.md).
@@ -55,7 +61,7 @@ Read Me
 - Homepage reset: those three paths have equal prominence and equal card heights, distinct icon/color cues, and plain eligibility guidance. They stack on phones and sit side by side on wider screens.
 - Homepage reset: a shorter introduction and quieter page background replace the campus hero image. Map, Calendar, My Hub, and Help remain visible shortcuts.
 - Homepage reset: discount and card-offer example panels are removed; Today on campus and My Hub remain. Shortcuts explain their destinations, and header navigation uses matching colored icons and an active-page ring.
-- Homepage reset: My Hub prompts guests to sign in and returns them to the hub after login. Signed-in saved lists still expand, retry, and open details. Saves currently remain browser-local; account-backed storage remains P03/P04 work.
+- My Hub prompts guests to sign in and returns them to the hub after login. Eligible discount and event saves sync through Supabase. Card punches stay in browser storage.
 - Complete: a prominent My Hub shortcut reaches a compact preview of existing saved discounts and events; lists expand on request.
 - Complete: long instructions live at `/help`; the homepage no longer includes the Verified Discounts section or static freshness/count claims.
 - Complete: Today on Campus shows at most two events with access to the full calendar/list.

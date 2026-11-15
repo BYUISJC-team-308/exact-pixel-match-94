@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { logActivityEvent } from "@/lib/analytics";
 import {
+  isUuid,
   saveUserDeal,
   unsaveUserDeal,
   saveUserEvent,
@@ -27,6 +28,7 @@ export type RecentMapSearch = {
 };
 
 type State = {
+  savedItemsAccount: string | null;
   savedDeals: string[];
   savedEvents: string[];
   usedSS: string[];
@@ -39,6 +41,7 @@ type State = {
 
 const KEY = "studeats-state";
 const empty: State = {
+  savedItemsAccount: null,
   savedDeals: [],
   savedEvents: [],
   usedSS: [],
@@ -73,11 +76,16 @@ function load() {
           if (!counts[id]) counts[id] = 1;
         });
       }
+      // Legacy caches have no ownership information. Only restore clearly owned or guest saves.
+      if (!Object.hasOwn(parsed, "savedItemsAccount") || parsed.savedItemsAccount !== state.savedItemsAccount) {
+        parsed.savedDeals = state.savedDeals;
+        parsed.savedEvents = state.savedEvents;
+        parsed.savedItemsAccount = state.savedItemsAccount;
+      }
       // User now comes from the Supabase session; never trust a locally saved one
-      state = { ...empty, ...parsed, ssUsedCounts: counts, user: null, authReady: false };
-      localStorage.setItem(KEY, JSON.stringify({ ...state, user: null, authReady: false }));
+      state = { ...empty, ...parsed, ssUsedCounts: counts, user: state.user, authReady: state.authReady };
     } else {
-      state = { ...empty, savedDeals: [] };
+      if (!state.user) state = { ...empty, authReady: state.authReady };
     }
   } catch {
     // Keep default state if browser storage is unavailable.
@@ -86,7 +94,11 @@ function load() {
 
 function set(next: Partial<State>) {
   state = { ...state, ...next };
-  localStorage.setItem(KEY, JSON.stringify({ ...state, user: null, authReady: false }));
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ ...state, user: null, authReady: false }));
+  } catch {
+    // The current session can continue when browser storage is unavailable.
+  }
   listeners.forEach((l) => l());
 }
 
@@ -164,6 +176,14 @@ export const actions = {
     if (events !== undefined) next.savedEvents = events;
     set(next);
   },
+  scopeSavedItemsToAccount: (accountId: string | null) => {
+    const owner = state.savedItemsAccount;
+    if (owner === accountId) return;
+    set({
+      savedItemsAccount: accountId,
+      ...(owner ? { savedDeals: [], savedEvents: [] } : {}),
+    });
+  },
   clearSavedItems: () => {
     set({ savedDeals: [], savedEvents: [] });
   },
@@ -175,7 +195,6 @@ export const actions = {
 
     const label = metadata?.company || metadata?.title || "Deal";
     if (isAdding) {
-      void logActivityEvent("deal_saved", { dealId: id });
       toast.success(`Saved ${label} to My Hub!`, {
         action: {
           label: "View My Hub",
@@ -188,17 +207,20 @@ export const actions = {
 
     // Persist to user account if signed in
     const userId = state.user?.id;
-    if (userId) {
+    if (userId && isUuid(id)) {
       (async () => {
         try {
           if (isAdding) {
             await saveUserDeal(userId, id);
+            void logActivityEvent("deal_saved", { dealId: id }, userId);
           } else {
             await unsaveUserDeal(userId, id);
           }
         } catch (err) {
           console.error("Account deal save failed, rolling back:", err);
-          set({ savedDeals: prevSaved });
+          if (state.user?.id === userId && state.savedDeals.includes(id) === isAdding) {
+            set({ savedDeals: toggle(state.savedDeals, id) });
+          }
           toast.error("Could not sync saved deal to your account. Check your connection.");
         }
       })();
@@ -212,7 +234,6 @@ export const actions = {
 
     const label = metadata?.title || "Event";
     if (isAdding) {
-      void logActivityEvent("event_saved", { eventId: id });
       toast.success(`Saved "${label}" to My Hub!`, {
         action: {
           label: "View My Hub",
@@ -225,17 +246,20 @@ export const actions = {
 
     // Persist to user account if signed in
     const userId = state.user?.id;
-    if (userId) {
+    if (userId && isUuid(id)) {
       (async () => {
         try {
           if (isAdding) {
             await saveUserEvent(userId, id);
+            void logActivityEvent("event_saved", { eventId: id }, userId);
           } else {
             await unsaveUserEvent(userId, id);
           }
         } catch (err) {
           console.error("Account food event save failed, rolling back:", err);
-          set({ savedEvents: prevSaved });
+          if (state.user?.id === userId && state.savedEvents.includes(id) === isAdding) {
+            set({ savedEvents: toggle(state.savedEvents, id) });
+          }
           toast.error("Could not sync saved event to your account. Check your connection.");
         }
       })();

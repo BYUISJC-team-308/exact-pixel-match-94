@@ -33,9 +33,10 @@ export function PrivacyPage() {
       <section>
         <h2>Saved items and browser storage</h2>
         <p>
-          Saved discount and event identifiers, card-use counts, your preferred campus, and up to
-          eight recent map searches currently stay in this browser’s local storage. They do not yet
-          sync between devices or accounts. Signing out does not clear these saved selections.
+          When you sign in, Supabase stores eligible saved discounts and events with your account
+          so they can appear on your devices. Guest saves stay in this browser until they can
+          be added to your account. Card-use counts, your map campus selection, and up to eight
+          recent map searches stay in this browser.
         </p>
         <p>
           You can remove saved items using their save controls and clear recent map searches in the
@@ -53,7 +54,7 @@ export function PrivacyPage() {
         </p>
         <p>
           Supabase stores these records, and the team’s restricted OKR dashboard shows aggregate
-          measurements. Saving an item and marking an offer used are still browser features.
+          measurements. A card-use action records what you mark in the app.
         </p>
       </section>
       <section>
