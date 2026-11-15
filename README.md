@@ -1,3 +1,69 @@
+## Student Steals data flow
+
+### Level 0 — System context
+
+```mermaid
+flowchart LR
+    Student["Student"]
+    Team["Authorized team member"]
+    Sources["Deal providers and campus calendars"]
+    AI["Gemini API"]
+    Maps["Map tile and directions providers"]
+    System(("0. Student Steals"))
+    Student -->|"Search, sign-in, saves, card punches and reported use"| System
+    System -->|"Offers, events, maps, saved items and account status"| Student
+    Team -->|"Authenticated cohort request"| System
+    System -->|"Aggregate Key Results and data-quality checks"| Team
+    System -->|"Scheduled requests and source lookups"| Sources
+    Sources -->|"Offer and event source data"| System
+    System -->|"Unclassified offer text"| AI
+    AI -->|"Category, offer type and structured description"| System
+    System -->|"Map tile requests or chosen destination"| Maps
+    Maps -->|"Basemap tiles or directions"| System
+```
+
+### Level 1 — Processes and data stores
+
+```mermaid
+flowchart LR
+    Student["Student"]
+    Team["Authorized team member"]
+    Sources["Deal providers and campus calendars"]
+    AI["Gemini API"]
+    Maps["Map tile and directions providers"]
+    Browse(("1.0 Browse offers and events"))
+    Account(("2.0 Authenticate and manage saves"))
+    Ingest(("3.0 Collect and classify listings"))
+    Track(("4.0 Record activity and compute OKRs"))
+    Catalog[("D1 Supabase listings and map reference data")]
+    Accounts[("D2 Supabase Auth, profiles and saved items")]
+    Browser[("D3 Browser storage: guest saves and card punches")]
+    Activity[("D4 Supabase user activity logs and team access")]
+
+    Student -->|"Search, filters and map actions"| Browse
+    Browse -->|"Offers, events and map results"| Student
+    Catalog -->|"Deals, card offers, campus events and locations"| Browse
+    Browse -->|"Tile or directions request"| Maps
+    Maps -->|"Basemap tiles or directions"| Browse
+    Student -->|"Sign-in, save and punch actions"| Account
+    Account -->|"Account status and saved items"| Student
+    Account -->|"Profile and saved-item changes"| Accounts
+    Accounts -->|"Session, profile and saved items"| Account
+    Account -->|"Guest saves and punch counts"| Browser
+    Browser -->|"Local selections and punch counts"| Account
+    Ingest -->|"Scheduled source requests"| Sources
+    Sources -->|"Raw deals and events"| Ingest
+    Ingest -->|"Unclassified deal text"| AI
+    AI -->|"Validated classification fields"| Ingest
+    Ingest -->|"Normalized listings"| Catalog
+    Account -->|"Signup, visit, confirmed account save and reported use"| Track
+    Accounts -->|"Signup timestamps and account IDs"| Track
+    Track -->|"Timestamped activity"| Activity
+    Activity -->|"Events and team access checks"| Track
+    Team -->|"Authenticated cohort request"| Track
+    Track -->|"Four aggregate KRs and readiness checks"| Team
+```
+
 ## Account recovery and activity tracking
 
 Use **Forgot your password?** on the sign-in page. Supabase emails a link to `/reset-password`, where the app accepts a verified recovery session for the active account. For each supported hostname, add its exact `/reset-password` URL to Supabase Auth URL Configuration. The production URL is already listed. Test real mailbox delivery with a disposable account before marking recovery verified.

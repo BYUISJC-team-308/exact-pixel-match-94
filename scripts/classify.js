@@ -1,10 +1,12 @@
 /**
  * Hybrid Deal Classifier
- * Uses Google Gemini 1.5 Flash in smart batches of 15 when GEMINI_API_KEY is available,
+ * Uses Google Gemini Flash-Lite in smart batches of 15 when GEMINI_API_KEY is available,
  * with an intelligent rule-based engine and company catalog as a reliable instant fallback.
  */
 
 import { getCompanyCatalogEntry, buildEnrichedDescription } from './company-catalog.js';
+
+const geminiModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 
 const VALID_CATEGORIES = ['Food', 'Tech', 'AI', 'Subscription', 'Groceries', 'Print', 'Fitness', 'Travel'];
 const VALID_DEAL_TYPES = ['Percent off', 'Free', 'Fixed price'];
@@ -71,7 +73,13 @@ export async function classifyDeal(deal, geminiApiKey = process.env.GEMINI_API_K
 /**
  * Classify a batch of deals in bulk using Gemini batch prompts (15 items per prompt)
  */
-export async function classifyBatch(deals, geminiApiKey = process.env.GEMINI_API_KEY) {
+export async function classifyBatch(
+  deals,
+  geminiApiKey = process.env.GEMINI_API_KEY,
+  { requireGemini = false } = {},
+) {
+  if (requireGemini && !geminiApiKey) throw new Error('Set the GEMINI_API_KEY Actions secret.');
+
   console.log(`[Classifier] Classifying ${deals.length} deals (Gemini: ${geminiApiKey ? 'Batch Mode' : 'Heuristic Mode'})...`);
 
   const results = new Array(deals.length);
@@ -106,6 +114,7 @@ export async function classifyBatch(deals, geminiApiKey = process.env.GEMINI_API
   console.log(`[Classifier] ${results.length - unclassifiedIndices.length} categorized (via catalog/existing), ${unclassifiedIndices.length} need classification.`);
 
   if (unclassifiedIndices.length === 0) {
+    if (requireGemini) throw new Error("No input required Gemini classification.");
     return results;
   }
 
@@ -124,9 +133,11 @@ export async function classifyBatch(deals, geminiApiKey = process.env.GEMINI_API
 
       try {
         const classifiedMap = await classifyBatchWithGemini(batchPayload, geminiApiKey);
+        let applied = 0;
         for (const idx of currentIndices) {
           const match = classifiedMap.get(idx);
           if (match && VALID_CATEGORIES.includes(match.category) && VALID_DEAL_TYPES.includes(match.deal_type)) {
+            applied++;
             results[idx] = {
               ...deals[idx],
               category: match.category,
@@ -138,7 +149,12 @@ export async function classifyBatch(deals, geminiApiKey = process.env.GEMINI_API
             results[idx] = classifyWithRules(deals[idx]);
           }
         }
+        if (requireGemini && applied !== currentIndices.length) {
+          throw new Error('Gemini did not return a valid classification for every sample.');
+        }
+        console.log(`[Classifier] Applied ${applied} Gemini classifications (${geminiModel}).`);
       } catch (err) {
+        if (requireGemini) throw err;
         console.warn(`[Classifier] Batch classification error, falling back to heuristics: ${err.message}`);
         for (const idx of currentIndices) {
           results[idx] = classifyWithRules(deals[idx]);
@@ -156,7 +172,7 @@ export async function classifyBatch(deals, geminiApiKey = process.env.GEMINI_API
 }
 
 /**
- * Call Gemini 1.5 Flash in bulk with a batch of deals
+ * Call Gemini Flash-Lite in bulk with a batch of deals
  */
 async function classifyBatchWithGemini(batchDeals, apiKey) {
   const prompt = `
@@ -179,10 +195,11 @@ Return ONLY a valid JSON array matching this exact format:
 ]
 `;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel)}:generateContent`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    signal: AbortSignal.timeout(30_000),
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
@@ -197,7 +214,7 @@ Return ONLY a valid JSON array matching this exact format:
   }
 
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = data.candidates?.[0]?.content?.parts?.find((part) => part.text && !part.thought)?.text;
   if (!text) return new Map();
 
   const parsed = JSON.parse(text);
@@ -234,10 +251,11 @@ Return ONLY valid JSON with this structure:
 }
 `;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel)}:generateContent`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    signal: AbortSignal.timeout(30_000),
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
@@ -252,7 +270,7 @@ Return ONLY valid JSON with this structure:
   }
 
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = data.candidates?.[0]?.content?.parts?.find((part) => part.text && !part.thought)?.text;
   if (!text) return null;
 
   const parsed = JSON.parse(text);

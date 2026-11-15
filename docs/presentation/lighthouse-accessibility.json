@@ -1,0 +1,77 @@
+[
+  {
+    "page": "Home",
+    "url": "https://studeats.vercel.app/",
+    "runAt": "2026-11-15T02:58:07.772Z",
+    "lighthouse": "13.6.0",
+    "device": "mobile",
+    "score": 100,
+    "failed": []
+  },
+  {
+    "page": "Discounts",
+    "url": "https://studeats.vercel.app/discounts",
+    "runAt": "2026-11-15T02:54:20.805Z",
+    "lighthouse": "13.6.0",
+    "device": "mobile",
+    "score": 96,
+    "failed": [
+      "color-contrast"
+    ]
+  },
+  {
+    "page": "Starving Student Card",
+    "url": "https://studeats.vercel.app/starving-student?q=&category=All+categories&type=All+Deals&status=Any+Status&sort=company-asc&view=compact&page=1",
+    "runAt": "2026-11-15T02:55:36.645Z",
+    "lighthouse": "13.6.0",
+    "device": "mobile",
+    "score": 96,
+    "failed": [
+      "color-contrast",
+      "label-content-name-mismatch"
+    ]
+  },
+  {
+    "page": "Free Food",
+    "url": "https://studeats.vercel.app/free-food",
+    "runAt": "2026-11-15T02:54:39.954Z",
+    "lighthouse": "13.6.0",
+    "device": "mobile",
+    "score": 98,
+    "failed": [
+      "heading-order"
+    ]
+  },
+  {
+    "page": "Map",
+    "url": "https://studeats.vercel.app/map",
+    "runAt": "2026-11-15T02:54:56.958Z",
+    "lighthouse": "13.6.0",
+    "device": "mobile",
+    "score": 96,
+    "failed": [
+      "target-size"
+    ]
+  },
+  {
+    "page": "Home",
+    "url": "https://studeats.vercel.app/",
+    "runAt": "2026-11-15T02:57:34.534Z",
+    "lighthouse": "13.6.0",
+    "device": "desktop",
+    "score": 100,
+    "failed": []
+  },
+  {
+    "page": "Calendar",
+    "url": "https://studeats.vercel.app/calendar",
+    "runAt": "2026-11-15T02:57:45.946Z",
+    "lighthouse": "13.6.0",
+    "device": "desktop",
+    "score": 96,
+    "failed": [
+      "color-contrast",
+      "label-content-name-mismatch"
+    ]
+  }
+]
