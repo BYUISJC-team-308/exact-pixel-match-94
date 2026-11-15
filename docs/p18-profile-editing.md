@@ -7,7 +7,7 @@ Owner: Lot Holmstead, taking over Feature 9 follow-up with Product Owner authori
 ## Scope and behavior
 
 - `/profile` edits full name (1–100 characters), username (3–30 characters), optional phone (up to 20 characters; at least 7 digits when supplied), and photo. Values are trimmed.
-- Email is read-only and comes from Supabase Auth. School is displayed, but this editor never writes school/interests (P17), saved items (P03/P04), passwords, roles, or account identity. Signup remains the existing AccountForm flow.
+- Email is read-only in the initial P18 scope; the current profile editor separately supports confirmation-based email changes and edits school and deal interests. It never writes saved items, passwords, administrator roles, or account identity. Signup remains the existing AccountForm flow.
 - Save is explicit. Cancel restores the last confirmed values and photo. Changes show a saving state; repeated submissions and edits are disabled while saving. Server rejection leaves entered values available for retry. Username conflicts have a specific message.
 - Photos accept JPEG/PNG/WebP, nonempty, at most 2 MiB. Browser decoding rejects unreadable images and images over 25 million pixels. Preview alone never uploads. File errors are announced; controls have visible focus and at least 44px touch targets.
 - The authenticated user is verified before writing. Reads/updates filter by that user ID; changing account during an edit is rejected. Profile state is updated from the returned database row, retaining ID and authoritative account fields.

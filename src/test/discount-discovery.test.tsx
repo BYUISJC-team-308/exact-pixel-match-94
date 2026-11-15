@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentType } from "react";
 import { Route as DiscountsRoute } from "@/routes/discounts";
@@ -11,7 +11,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-router", () => ({
-  createFileRoute: () => (options: unknown) => options,
+  createFileRoute: () => (options: Record<string, unknown>) => ({
+    ...options,
+    useSearch: () => ({}),
+  }),
   useNavigate: () => vi.fn(),
   Link: ({ to, hash, children, ...props }: { to: string; hash?: string; children: React.ReactNode }) => (
     <a href={hash ? `${to}#${hash}` : to} {...props}>
@@ -230,6 +233,28 @@ describe("Discount Dashboard Discovery & Layout Unification (P21)", () => {
     fireEvent.click(foodBtn);
 
     expect(screen.queryByText("Apple")).not.toBeInTheDocument();
+    expect(screen.getByText("Zupas")).toBeInTheDocument();
+    expect(screen.getByText("Subway")).toBeInTheDocument();
+  });
+
+  it("defaults to the user's interests and lets them override that filter", async () => {
+    mocks.store.mockReturnValue({
+      user: { id: "student-1", interests: ["Food"] },
+      authReady: true,
+      savedDeals: [],
+    });
+
+    render(<Discounts />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Zupas")).toBeInTheDocument();
+      expect(screen.getByText("Subway")).toBeInTheDocument();
+      expect(screen.queryByText("Apple")).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "All categories" }));
+
+    expect(screen.getByText("Apple")).toBeInTheDocument();
     expect(screen.getByText("Zupas")).toBeInTheDocument();
     expect(screen.getByText("Subway")).toBeInTheDocument();
   });

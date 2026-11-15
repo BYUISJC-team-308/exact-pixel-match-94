@@ -132,7 +132,7 @@ function StoredHeader() {
     </>
   );
 }
-it("restores browser saves after hydration, ignores legacy local identity, and waits for verified auth", async () => {
+it("discards signed-out browser saves, ignores legacy local identity, and waits for verified auth", async () => {
   localStorage.setItem(
     "studeats-state",
     JSON.stringify({
@@ -155,7 +155,7 @@ it("restores browser saves after hydration, ignores legacy local identity, and w
     });
   });
   expect(recovered).toEqual([]);
-  expect(document.body).toHaveTextContent("1 saved at uvu");
+  expect(document.body).toHaveTextContent("0 saved at uvu");
   expect(document.querySelector('[aria-label="Checking your account"]')).not.toBeNull();
   expect(document.querySelector('[aria-label="Create account"]')).toBeNull();
   await act(async () => {

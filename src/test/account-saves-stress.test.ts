@@ -26,6 +26,7 @@ describe("Account-Backed Saves - Resilience & Stress Tests", () => {
       removeItem: (key: string) => { values.delete(key); },
       clear: () => values.clear(),
     });
+    actions.scopeSavedItemsToAccount(null);
     actions.clearSavedItems();
     actions.setUser(null);
   });
@@ -283,8 +284,8 @@ describe("Account-Backed Saves - Resilience & Stress Tests", () => {
     });
   });
 
-  describe("5. Cross-Tab Real-Time Sync", () => {
-    it("updates store in real-time when a storage event fires from another tab", () => {
+  describe("5. Signed-Out Cross-Tab Isolation", () => {
+    it("does not restore saved items from another signed-out tab", () => {
       expect(getStoreState().savedDeals).toHaveLength(0);
 
       // Simulate another browser tab saving a deal into localStorage
@@ -304,12 +305,12 @@ describe("Account-Backed Saves - Resilience & Stress Tests", () => {
         new StorageEvent("storage", {
           key: "studeats-state",
           newValue: JSON.stringify(updatedStorage),
-        })
+        }),
       );
 
       const state = getStoreState();
-      expect(state.savedDeals).toEqual(["deal-from-other-tab"]);
-      expect(state.savedEvents).toEqual(["event-from-other-tab"]);
+      expect(state.savedDeals).toEqual([]);
+      expect(state.savedEvents).toEqual([]);
     });
   });
 

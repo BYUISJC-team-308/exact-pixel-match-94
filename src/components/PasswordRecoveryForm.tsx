@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { requestPasswordRecovery } from "@/lib/password-recovery";
+import { MAX_EMAIL_LENGTH } from "@/lib/profile";
 
 export function PasswordRecoveryForm() {
   const [email, setEmail] = useState("");
@@ -33,6 +34,7 @@ export function PasswordRecoveryForm() {
         <input
           className="h-11 rounded-lg bg-background px-3 ring-1 ring-border"
           type="email"
+          maxLength={MAX_EMAIL_LENGTH}
           autoComplete="email"
           required
           value={email}

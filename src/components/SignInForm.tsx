@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { MAX_EMAIL_LENGTH } from "@/lib/profile";
 
 export function SignInForm({
   onSubmit,
@@ -23,7 +24,7 @@ export function SignInForm({
     >
       <label className="block text-sm">
         <span className="font-medium">Email</span>
-        <input type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)}
+        <input type="email" maxLength={MAX_EMAIL_LENGTH} autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)}
           className="mt-1 h-11 w-full rounded-lg bg-glass/80 px-3 ring-1 ring-border outline-none focus:ring-2 focus:ring-ring" />
       </label>
       <label className="block text-sm">

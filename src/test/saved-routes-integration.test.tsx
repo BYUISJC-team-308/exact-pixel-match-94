@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentType, ReactNode } from "react";
 import { Route as DiscountsRoute } from "@/routes/discounts";
@@ -19,7 +19,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-router", () => ({
-  createFileRoute: () => (options: unknown) => options,
+  createFileRoute: () => (options: Record<string, unknown>) => ({
+    ...options,
+    useSearch: () => ({}),
+  }),
   useNavigate: () => mocks.navigate,
   Link: ({
     to,
@@ -173,6 +176,31 @@ describe("Saved Routes & Component UI Integration Tests (P03 & P04)", () => {
   });
 
   describe("Discounts Page (/discounts)", () => {
+    it("filters to the signed-in user's interests by default", async () => {
+      mocks.store.mockReturnValue({
+        user: { id: "user-uuid", interests: ["Food"] },
+        authReady: true,
+        savedDeals: [],
+        savedEvents: [],
+        preferredCampus: "byu-provo",
+      });
+      mocks.deals.mockReturnValue({
+        data: mockDeals.map((deal, index) => ({
+          ...deal,
+          category: index === 0 ? "Tech" : "Food",
+        })),
+        isPending: false,
+        isError: false,
+      });
+
+      render(<Discounts />);
+
+      await waitFor(() => {
+        expect(screen.queryByText("Waffle Love")).not.toBeInTheDocument();
+        expect(screen.getByText("Daylight Donuts")).toBeInTheDocument();
+      });
+    });
+
     it("renders unselected star for unsaved deal and calls toggleDeal with metadata on click", () => {
       render(<Discounts />);
 

@@ -1,9 +1,12 @@
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
+import { dealInterestCategories, type DealInterest } from "@/lib/data";
 import type { User } from "@/lib/store";
 
 export const AVATAR_BUCKET = "profile-avatars";
 export const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+export const MAX_EMAIL_LENGTH = 255;
+export const UTAH_VALLEY_SCHOOLS = ["BYU", "UVU"] as const;
 const extensions: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -25,7 +28,15 @@ export const profileSchema = z.object({
       "Enter a phone number with at least 7 digits.",
     )
     .default(""),
+  school: z.enum(UTAH_VALLEY_SCHOOLS),
+  interests: z.array(z.enum(dealInterestCategories)).max(dealInterestCategories.length).default([]),
 });
+export const profileEmailSchema = z
+  .string()
+  .trim()
+  .email("Enter a valid email address.")
+  .max(MAX_EMAIL_LENGTH, `Use ${MAX_EMAIL_LENGTH} characters or fewer.`);
+export type ProfileSchool = (typeof UTAH_VALLEY_SCHOOLS)[number];
 export type PhotoChange = { file?: File | undefined; remove?: boolean };
 export type ProfileRow = {
   username: string;
@@ -34,6 +45,8 @@ export type ProfileRow = {
   school: string;
   phone: string | null;
   avatar_url: string | null;
+  interests?: DealInterest[] | null;
+  role?: string | null;
 };
 
 export function avatarFileError(file: File): string | null {
@@ -69,7 +82,13 @@ export async function profileUser(row: ProfileRow, id: string, email?: string): 
     name: row.full_name ?? row.username,
     email: email ?? row.email ?? "",
     school: row.school,
+    isAdmin: row.role === "ADMIN",
     ...(row.phone ? { phone: row.phone } : {}),
+    interests: Array.isArray(row.interests)
+      ? row.interests.filter((interest): interest is DealInterest =>
+          dealInterestCategories.includes(interest as DealInterest),
+        )
+      : [],
     ...(avatar ? { avatar } : {}),
     ...(path ? { avatarPath: path } : {}),
   };
@@ -102,7 +121,7 @@ export async function saveProfile(
     throw new Error("Your account changed. Reload this page before saving.");
   const { data: old, error: readError } = await supabase
     .from("profiles")
-    .select("username,full_name,email,school,phone,avatar_url")
+    .select("username,full_name,email,school,phone,avatar_url,interests,role")
     .eq("id", id)
     .single();
   if (readError || !old)
@@ -126,10 +145,12 @@ export async function saveProfile(
       username: values.username,
       full_name: values.name,
       phone: values.phone || null,
+      school: values.school,
+      interests: values.interests,
       ...(change.file || change.remove ? { avatar_url: nextAvatar } : {}),
     })
     .eq("id", id)
-    .select("username,full_name,email,school,phone,avatar_url")
+    .select("username,full_name,email,school,phone,avatar_url,interests,role")
     .single();
   if (error || !saved) {
     // For a rejected write the new upload is unused. Ambiguous transport errors may have committed:

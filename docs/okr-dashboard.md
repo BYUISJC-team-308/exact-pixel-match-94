@@ -46,13 +46,16 @@ Empty cohorts and zero mature-user denominators show no percentage. No-save user
 
 ## Database setup and access
 
-Migration: `supabase/migrations/20261110000100_team_okr_dashboard.sql`.
+Migrations: `supabase/migrations/20261110000100_team_okr_dashboard.sql` and
+`supabase/migrations/20261115000200_admin_only_access.sql`.
 
-- `team_analytics_members`: administrator-managed allowlist. RLS enabled; clients have no direct read/write grant. Each member is excluded from OKR cohorts by default (`exclude_from_metrics=true`).
+- `team_analytics_members`: project-admin-managed team accounts excluded from OKR cohorts. RLS enabled; clients have no direct read/write grant. Admin profiles are added here automatically to avoid counting team activity.
+- `profiles.role`: the project administrator sets this to `ADMIN` in Supabase. Website users cannot change it; only profiles with this role can access OKRs and moderation.
+- `current_user_is_admin`: checks the caller's profile role. It is used by report RLS, the OKR RPC, and the listing-deletion RPC; client visibility checks are not the security boundary.
 - `app_okr_private.snapshot`: private calculation helper; no public, anonymous, or authenticated execute permission.
-- `team_okr_snapshot`: authenticated aggregate RPC; checks membership before reading user/activity data. No user IDs, emails, usernames, or devices are returned. Anonymous execute permission is revoked.
-- Apply the migration before deploying the UI. If applied through SQL Editor, the idempotent migration can be replayed by the repository migration workflow later.
-- To authorize another teammate, a project administrator should insert that person's existing `auth.users.id` into `team_analytics_members`. Membership is never editable by website users.
+- `team_okr_snapshot`: authenticated aggregate RPC; checks the profile role before reading user/activity data. No user IDs, emails, usernames, or devices are returned. Anonymous execute permission is revoked.
+- Apply both migrations before deploying the UI. The admin-only migration revokes the old public report/deletion permissions and keeps admins out of OKR cohorts. If applied through SQL Editor, the idempotent migrations can be replayed by the repository migration workflow later.
+- To authorize a teammate, a project administrator sets that profile's `role` to `ADMIN` in Supabase. Role changes are never editable by website users.
 
 Production setup verified during this work: the aggregate functions and membership table were applied, the requested account was authorized, and anonymous RPC/raw membership access were confirmed false. The initial 30-day snapshot had **2 non-team cohort users, 0 linked qualifying events, and 2 missing signup sessions**. Accordingly, results correctly report tracking incomplete. There is no claim that P06 is finished or that the KRs have reached their targets.
 

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { InformationPage } from "@/components/InformationPage";
+import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({ meta: [{ title: "Contact — Student Steals" }] }),
@@ -7,6 +8,7 @@ export const Route = createFileRoute("/contact")({
 });
 
 export function ContactPage() {
+  const { user } = useStore();
   return (
     <InformationPage
       title="Contact"
@@ -44,9 +46,11 @@ export function ContactPage() {
           <Link className="inline-flex min-h-11 items-center" to="/free-food">
             Free-food events
           </Link>
-          <Link className="inline-flex min-h-11 items-center text-primary font-semibold" to="/admin">
-            Admin Reports Dashboard →
-          </Link>
+          {user?.isAdmin && (
+            <Link className="inline-flex min-h-11 items-center text-primary font-semibold" to="/admin">
+              Admin Reports Dashboard →
+            </Link>
+          )}
         </div>
       </section>
       <section>

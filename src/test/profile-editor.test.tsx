@@ -1,27 +1,55 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ProfileEditor } from "@/components/ProfileEditor";
-import { updateProfile } from "@/lib/auth";
-vi.mock("@/lib/auth", () => ({ updateProfile: vi.fn() }));
-const user = {
+import { requestEmailChange, updateProfile } from "@/lib/auth";
+import type { User } from "@/lib/store";
+vi.mock("@/lib/auth", () => ({
+  requestEmailChange: vi.fn(),
+  updateProfile: vi.fn(),
+}));
+const user: User = {
   id: "owner",
   name: "Lot",
   username: "lot",
   email: "lot@example.com",
   school: "BYU",
   avatar: "https://example.com/photo",
+  interests: ["Food"],
 };
 beforeEach(() => vi.resetAllMocks());
 afterEach(cleanup);
-it("keeps identity and preference fields outside the editor and supports cancelling", () => {
+it("keeps passwords out of the editor and supports cancelling profile changes", () => {
   render(<ProfileEditor initial={user} />);
-  expect(screen.queryByLabelText(/password|school|email/i)).toBeNull();
+  expect(screen.queryByLabelText(/password/i)).toBeNull();
+  expect(screen.getByLabelText("School")).toHaveValue("BYU");
+  expect(screen.getByRole("button", { name: "Food" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
   fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Changed" } });
   fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
   fireEvent.click(screen.getByRole("button", { name: "Cancel changes" }));
   expect(screen.getByLabelText("Full name")).toHaveValue("Lot");
   expect(screen.getByAltText("Your profile photo")).toBeVisible();
+});
+it("saves selected deal interests and requests email changes with confirmation", async () => {
+  vi.mocked(updateProfile).mockResolvedValue({
+    user: { ...user, interests: ["Food", "Tech"] },
+  });
+  vi.mocked(requestEmailChange).mockResolvedValue(null);
+  render(<ProfileEditor initial={user} />);
+  fireEvent.click(screen.getByRole("button", { name: "Tech" }));
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() =>
+    expect(updateProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ interests: ["Food", "Tech"] }),
+      expect.any(Object),
+    ),
+  );
+  fireEvent.change(screen.getByLabelText("New email"), {
+    target: { value: "new@example.com" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Change email" }));
+  expect(await screen.findByText(/confirmation requested for new@example.com/i)).toBeVisible();
+  expect(requestEmailChange).toHaveBeenCalledWith("new@example.com");
 });
 it("announces validation and oversized upload errors", async () => {
   render(<ProfileEditor initial={user} />);

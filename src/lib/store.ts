@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { logActivityEvent } from "@/lib/analytics";
+import type { DealInterest } from "@/lib/data";
 import {
   isUuid,
   saveUserDeal,
@@ -19,6 +20,8 @@ export type User = {
   phone?: string;
   avatar?: string;
   avatarPath?: string;
+  interests?: DealInterest[];
+  isAdmin?: boolean;
 };
 
 export type RecentMapSearch = {
@@ -76,8 +79,12 @@ function load() {
           if (!counts[id]) counts[id] = 1;
         });
       }
-      // Legacy caches have no ownership information. Only restore clearly owned or guest saves.
-      if (!Object.hasOwn(parsed, "savedItemsAccount") || parsed.savedItemsAccount !== state.savedItemsAccount) {
+      // Saved items are restored only for the currently authenticated account.
+      if (
+        !state.savedItemsAccount ||
+        !Object.hasOwn(parsed, "savedItemsAccount") ||
+        parsed.savedItemsAccount !== state.savedItemsAccount
+      ) {
         parsed.savedDeals = state.savedDeals;
         parsed.savedEvents = state.savedEvents;
         parsed.savedItemsAccount = state.savedItemsAccount;
@@ -93,9 +100,18 @@ function load() {
 }
 
 function set(next: Partial<State>) {
+  load();
   state = { ...state, ...next };
   try {
-    localStorage.setItem(KEY, JSON.stringify({ ...state, user: null, authReady: false }));
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        ...state,
+        ...(state.savedItemsAccount ? {} : { savedDeals: [], savedEvents: [] }),
+        user: null,
+        authReady: false,
+      }),
+    );
   } catch {
     // The current session can continue when browser storage is unavailable.
   }

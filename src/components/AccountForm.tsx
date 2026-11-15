@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { z } from "zod";
 import type { User } from "@/lib/store";
+import { MAX_EMAIL_LENGTH, UTAH_VALLEY_SCHOOLS } from "@/lib/profile";
 
-export const UTAH_VALLEY_SCHOOLS = ["BYU", "UVU"] as const;
+export { UTAH_VALLEY_SCHOOLS };
 export type UtahValleySchool = (typeof UTAH_VALLEY_SCHOOLS)[number];
 
 const schema = z.object({
   username: z.string().trim().min(3, "At least 3 characters").max(30),
   password: z.string().min(6, "At least 6 characters").max(100).optional(),
   name: z.string().trim().min(1, "Required").max(100),
-  email: z.string().trim().email("Enter a valid email").max(255),
+  email: z.string().trim().email("Enter a valid email").max(MAX_EMAIL_LENGTH),
   school: z.enum(UTAH_VALLEY_SCHOOLS, {
     errorMap: () => ({ message: "Please select a school (BYU or UVU)" }),
   }),
@@ -121,6 +122,7 @@ export function AccountForm({
               id={f.key}
               name={f.key}
               type={f.type ?? "text"}
+              maxLength={f.key === "email" ? MAX_EMAIL_LENGTH : undefined}
               autoComplete={f.key === "password" ? "new-password" : f.key === "phone" ? "tel" : f.key}
               value={String(v[f.key] ?? "")}
               onChange={(e) => setV({ ...v, [f.key]: e.target.value })}

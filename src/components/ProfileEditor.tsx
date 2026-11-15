@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { updateProfile } from "@/lib/auth";
-import { avatarFileError, profileSchema } from "@/lib/profile";
+import { requestEmailChange, updateProfile } from "@/lib/auth";
+import {
+  avatarFileError,
+  MAX_EMAIL_LENGTH,
+  profileEmailSchema,
+  profileSchema,
+  UTAH_VALLEY_SCHOOLS,
+} from "@/lib/profile";
+import { dealInterestCategories } from "@/lib/data";
 import type { User } from "@/lib/store";
 
 export function ProfileEditor({ initial }: { initial: User }) {
@@ -9,7 +16,13 @@ export function ProfileEditor({ initial }: { initial: User }) {
     username: initial.username,
     name: initial.name,
     phone: initial.phone ?? "",
+    school: initial.school,
+    interests: initial.interests ?? [],
   });
+  const [emailToChange, setEmailToChange] = useState("");
+  const [emailStatus, setEmailStatus] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
   const [file, setFile] = useState<File>();
   const [preview, setPreview] = useState<string>();
   const [remove, setRemove] = useState(false);
@@ -38,7 +51,11 @@ export function ProfileEditor({ initial }: { initial: User }) {
   const dirty =
     !!file ||
     remove ||
-    Object.entries(values).some(([k, value]) => value !== (baseline[k as keyof User] ?? ""));
+    values.username !== baseline.username ||
+    values.name !== baseline.name ||
+    values.phone !== (baseline.phone ?? "") ||
+    values.school !== baseline.school ||
+    values.interests.join("|") !== (baseline.interests ?? []).join("|");
   const avatar = remove ? undefined : (preview ?? baseline.avatar);
   const clearFeedback = () => {
     setMessage("");
@@ -46,7 +63,16 @@ export function ProfileEditor({ initial }: { initial: User }) {
   };
   const reset = () => {
     request.current++;
-    setValues({ username: baseline.username, name: baseline.name, phone: baseline.phone ?? "" });
+    setValues({
+      username: baseline.username,
+      name: baseline.name,
+      phone: baseline.phone ?? "",
+      school: baseline.school,
+      interests: baseline.interests ?? [],
+    });
+    setEmailToChange("");
+    setEmailStatus("");
+    setEmailError("");
     setFile(undefined);
     setPreview(undefined);
     setRemove(false);
@@ -85,6 +111,8 @@ export function ProfileEditor({ initial }: { initial: User }) {
               username: result.user.username,
               name: result.user.name,
               phone: result.user.phone ?? "",
+              school: result.user.school,
+              interests: result.user.interests ?? [],
             });
             setFile(undefined);
             setPreview(undefined);
@@ -104,7 +132,7 @@ export function ProfileEditor({ initial }: { initial: User }) {
     >
       <h2 className="text-xl font-semibold">Edit profile</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Update your name, username, phone, and photo.
+        Update your name, username, school, interests, phone, and photo.
       </p>
       <fieldset disabled={busy} className="mt-5 min-w-0 space-y-5 disabled:opacity-70">
         <legend className="sr-only">Profile fields and photo</legend>
@@ -113,7 +141,9 @@ export function ProfileEditor({ initial }: { initial: User }) {
             {avatar ? (
               <img src={avatar} alt="Your profile photo" className="size-full object-cover" />
             ) : (
-              <span role="img" aria-label="No profile photo">{values.name[0] || "?"}</span>
+              <span role="img" aria-label="No profile photo">
+                {values.name[0] || "?"}
+              </span>
             )}
           </div>
           <div className="min-w-0 flex-1 basis-52">
@@ -248,14 +278,131 @@ export function ProfileEditor({ initial }: { initial: User }) {
             </div>
           ))}
         </div>
+        <div>
+          <label htmlFor="profile-school" className="text-sm font-medium">
+            School
+          </label>
+          <select
+            id="profile-school"
+            value={values.school}
+            className="mt-1 h-11 w-full rounded-lg bg-background px-3 ring-1 ring-border focus:outline-2 focus:outline-primary"
+            onChange={(event) => {
+              setValues({ ...values, school: event.target.value });
+              clearFeedback();
+            }}
+          >
+            {UTAH_VALLEY_SCHOOLS.map((school) => (
+              <option key={school} value={school}>
+                {school}
+              </option>
+            ))}
+          </select>
+        </div>
+        <fieldset>
+          <legend className="text-sm font-medium">Deal interests</legend>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Choose categories to filter the Discount Dashboard to deals you care about.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {dealInterestCategories.map((interest) => {
+              const selected = values.interests.includes(interest);
+              return (
+                <button
+                  key={interest}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    setValues({
+                      ...values,
+                      interests: selected
+                        ? values.interests.filter((item) => item !== interest)
+                        : [...values.interests, interest],
+                    });
+                    clearFeedback();
+                  }}
+                  className={`min-h-10 rounded-full px-3.5 text-sm font-medium ring-1 ring-border transition-colors ${
+                    selected ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-glass"
+                  }`}
+                >
+                  {interest}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
         <div className="rounded-xl bg-secondary/50 p-3 text-sm">
           <p className="font-medium">Account details</p>
           <p className="mt-1 break-all">Email: {baseline.email || "Not available"}</p>
-          <p className="mt-1">School: {baseline.school || "Not set"}</p>
           <p className="mt-2 text-xs text-muted-foreground">
-            Email is managed by your sign-in provider. School and interests are managed separately
-            from profile editing.
+            Email changes require confirmation from Supabase before they take effect.
           </p>
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <label htmlFor="profile-new-email" className="min-w-0 flex-1 text-sm font-medium">
+              New email
+              <input
+                id="profile-new-email"
+                type="email"
+                maxLength={MAX_EMAIL_LENGTH}
+                autoComplete="email"
+                value={emailToChange}
+                disabled={emailBusy}
+                className="mt-1 h-11 w-full rounded-lg bg-background px-3 ring-1 ring-border focus:outline-2 focus:outline-primary disabled:opacity-60"
+                onChange={(event) => {
+                  setEmailToChange(event.target.value);
+                  setEmailError("");
+                  setEmailStatus("");
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              disabled={!emailToChange.trim() || emailBusy}
+              className="min-h-11 rounded-full bg-secondary px-4 text-sm font-medium ring-1 ring-border disabled:opacity-50"
+              onClick={async () => {
+                const parsed = profileEmailSchema.safeParse(emailToChange);
+                if (!parsed.success) {
+                  setEmailError(parsed.error.issues[0]?.message ?? "Enter a valid email address.");
+                  return;
+                }
+                if (parsed.data.toLowerCase() === baseline.email.toLowerCase()) {
+                  setEmailError("That is already your current email.");
+                  return;
+                }
+                setEmailBusy(true);
+                setEmailError("");
+                setEmailStatus("");
+                try {
+                  const error = await requestEmailChange(parsed.data);
+                  if (error) {
+                    setEmailError(error);
+                  } else {
+                    setEmailToChange("");
+                    setEmailStatus(
+                      `Confirmation requested for ${parsed.data}. Your current email stays active until you confirm.`,
+                    );
+                  }
+                } catch {
+                  setEmailError(
+                    "We couldn't request an email change. Check your connection and retry.",
+                  );
+                } finally {
+                  setEmailBusy(false);
+                }
+              }}
+            >
+              {emailBusy ? "Requesting…" : "Change email"}
+            </button>
+          </div>
+          {emailError && (
+            <p role="alert" className="mt-2 text-sm text-destructive">
+              {emailError}
+            </p>
+          )}
+          {emailStatus && (
+            <p role="status" className="mt-2 text-sm text-primary">
+              {emailStatus}
+            </p>
+          )}
         </div>
         {errors.form && (
           <p ref={errorSummary} tabIndex={-1} role="alert" className="text-sm text-destructive">

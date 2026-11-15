@@ -9,6 +9,18 @@ export type DealCategory =
   | "Fitness"
   | "Travel";
 
+export const dealInterestCategories = [
+  "Apparel",
+  "Tech",
+  "Fitness",
+  "Food",
+  "AI",
+  "Subscription",
+  "Groceries",
+  "Travel",
+] as const;
+export type DealInterest = (typeof dealInterestCategories)[number];
+
 export type DealVerificationStatus = "verified" | "community" | "pending" | "expired" | "rejected";
 
 export type Deal = {

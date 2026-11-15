@@ -45,7 +45,13 @@ export async function syncActiveUserSaves(userId?: string) {
   }
 }
 
-import { profileUser, saveProfile, type PhotoChange, type ProfileRow } from "@/lib/profile";
+import {
+  profileEmailSchema,
+  profileUser,
+  saveProfile,
+  type PhotoChange,
+  type ProfileRow,
+} from "@/lib/profile";
 
 async function syncUser(authUserId: string | null, email: string | undefined, generation: number) {
   if (generation !== authGeneration) return;
@@ -187,4 +193,11 @@ export async function updateProfile(
       error: error instanceof Error ? error.message : "We couldn't save your profile. Try again.",
     };
   }
+}
+
+export async function requestEmailChange(email: string): Promise<string | null> {
+  const parsed = profileEmailSchema.safeParse(email);
+  if (!parsed.success) return parsed.error.issues[0]?.message ?? "Enter a valid email address.";
+  const { error } = await supabase.auth.updateUser({ email: parsed.data });
+  return error?.message ?? null;
 }

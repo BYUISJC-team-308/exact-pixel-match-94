@@ -6,6 +6,8 @@ import * as dataIssuesModule from "@/lib/data-issues";
 import * as dealsModule from "@/lib/deals";
 import * as foodEventsModule from "@/lib/food-events";
 
+const mocks = vi.hoisted(() => ({ store: vi.fn() }));
+vi.mock("@/lib/store", () => ({ useStore: mocks.store }));
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (config: any) => config,
   Link: ({ to, children, ...props }: any) => (
@@ -93,6 +95,12 @@ describe("Admin Reports Dashboard (/admin)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.store.mockReturnValue({
+      authReady: true,
+      user: { id: "admin-user", username: "admin", email: "admin@example.com", isAdmin: true },
+      savedDeals: [],
+      savedEvents: [],
+    });
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false, gcTime: 0 },
@@ -131,6 +139,20 @@ describe("Admin Reports Dashboard (/admin)", () => {
       mutateAsync: mockDeleteFoodEvent,
       isPending: false,
     } as any);
+  });
+
+  it("blocks direct visits from non-admin accounts before loading report data", () => {
+    mocks.store.mockReturnValue({
+      authReady: true,
+      user: { id: "regular-user", username: "student", isAdmin: false },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AdminPage />
+      </QueryClientProvider>
+    );
+    expect(screen.getByRole("heading", { name: "Administrator access required" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Admin Reports" })).not.toBeInTheDocument();
   });
 
   it("renders header, metrics cards, and submitted reports list with deep links", () => {

@@ -140,6 +140,36 @@ function TypeBadge({ type }: { type: DataIssueReport["itemType"] }) {
 }
 
 export function AdminPage() {
+  const { user, authReady } = useStore();
+  if (!authReady) {
+    return (
+      <p className="py-20 text-center text-muted-foreground" role="status">
+        Checking administrator access…
+      </p>
+    );
+  }
+  if (user?.isAdmin !== true) {
+    return (
+      <div className="mx-auto max-w-md py-20 text-center">
+        <h1 className="text-3xl font-semibold">Administrator access required</h1>
+        <p className="mt-2 text-muted-foreground">
+          Sign in with an account authorized by the project administrator.
+        </p>
+        {!user && (
+          <Link
+            to="/signin"
+            className="mt-6 inline-flex min-h-11 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground"
+          >
+            Sign in
+          </Link>
+        )}
+      </div>
+    );
+  }
+  return <AdminDashboard />;
+}
+
+function AdminDashboard() {
   const { user } = useStore();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"reports" | "disputed" | "deleted" | "health">("reports");
@@ -1244,42 +1274,14 @@ export function AdminPage() {
 
             <div className="mt-6 rounded-xl border border-border/80 bg-muted/40 p-4">
               <h4 className="text-xs font-bold text-foreground uppercase tracking-wide">
-                Supabase Migration Reference
+                Administrator access
               </h4>
               <p className="mt-1 text-xs text-muted-foreground">
-                Ensure this SQL snippet is executed in your Supabase SQL Editor to allow administrators to read, update reports, and delete listings:
+                Access is assigned by project administrators by setting the profile{" "}
+                <code>role</code> to <code>ADMIN</code> in Supabase. Website users cannot grant
+                themselves access. Apply the admin-only access migration before enabling this
+                dashboard.
               </p>
-              <pre className="mt-2 overflow-x-auto rounded-lg bg-black/90 p-3 text-[11px] font-mono text-emerald-400">
-{`-- Migration: 20261113000200_admin_reports_access.sql
-grant select, update, delete on public.data_issue_reports to anon, authenticated;
-grant delete on public.deals to anon, authenticated;
-grant delete on public.food_events to anon, authenticated;
-
-drop policy if exists "allow read data_issue_reports" on public.data_issue_reports;
-create policy "allow read data_issue_reports"
-  on public.data_issue_reports for select
-  to anon, authenticated
-  using (true);
-
-drop policy if exists "allow update data_issue_reports" on public.data_issue_reports;
-create policy "allow update data_issue_reports"
-  on public.data_issue_reports for update
-  to anon, authenticated
-  using (true)
-  with check (status in ('open', 'reviewing', 'resolved', 'dismissed'));
-
-drop policy if exists "Allow admins and users to delete deals" on public.deals;
-create policy "Allow admins and users to delete deals"
-  on public.deals for delete
-  to anon, authenticated
-  using (true);
-
-drop policy if exists "Allow admins and users to delete food_events" on public.food_events;
-create policy "Allow admins and users to delete food_events"
-  on public.food_events for delete
-  to anon, authenticated
-  using (true);`}
-              </pre>
             </div>
           </div>
         </section>

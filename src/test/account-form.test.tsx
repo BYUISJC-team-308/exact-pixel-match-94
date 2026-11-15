@@ -36,6 +36,7 @@ describe("AccountForm - Utah Valley School Selection", () => {
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "password123" } });
     fireEvent.change(screen.getByLabelText(/full name/i), { target: { value: "Test User" } });
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "test@byu.edu" } });
+    expect(screen.getByLabelText(/email/i)).toHaveAttribute("maxLength", "255");
 
     // Submit should still be disabled because school is not selected
     expect(submitBtn).toBeDisabled();

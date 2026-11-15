@@ -46,7 +46,9 @@ const sample: TeamOkrSnapshot = {
   },
 };
 beforeEach(() => {
-  mocks.store.mockReturnValue({ user: { email: "team@example.com" } });
+  mocks.store.mockReturnValue({
+    user: { id: "team-user", email: "team@example.com", isAdmin: true },
+  });
   mocks.query.mockReturnValue({
     data: sample,
     isPending: false,
@@ -81,11 +83,23 @@ describe("Team OKR dashboard", () => {
     expect(screen.queryByText("0%")).not.toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
-  it("prompts signed-out users to sign in without an enabled metrics query", () => {
+  it("does not render or query metrics for signed-out users", () => {
     mocks.store.mockReturnValue({ user: null });
     render(<AnalyticsDrawerModal open onClose={() => {}} />);
-    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/signin");
-    expect(mocks.query).toHaveBeenCalledWith(expect.any(String), expect.any(String), null, true);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(mocks.query).toHaveBeenCalledWith(expect.any(String), expect.any(String), null, false);
+    expect(screen.queryByText("75%")).not.toBeInTheDocument();
+  });
+  it("does not render or query metrics for signed-in non-admin users", () => {
+    mocks.store.mockReturnValue({ user: { id: "regular-user", isAdmin: false } });
+    render(<AnalyticsDrawerModal open onClose={() => {}} />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(mocks.query).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      "regular-user",
+      false,
+    );
     expect(screen.queryByText("75%")).not.toBeInTheDocument();
   });
   it("shows query errors with retry rather than an empty dashboard", () => {

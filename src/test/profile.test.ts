@@ -21,21 +21,25 @@ vi.mock("@/lib/supabase", () => ({
   },
 }));
 import { avatarFileError, ownedAvatarPath, profileUser, saveProfile } from "@/lib/profile";
+import type { ProfileRow } from "@/lib/profile";
+import type { User } from "@/lib/store";
 const id = "00000000-0000-4000-8000-000000000001";
-const row = {
+const row: ProfileRow = {
   username: "lot",
   full_name: "Lot",
   phone: null,
   school: "BYU",
   email: "provider@example.com",
   avatar_url: `${id}/old.jpg`,
+  interests: ["Food"],
 };
-const input = {
+const input: User = {
   id,
   username: "newlot",
   name: "Lot Updated",
   phone: "801 555 0101",
   school: "UVU",
+  interests: ["Food"],
   email: "forged@example.com",
   avatar: "https://untrusted.example/a.png",
 };
@@ -58,6 +62,11 @@ it("validates unsupported, empty and oversized photos before upload", () => {
     avatarFileError(new File([new Uint8Array(2097153)], "x.jpg", { type: "image/jpeg" })),
   ).toMatch(/2 MB/);
 });
+it("maps only the Supabase ADMIN role to administrator access", async () => {
+  expect((await profileUser({ ...row, role: "ADMIN" }, id)).isAdmin).toBe(true);
+  expect((await profileUser({ ...row, role: "USER" }, id)).isAdmin).toBe(false);
+  expect((await profileUser(row, id)).isAdmin).toBe(false);
+});
 it("uses provider identity and existing school, saves storage reference then retires old photo", async () => {
   const result = await saveProfile(input, { file: photo() });
   expect(m.upload).toHaveBeenCalledWith(
@@ -69,6 +78,8 @@ it("uses provider identity and existing school, saves storage reference then ret
     username: "newlot",
     full_name: "Lot Updated",
     phone: "801 555 0101",
+    school: "UVU",
+    interests: ["Food"],
     avatar_url: `${id}/new.png`,
   });
   expect(m.remove).toHaveBeenCalledWith([`${id}/old.jpg`]);
@@ -77,6 +88,7 @@ it("uses provider identity and existing school, saves storage reference then ret
     id,
     email: "provider@example.com",
     school: "BYU",
+    interests: ["Food"],
     avatarPath: `${id}/new.png`,
   });
 });
@@ -141,6 +153,8 @@ it("leaves photo references untouched when only profile fields change", async ()
     username: "newlot",
     full_name: "Lot Updated",
     phone: "801 555 0101",
+    school: "UVU",
+    interests: ["Food"],
   });
   expect(m.upload).not.toHaveBeenCalled();
   expect(m.remove).not.toHaveBeenCalled();

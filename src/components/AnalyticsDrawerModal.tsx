@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { Modal, Btn } from "@/components/ui-bits";
 import { useStore } from "@/lib/store";
 import {
@@ -193,9 +192,10 @@ export function AnalyticsDrawerModal({ open, onClose }: { open: boolean; onClose
   const query = useTeamOkrSnapshot(
     applied.from,
     applied.through,
-    user?.email || user?.username || null,
-    open,
+    user?.id ?? null,
+    open && user?.isAdmin === true,
   );
+  if (!open || user?.isAdmin !== true) return null;
   return (
     <Modal open={open} onClose={onClose} title="Team OKR dashboard">
       <div className="space-y-4">
@@ -206,89 +206,74 @@ export function AnalyticsDrawerModal({ open, onClose }: { open: boolean; onClose
             Four OKRs measured from registered-user behavior stored in Supabase.
           </p>
         </div>
-        {!user ? (
-          <div className="rounded-xl bg-muted p-4">
-            <p className="text-sm">Sign in with an approved team account to view these metrics.</p>
-            <Link
-              to="/signin"
-              onClick={onClose}
-              className="mt-3 inline-flex min-h-11 items-center rounded-full bg-primary px-4 text-sm text-primary-foreground"
-            >
-              Sign in
-            </Link>
+        <form
+          className="space-y-3 rounded-xl bg-muted/60 p-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            try {
+              signupPeriod(from, through);
+              setFormError("");
+              setApplied({ from, through });
+            } catch (error) {
+              setFormError(error instanceof Error ? error.message : "Choose valid dates.");
+            }
+          }}
+        >
+          <p className="text-xs font-semibold">Accounts created during this period (UTC)</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs font-medium">
+              From
+              <input
+                required
+                type="date"
+                max={today}
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-background px-2"
+              />
+            </label>
+            <label className="text-xs font-medium">
+              Through
+              <input
+                required
+                type="date"
+                max={today}
+                value={through}
+                onChange={(e) => setThrough(e.target.value)}
+                className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-background px-2"
+              />
+            </label>
+          </div>
+          {formError && (
+            <p role="alert" className="text-sm text-destructive">
+              {formError}
+            </p>
+          )}
+          <Btn type="submit" variant="soft">
+            Apply signup period
+          </Btn>
+        </form>
+        {query.isPending && (
+          <p role="status" className="py-4 text-sm">
+            Loading stored team metrics…
+          </p>
+        )}
+        {query.isError ? (
+          <div role="alert" className="rounded-xl border border-destructive/30 p-3">
+            <p className="text-sm">{query.error.message}</p>
+            <Btn variant="soft" className="mt-3" onClick={() => void query.refetch()}>
+              Try again
+            </Btn>
           </div>
         ) : (
-          <>
-            <form
-              className="space-y-3 rounded-xl bg-muted/60 p-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                try {
-                  signupPeriod(from, through);
-                  setFormError("");
-                  setApplied({ from, through });
-                } catch (error) {
-                  setFormError(error instanceof Error ? error.message : "Choose valid dates.");
-                }
-              }}
-            >
-              <p className="text-xs font-semibold">Accounts created during this period (UTC)</p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-xs font-medium">
-                  From
-                  <input
-                    required
-                    type="date"
-                    max={today}
-                    value={from}
-                    onChange={(e) => setFrom(e.target.value)}
-                    className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-background px-2"
-                  />
-                </label>
-                <label className="text-xs font-medium">
-                  Through
-                  <input
-                    required
-                    type="date"
-                    max={today}
-                    value={through}
-                    onChange={(e) => setThrough(e.target.value)}
-                    className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-background px-2"
-                  />
-                </label>
-              </div>
-              {formError && (
-                <p role="alert" className="text-sm text-destructive">
-                  {formError}
-                </p>
-              )}
-              <Btn type="submit" variant="soft">
-                Apply signup period
-              </Btn>
-            </form>
-            {query.isPending && (
-              <p role="status" className="py-4 text-sm">
-                Loading stored team metrics…
-              </p>
-            )}
-            {query.isError ? (
-              <div role="alert" className="rounded-xl border border-destructive/30 p-3">
-                <p className="text-sm">{query.error.message}</p>
-                <Btn variant="soft" className="mt-3" onClick={() => void query.refetch()}>
-                  Try again
-                </Btn>
-              </div>
-            ) : (
-              query.data && <OkrSummary metrics={query.data} />
-            )}
-            <div className="flex flex-wrap gap-2 border-t border-border pt-3">
-              <Btn variant="soft" disabled={query.isFetching} onClick={() => void query.refetch()}>
-                {query.isFetching ? "Refreshing…" : "Refresh metrics"}
-              </Btn>
-              <Btn onClick={onClose}>Close</Btn>
-            </div>
-          </>
+          query.data && <OkrSummary metrics={query.data} />
         )}
+        <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+          <Btn variant="soft" disabled={query.isFetching} onClick={() => void query.refetch()}>
+            {query.isFetching ? "Refreshing…" : "Refresh metrics"}
+          </Btn>
+          <Btn onClick={onClose}>Close</Btn>
+        </div>
       </div>
     </Modal>
   );

@@ -23,6 +23,8 @@ describe("Account-backed Saves & Guest Migration (P03 & P04)", () => {
       removeItem: (key: string) => storage.delete(key),
       clear: () => storage.clear(),
     });
+    actions.scopeSavedItemsToAccount(null);
+    actions.clearSavedItems();
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -163,6 +165,13 @@ describe("Account-backed Saves & Guest Migration (P03 & P04)", () => {
   });
 
   describe("Store Operations & Sign-Out Clearing", () => {
+    it("does not persist signed-out saved items to browser storage", () => {
+      actions.setSavedItems({ deals: ["guest-deal"], events: ["guest-event"] });
+      const persisted = JSON.parse(localStorage.getItem("studeats-state") ?? "{}");
+      expect(getStoreState().savedDeals).toEqual(["guest-deal"]);
+      expect(persisted.savedDeals).toEqual([]);
+      expect(persisted.savedEvents).toEqual([]);
+    });
     it("clears saved deals and events on sign-out so public terminals stay clean", () => {
       actions.setSavedItems({
         deals: ["deal-a", "deal-b"],

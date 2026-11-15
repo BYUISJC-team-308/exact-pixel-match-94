@@ -114,7 +114,8 @@ Read Me
 
 # Team OKR dashboard (P07)
 
-- Open Profile → Team OKRs (or Team Analytics while signed out), then sign in with an approved dashboard account.
+- Only profiles with `role = 'ADMIN'` see Team OKRs or Admin Reports. The role is assigned in Supabase and cannot be changed through the website.
+- Apply `20261115000200_admin_only_access.sql` before deploying these UI changes; the migration gates the dashboard, report policies, and listing-deletion RPC.
 - Production reads only the restricted `team_okr_snapshot` aggregate RPC. No raw activity is downloaded or merged with local backups, and demo buttons no longer create production activity.
 - All four KRs show their counting rules, sample sizes, targets, UTC signup period, calculation time, and data-readiness checks. The Product Owner set the first-save mean target to under five minutes.
 - Older cohorts without recorded signup or session markers show **Tracking incomplete**, not fabricated zero-percent results. Seven-day retention excludes users whose full 168-hour window is unfinished.

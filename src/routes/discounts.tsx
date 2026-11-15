@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import type { Deal, DealCategory } from "@/lib/data";
+import { dealInterestCategories, type Deal, type DealCategory } from "@/lib/data";
 import { actions, useStore } from "@/lib/store";
 import {
   DealDetail,
@@ -21,28 +21,13 @@ import {
   useDealInteractionsQuery,
 } from "@/lib/deal-verification";
 
-export const discountTypes = [
-  "All Deals",
-  "Percent off",
-  "Free / Trials",
-  "Fixed price",
-] as const;
+export const discountTypes = ["All Deals", "Percent off", "Free / Trials", "Fixed price"] as const;
 export type DiscountType = (typeof discountTypes)[number];
 
 export const discountStatusFilters = ["All", "Saved", "New"] as const;
 export type DiscountStatusFilter = (typeof discountStatusFilters)[number];
 
-export const discountCategories = [
-  "All categories",
-  "Apparel",
-  "Tech",
-  "Fitness",
-  "Food",
-  "AI",
-  "Subscription",
-  "Groceries",
-  "Travel",
-] as const;
+export const discountCategories = ["All categories", ...dealInterestCategories] as const;
 export type DiscountCategory = (typeof discountCategories)[number];
 
 export const discountSortOptions = [
@@ -55,29 +40,45 @@ export const discountSortOptions = [
 ] as const;
 export type DiscountSortOption = (typeof discountSortOptions)[number]["value"];
 
+type DiscountSearch = {
+  dealId?: string;
+  q?: string;
+  type?: DiscountType;
+  status?: DiscountStatusFilter;
+  category?: string;
+  sort?: DiscountSortOption;
+  view?: "grid" | "compact";
+};
+
 export const Route = createFileRoute("/discounts")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    dealId: typeof search.dealId === "string" ? search.dealId : undefined,
-    q: typeof search.q === "string" ? search.q : undefined,
-    type:
-      typeof search.type === "string" && (discountTypes as readonly string[]).includes(search.type)
-        ? (search.type as DiscountType)
-        : undefined,
-    status:
-      typeof search.status === "string" &&
-      (discountStatusFilters as readonly string[]).includes(search.status)
-        ? (search.status as DiscountStatusFilter)
-        : undefined,
-    category: typeof search.category === "string" ? search.category : undefined,
-    sort:
-      typeof search.sort === "string" && discountSortOptions.some((o) => o.value === search.sort)
-        ? (search.sort as DiscountSortOption)
-        : undefined,
-    view:
-      search.view === "grid" || search.view === "compact"
-        ? (search.view as "grid" | "compact")
-        : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): DiscountSearch => {
+    const validated: DiscountSearch = {};
+    if (typeof search["dealId"] === "string") validated.dealId = search["dealId"];
+    if (typeof search["q"] === "string") validated.q = search["q"];
+    if (
+      typeof search["type"] === "string" &&
+      (discountTypes as readonly string[]).includes(search["type"])
+    ) {
+      validated.type = search["type"] as DiscountType;
+    }
+    if (
+      typeof search["status"] === "string" &&
+      (discountStatusFilters as readonly string[]).includes(search["status"])
+    ) {
+      validated.status = search["status"] as DiscountStatusFilter;
+    }
+    if (typeof search["category"] === "string") validated.category = search["category"];
+    if (
+      typeof search["sort"] === "string" &&
+      discountSortOptions.some((option) => option.value === search["sort"])
+    ) {
+      validated.sort = search["sort"] as DiscountSortOption;
+    }
+    if (search["view"] === "grid" || search["view"] === "compact") {
+      validated.view = search["view"];
+    }
+    return validated;
+  },
   head: () => ({
     meta: [
       { title: "Discount Dashboard — Student Steals" },
@@ -145,24 +146,26 @@ function DealCardUpvoteButton({
 }
 
 function Discounts() {
-  let search: ReturnType<typeof Route.useSearch> | undefined;
-  try {
-    search = typeof Route.useSearch === "function" ? Route.useSearch() : undefined;
-  } catch {
-    search = undefined;
-  }
+  const search = Route.useSearch();
 
-  const { savedDeals } = useStore();
+  const { savedDeals, user } = useStore();
   const [q, setQ] = useState(search?.q ?? "");
   const [typeFilter, setTypeFilter] = useState<DiscountType>(search?.type ?? "All Deals");
   const [statusFilter, setStatusFilter] = useState<DiscountStatusFilter>(search?.status ?? "All");
   const [cat, setCat] = useState<string>(search?.category ?? "All categories");
+  const [categoryTouched, setCategoryTouched] = useState(false);
   const [sort, setSort] = useState<DiscountSortOption>(search?.sort ?? "best");
   const [viewMode, setViewMode] = useState<"compact" | "grid">(search?.view ?? "grid");
   const [open, setOpen] = useState<Deal | null>(null);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authAction, setAuthAction] = useState("upvote deals");
+
+  useEffect(() => {
+    if (!categoryTouched && !search?.category && user?.interests?.length) {
+      setCat("My interests");
+    }
+  }, [categoryTouched, search?.category, user?.interests]);
 
   // Sync viewMode with localStorage on mount if not specified in URL query
   useEffect(() => {
@@ -172,7 +175,9 @@ function Discounts() {
         if (stored === "compact" || stored === "grid") {
           setViewMode(stored);
         }
-      } catch {}
+      } catch (error) {
+        console.warn("Unable to read the discounts view preference.", error);
+      }
     }
   }, [search?.view]);
 
@@ -181,7 +186,9 @@ function Discounts() {
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem("studeats_catalog_view", mode);
-      } catch {}
+      } catch (error) {
+        console.warn("Unable to save the discounts view preference.", error);
+      }
     }
   };
 
@@ -220,7 +227,10 @@ function Discounts() {
     if (typeFilter === "Fixed price" && d.type !== "Fixed price") return false;
 
     // 3. Category Filter
-    if (cat !== "All" && cat !== "All categories") {
+    if (cat === "My interests") {
+      const categories = d.categories?.length ? d.categories : [d.category];
+      if (!user?.interests?.some((interest) => categories.includes(interest))) return false;
+    } else if (cat !== "All" && cat !== "All categories") {
       const match =
         d.category === cat || (d.categories && d.categories.includes(cat as DealCategory));
       if (!match) return false;
@@ -229,7 +239,8 @@ function Discounts() {
     // 4. Search Filter
     if (t) {
       const catStr = d.categories ? d.categories.join(" ") : d.category;
-      const searchable = `${d.title} ${d.company} ${d.description} ${catStr} ${d.city || ""} ${d.howTo || ""}`.toLowerCase();
+      const searchable =
+        `${d.title} ${d.company} ${d.description} ${catStr} ${d.city || ""} ${d.howTo || ""}`.toLowerCase();
       if (!searchable.includes(t)) return false;
     }
     return true;
@@ -283,7 +294,7 @@ function Discounts() {
     setQ("");
     setTypeFilter("All Deals");
     setStatusFilter("All");
-    setCat("All categories");
+    setCat(user?.interests?.length ? "My interests" : "All categories");
     setSort("best");
   };
 
@@ -367,7 +378,9 @@ function Discounts() {
 
               <div className="flex items-center gap-1.5 text-xs">
                 {score.hasVotes && (
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${score.badgeColor}`}>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${score.badgeColor}`}
+                  >
                     {score.percentage}% Real
                   </span>
                 )}
@@ -385,7 +398,9 @@ function Discounts() {
             {isCommunity && (
               <p className="mt-2 text-[11px] font-medium text-muted-foreground flex items-center gap-1">
                 <span>Posted by</span>
-                <span className="text-primary font-semibold">@{d.submitterUsername || "student"}</span>
+                <span className="text-primary font-semibold">
+                  @{d.submitterUsername || "student"}
+                </span>
               </p>
             )}
 
@@ -394,9 +409,7 @@ function Discounts() {
               onClick={() => setOpen(d)}
               className="mt-2.5 block w-full text-left focus:outline-none"
             >
-              <h4 className="text-sm font-bold text-foreground/90 line-clamp-1">
-                {d.title}
-              </h4>
+              <h4 className="text-sm font-bold text-foreground/90 line-clamp-1">{d.title}</h4>
               <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                 {d.description}
               </p>
@@ -486,9 +499,7 @@ function Discounts() {
           {/* Column 3: Title, Badges & Description (Fills remaining horizontal space) */}
           <div className="min-w-0 flex-1 pr-3">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <h4 className="text-sm font-bold text-foreground/90 line-clamp-1">
-                {d.title}
-              </h4>
+              <h4 className="text-sm font-bold text-foreground/90 line-clamp-1">{d.title}</h4>
               {isCommunity ? (
                 <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-accent shrink-0">
                   👥 Community
@@ -499,7 +510,9 @@ function Discounts() {
                 </span>
               )}
               {score.hasVotes && (
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${score.badgeColor} shrink-0`}>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${score.badgeColor} shrink-0`}
+                >
                   {score.percentage}% Real
                 </span>
               )}
@@ -756,7 +769,18 @@ function Discounts() {
             <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
               Category:
             </span>
-            <FilterChips options={discountCategories} value={cat} onChange={setCat} />
+            <FilterChips
+              options={[
+                discountCategories[0],
+                ...(user?.interests?.length ? ["My interests"] : []),
+                ...discountCategories.slice(1),
+              ]}
+              value={cat}
+              onChange={(value) => {
+                setCategoryTouched(true);
+                setCat(value);
+              }}
+            />
           </div>
 
           <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -784,8 +808,8 @@ function Discounts() {
       </div>
 
       {/* Loading Skeleton */}
-      {isLoading && (
-        viewMode === "grid" ? (
+      {isLoading &&
+        (viewMode === "grid" ? (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="glass animate-pulse p-5">
@@ -819,8 +843,7 @@ function Discounts() {
               </div>
             ))}
           </div>
-        )
-      )}
+        ))}
 
       {/* Error State */}
       {isError && (
@@ -834,8 +857,9 @@ function Discounts() {
         </div>
       )}
 
-      {!isLoading && !isError && (
-        filtered.length === 0 ? (
+      {!isLoading &&
+        !isError &&
+        (filtered.length === 0 ? (
           <div className="mt-6 glass p-10 text-center">
             <div className="text-3xl">🏷️</div>
             <h4 className="mt-3 text-lg font-semibold">
@@ -856,7 +880,10 @@ function Discounts() {
                   ? "Tap a discount’s star to save it here on this browser."
                   : "No discounts match your selected filters right now. Try resetting filters or check provider terms."}
             </p>
-            {(q || cat !== "All categories" || typeFilter !== "All Deals" || statusFilter !== "All") && (
+            {(q ||
+              cat !== "All categories" ||
+              typeFilter !== "All Deals" ||
+              statusFilter !== "All") && (
               <button
                 onClick={resetFilters}
                 className="mt-4 inline-flex items-center rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20"
@@ -873,7 +900,10 @@ function Discounts() {
                 <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border/60 pb-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 id="verified-deals-heading" className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                      <h2
+                        id="verified-deals-heading"
+                        className="text-xl font-bold tracking-tight text-foreground sm:text-2xl"
+                      >
                         Verified Deals
                       </h2>
                       <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
@@ -914,7 +944,10 @@ function Discounts() {
               <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border/60 pb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 id="community-deals-heading" className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                    <h2
+                      id="community-deals-heading"
+                      className="text-xl font-bold tracking-tight text-foreground sm:text-2xl"
+                    >
                       Community Deals
                     </h2>
                     <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-accent">
@@ -950,7 +983,9 @@ function Discounts() {
                 )
               ) : (
                 <div className="mt-4 rounded-xl border border-dashed border-border/80 p-8 text-center">
-                  <p className="text-sm font-medium text-foreground">No community-submitted deals yet in this filter.</p>
+                  <p className="text-sm font-medium text-foreground">
+                    No community-submitted deals yet in this filter.
+                  </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Know a great student special or happy hour deal? Be the first to share it!
                   </p>
@@ -964,16 +999,11 @@ function Discounts() {
               )}
             </section>
           </div>
-        )
-      )}
+        ))}
 
       {open && <DealDetail deal={open} onClose={() => setOpen(null)} />}
       {submitOpen && <SubmitDealModal open={submitOpen} onClose={() => setSubmitOpen(false)} />}
-      <AuthRequiredModal
-        open={authOpen}
-        onClose={() => setAuthOpen(false)}
-        action={authAction}
-      />
+      <AuthRequiredModal open={authOpen} onClose={() => setAuthOpen(false)} action={authAction} />
     </>
   );
 }

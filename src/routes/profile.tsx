@@ -61,20 +61,7 @@ function Profile() {
           >
             Sign in
           </Link>
-          <button
-            onClick={() => setAnalyticsOpen(true)}
-            className="inline-flex rounded-full bg-secondary px-4 py-2.5 text-sm font-medium ring-1 ring-border hover:bg-glass"
-          >
-            📊 Team OKRs
-          </button>
-          <Link
-            to="/admin"
-            className="inline-flex rounded-full bg-secondary px-4 py-2.5 text-sm font-medium ring-1 ring-border hover:bg-glass"
-          >
-            🛡️ Admin Reports
-          </Link>
         </div>
-        <AnalyticsDrawerModal open={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
       </div>
     );
   }
@@ -86,18 +73,22 @@ function Profile() {
         title={`Hi, ${user.name.split(" ")[0]}`}
       >
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setAnalyticsOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-4 py-2 text-sm font-semibold text-primary hover:bg-accent/25 transition-colors"
-          >
-            📊 Team OKRs
-          </button>
-          <Link
-            to="/admin"
-            className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-semibold ring-1 ring-border hover:bg-glass transition-colors"
-          >
-            🛡️ Admin Reports
-          </Link>
+          {user.isAdmin && (
+            <>
+              <button
+                onClick={() => setAnalyticsOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-4 py-2 text-sm font-semibold text-primary hover:bg-accent/25 transition-colors"
+              >
+                📊 Team OKRs
+              </button>
+              <Link
+                to="/admin"
+                className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-semibold ring-1 ring-border hover:bg-glass transition-colors"
+              >
+                🛡️ Admin Reports
+              </Link>
+            </>
+          )}
           <a
             href="/#my-hub"
             className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-semibold ring-1 ring-border hover:bg-glass transition-colors"
@@ -250,7 +241,10 @@ function Profile() {
       </section>
 
       {/* Embedded Admin Drawer / Profile Modal (Question 3 Answer) */}
-      <AnalyticsDrawerModal open={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
+      <AnalyticsDrawerModal
+        open={analyticsOpen && user.isAdmin === true}
+        onClose={() => setAnalyticsOpen(false)}
+      />
       <DealDetail deal={selectedDeal} onClose={() => setSelectedDeal(null)} />
     </div>
   );
