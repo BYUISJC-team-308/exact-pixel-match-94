@@ -314,6 +314,23 @@ describe("Account-Backed Saves - Resilience & Stress Tests", () => {
   });
 
   describe("6. Multi-Device Real-Time Sync & WebSocket Channels", () => {
+    it("can subscribe again while removal of the previous channel is pending", () => {
+      const topics = new Set<string>();
+      const channel = { on: vi.fn(), subscribe: vi.fn() };
+      channel.on.mockReturnValue(channel);
+      vi.spyOn(supabase, "channel").mockImplementation((topic) => {
+        if (topics.has(topic)) throw new Error("Cannot add callbacks after subscribe");
+        topics.add(topic);
+        return channel as unknown as ReturnType<typeof supabase.channel>;
+      });
+      vi.spyOn(supabase, "removeChannel").mockReturnValue(new Promise(() => {}));
+
+      const remove = subscribeToUserSavedChanges("user-uuid-1", vi.fn());
+      remove();
+      expect(() => subscribeToUserSavedChanges("user-uuid-1", vi.fn())).not.toThrow();
+      expect(topics.size).toBe(2);
+    });
+
     it("subscribes to postgres_changes on saved_deals and saved_events and updates on change", async () => {
       let dealChangeHandler: () => Promise<void> = async () => {};
       let eventChangeHandler: () => Promise<void> = async () => {};
@@ -337,7 +354,7 @@ describe("Account-Backed Saves - Resilience & Stress Tests", () => {
       const updateCallback = vi.fn();
       const unsub = subscribeToUserSavedChanges("user-uuid-1", updateCallback);
 
-      expect(supabase.channel).toHaveBeenCalledWith("saved-items-user-uuid-1");
+      expect(supabase.channel).toHaveBeenCalledWith(expect.stringMatching(/^saved-items-user-uuid-1-\d+$/));
       expect(mockChannel.on).toHaveBeenCalledTimes(2);
       expect(mockChannel.subscribe).toHaveBeenCalled();
 

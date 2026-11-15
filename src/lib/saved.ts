@@ -162,6 +162,8 @@ export async function syncAndMergeGuestSaves(
   }
 }
 
+let savedItemsSubscriptionSequence = 0;
+
 /**
  * Subscribes to live database changes on saved_deals and saved_events
  * for the authenticated userId across all devices.
@@ -181,20 +183,23 @@ export function subscribeToUserSavedChanges(
     return () => {};
   }
 
+  let active = true;
   const handleDbChange = async () => {
+    if (!active) return;
     try {
       const [remoteDeals, remoteEvents] = await Promise.all([
         fetchUserSavedDeals(userId),
         fetchUserSavedEvents(userId),
       ]);
-      onUpdate({ deals: remoteDeals, events: remoteEvents });
+      if (active) onUpdate({ deals: remoteDeals, events: remoteEvents });
     } catch (err) {
       console.warn("Realtime saved items sync error:", err);
     }
   };
 
   const channel = supabase
-    .channel(`saved-items-${userId}`)
+    // Supabase reuses channels by topic until asynchronous removal finishes.
+    .channel(`saved-items-${userId}-${++savedItemsSubscriptionSequence}`)
     .on(
       "postgres_changes",
       {
@@ -221,6 +226,8 @@ export function subscribeToUserSavedChanges(
   }
 
   return () => {
+    if (!active) return;
+    active = false;
     if (supabase && typeof supabase.removeChannel === "function") {
       void supabase.removeChannel(channel);
     }
