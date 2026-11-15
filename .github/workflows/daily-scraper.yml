@@ -4,7 +4,12 @@ on:
   schedule:
     # Runs daily at 09:00 UTC (3:00 AM Mountain Time)
     - cron: '0 9 * * *'
-  workflow_dispatch: # Allows manual trigger from GitHub Actions tab anytime
+  workflow_dispatch:
+    inputs:
+      verify_ai_only:
+        description: 'Classify a sample offer with Gemini without writing to the database'
+        type: boolean
+        default: true
 
 jobs:
   scrape-and-sync:
@@ -31,4 +36,11 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: npm run scrape
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          VERIFY_AI_ONLY: ${{ inputs.verify_ai_only }}
+        run: |
+          if [ "$VERIFY_AI_ONLY" = "true" ]; then
+            node scripts/verify-deal-ai.js
+          else
+            npm run scrape
+          fi
