@@ -62,7 +62,8 @@ function Help() {
         <section className="rounded-2xl border border-border bg-white/60 p-5">
           <h2 className="text-xl font-semibold">Your saved finds</h2>
           <p className="mt-2 text-sm leading-relaxed">
-            Tap the save icon on a discount or event, then open My Hub on the home page. Sign in to see your saved discounts and events on your devices. Card punches stay on this browser.
+            Tap the save icon on a discount or event, then open My Hub on the home page. Card
+            punches stay in the browser where you recorded them.
           </p>
           <a
             href="/#my-hub"
@@ -74,8 +75,8 @@ function Help() {
         <section className="rounded-2xl border border-border bg-white/60 p-5">
           <h2 className="text-xl font-semibold">What an account does</h2>
           <p className="mt-2 text-sm leading-relaxed">
-            Create an account to keep your name, school, and optional profile photo. Signing in does
-            not yet sync saved discounts, events, or card-use tracking between browsers.
+            Create an account to keep your name, school, and optional profile photo. Sign in on any
+            device to see the discounts and events saved to your account.
           </p>
           <Link
             to="/account"
