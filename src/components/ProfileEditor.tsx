@@ -11,6 +11,7 @@ import { dealInterestCategories } from "@/lib/data";
 import type { User } from "@/lib/store";
 
 export function ProfileEditor({ initial }: { initial: User }) {
+  const [isEditing, setIsEditing] = useState(false);
   const [baseline, setBaseline] = useState(initial);
   const [values, setValues] = useState({
     username: initial.username,
@@ -81,6 +82,64 @@ export function ProfileEditor({ initial }: { initial: User }) {
     clearFeedback();
     if (picker.current) picker.current.value = "";
   };
+
+  const closeEditor = () => {
+    reset();
+  };
+
+  const openEditor = () => {
+    clearFeedback();
+    setIsEditing(true);
+  };
+
+  if (!isEditing) {
+    const avatar = remove ? undefined : (preview ?? baseline.avatar);
+    return (
+      <section className="rounded-3xl border-2 border-border bg-card p-4 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-primary/10 text-xl font-semibold text-primary">
+              {avatar ? (
+                <img src={avatar} alt="Your profile photo" className="size-full object-cover" />
+              ) : (
+                <span role="img" aria-label="No profile photo">
+                  {values.name[0] || "?"}
+                </span>
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Profile</p>
+              <h2 className="text-xl font-semibold">{baseline.name}</h2>
+              <p className="text-sm text-muted-foreground">@{baseline.username}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={openEditor}
+            className="min-h-11 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+          >
+            Edit profile information
+          </button>
+        </div>
+        <div className="mt-5 grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
+          <div className="rounded-xl bg-secondary/50 p-3">
+            <span className="block text-xs uppercase tracking-wide text-muted-foreground/80">School</span>
+            <span className="mt-1 block font-medium text-foreground">{baseline.school}</span>
+          </div>
+          <div className="rounded-xl bg-secondary/50 p-3">
+            <span className="block text-xs uppercase tracking-wide text-muted-foreground/80">Phone</span>
+            <span className="mt-1 block font-medium text-foreground">{baseline.phone || "Not provided"}</span>
+          </div>
+          <div className="rounded-xl bg-secondary/50 p-3">
+            <span className="block text-xs uppercase tracking-wide text-muted-foreground/80">Interests</span>
+            <span className="mt-1 block font-medium text-foreground">
+              {baseline.interests?.length ? baseline.interests.join(", ") : "None selected"}
+            </span>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <form
@@ -420,7 +479,7 @@ export function ProfileEditor({ initial }: { initial: User }) {
           <button
             type="button"
             disabled={!dirty && !errors.photo}
-            onClick={reset}
+            onClick={closeEditor}
             className="min-h-11 rounded-full bg-secondary px-5 py-2.5 text-sm font-medium ring-1 ring-border disabled:opacity-50"
           >
             Cancel changes

@@ -18,8 +18,12 @@ const user: User = {
 };
 beforeEach(() => vi.resetAllMocks());
 afterEach(cleanup);
+const openEditor = () => {
+  fireEvent.click(screen.getByRole("button", { name: "Edit profile information" }));
+};
 it("keeps passwords out of the editor and supports cancelling profile changes", () => {
   render(<ProfileEditor initial={user} />);
+  openEditor();
   expect(screen.queryByLabelText(/password/i)).toBeNull();
   expect(screen.getByLabelText("School")).toHaveValue("BYU");
   expect(screen.getByRole("button", { name: "Food" })).toHaveAttribute("aria-pressed", "true");
@@ -36,6 +40,7 @@ it("saves selected deal interests and requests email changes with confirmation",
   });
   vi.mocked(requestEmailChange).mockResolvedValue(null);
   render(<ProfileEditor initial={user} />);
+  openEditor();
   fireEvent.click(screen.getByRole("button", { name: "Tech" }));
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() =>
@@ -53,6 +58,7 @@ it("saves selected deal interests and requests email changes with confirmation",
 });
 it("announces validation and oversized upload errors", async () => {
   render(<ProfileEditor initial={user} />);
+  openEditor();
   fireEvent.change(screen.getByLabelText("Full name"), { target: { value: " " } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   expect(await screen.findByText("Enter your name.")).toBeVisible();
@@ -67,6 +73,7 @@ it("retains edits on failed save and allows a successful retry with confirmation
     .mockResolvedValueOnce({ error: "Network unavailable. Retry." })
     .mockResolvedValueOnce({ user: { ...user, name: "Updated" } });
   render(<ProfileEditor initial={user} />);
+  openEditor();
   fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Updated" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Network unavailable");
@@ -84,6 +91,7 @@ it("queues removal until save and prevents duplicate submissions", async () => {
       }),
   );
   render(<ProfileEditor initial={user} />);
+  openEditor();
   fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
   expect(updateProfile).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
@@ -99,6 +107,7 @@ it("queues removal until save and prevents duplicate submissions", async () => {
 it("allows removing a saved photo even if its signed preview is unavailable", () => {
   const { avatar: _avatar, ...withoutPhoto } = user;
   render(<ProfileEditor initial={{ ...withoutPhoto, avatarPath: "owner/photo.jpg" }} />);
+  openEditor();
   expect(screen.getByText(/saved photo couldn't load/)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
   expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
