@@ -1,5 +1,5 @@
 import { roomLabel } from "@/lib/student-copy";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MapPlace } from "@/lib/map-places";
 import type { Deal, SSDeal } from "@/lib/data";
 import type { NormalizedFoodEvent } from "@/lib/food-events";
@@ -22,9 +22,10 @@ type Props = {
 };
 
 const mapTilerKey = import.meta.env["VITE_MAPTILER_KEY"];
+const fallbackStyle = "https://tiles.openfreemap.org/styles/liberty";
 const mapStyle = mapTilerKey
   ? `https://api.maptiler.com/maps/streets-v4/style.json?key=${encodeURIComponent(mapTilerKey)}`
-  : "https://tiles.openfreemap.org/styles/liberty";
+  : fallbackStyle;
 
 function createMapIcon(kind: "card" | "event" | "discount") {
   const canvas = document.createElement("canvas");
@@ -87,6 +88,7 @@ function placeData(places: MapPlace[], include: (place: MapPlace) => boolean) {
 
 export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPlaceId, onSelect, onOpenOffer, onOpenEvent, onOpenDeal, onUserLocation }: Props) {
   const container = useRef<HTMLDivElement>(null);
+  const [basemapUnavailable, setBasemapUnavailable] = useState(false);
   const onSelectRef = useRef(onSelect);
   const onOpenOfferRef = useRef(onOpenOffer);
   const onOpenEventRef = useRef(onOpenEvent);
@@ -106,6 +108,10 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
   useEffect(() => {
     if (!container.current) return;
     let cancelled = false;
+    let startupTimer: ReturnType<typeof setTimeout> | undefined;
+    let styleReady = false;
+    let usingFallback = mapStyle === fallbackStyle;
+    setBasemapUnavailable(false);
     let map: import("maplibre-gl").Map | undefined;
     let activePopup: import("maplibre-gl").Popup | undefined;
     let recenterButton: HTMLButtonElement | undefined;
@@ -132,6 +138,26 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
         maxZoom: 19,
         attributionControl: {},
       });
+      const recoverBasemap = () => {
+        if (!map || cancelled || styleReady) return;
+        clearTimeout(startupTimer);
+        if (usingFallback) {
+          setBasemapUnavailable(true);
+          return;
+        }
+        usingFallback = true;
+        map.setStyle(fallbackStyle, { diff: false });
+        startupTimer = setTimeout(recoverBasemap, 10_000);
+      };
+      map.on("error", (event) => {
+        const { error } = event;
+        // A single tile can fail while the rest of the map remains usable.
+        if (styleReady || ("tile" in event && event.tile)) return;
+        if (!("sourceId" in event) || ("status" in error && (error.status === 401 || error.status === 403))) {
+          recoverBasemap();
+        }
+      });
+      startupTimer = setTimeout(recoverBasemap, 10_000);
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
       if (view === "campus" && container.current) {
         recenterButton = document.createElement("button");
@@ -276,8 +302,11 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
           .addTo(map);
       };
       let selectedBuildingId: string | number | undefined;
-      map.on("load", () => {
+      map.once("load", () => {
         if (!map || cancelled) return;
+        styleReady = true;
+        clearTimeout(startupTimer);
+        setBasemapUnavailable(false);
         const { places, showInactiveBuildings, focusPlaceId } = latest.current;
         if (view === "campus" && !focusedPlace) {
           const active = places.filter((place) => place.events.length > 0);
@@ -332,7 +361,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
           } });
           map.addLayer({ id: "building-labels", type: "symbol", source: "buildings", minzoom: 14.5, layout: {
             "text-field": ["step", ["zoom"], ["get", "code"], 17, ["get", "name"]],
-            "text-font": ["Roboto Regular", "Noto Sans Regular"],
+            "text-font": usingFallback ? ["Noto Sans Regular"] : ["Roboto Regular", "Noto Sans Regular"],
             "text-size": 12, "text-offset": [0, 1], "text-anchor": "top", "text-optional": true,
           }, paint: { "text-color": campus?.primaryColor || "#082e4f", "text-halo-color": campus?.secondaryColor || "#f8f4e8", "text-halo-width": 2.5 } });
           if (focusedPlace) {
@@ -384,7 +413,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
           "circle-radius": view === "campus" ? 19 : 16, "circle-stroke-color": "#fff", "circle-stroke-width": 2.5,
         } });
         map.addLayer({ id: "place-icons", type: "symbol", source: "places", filter: ["!", ["has", "point_count"]], layout: {
-          ...(view === "campus" ? { "text-field": ["to-string", ["get", "eventCount"]], "text-size": 14, "text-font": ["Roboto Bold", "Noto Sans Bold"], "text-allow-overlap": true } : {
+          ...(view === "campus" ? { "text-field": ["to-string", ["get", "eventCount"]], "text-size": 14, "text-font": usingFallback ? ["Noto Sans Bold"] : ["Roboto Bold", "Noto Sans Bold"], "text-allow-overlap": true } : {
             "icon-image": ["match", ["get", "kind"], "event", "place-food-icon", "discount", "place-discount-icon", "place-card-icon"],
             "icon-size": 1, "icon-allow-overlap": true, "icon-ignore-placement": true,
           }),
@@ -442,9 +471,12 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
         let renderedPlaces = places;
         let renderedInactive = showInactiveBuildings;
       });
+    }).catch(() => {
+      if (!cancelled) setBasemapUnavailable(true);
     });
     return () => {
       cancelled = true;
+      clearTimeout(startupTimer);
       refresh.current = null;
       resizeObserver.disconnect();
       recenterButton?.remove();
@@ -457,5 +489,18 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
     previousFocus.current = focusPlaceId;
   }, [places, showInactiveBuildings, focusPlaceId]);
 
-  return <div ref={container} className="relative h-[60svh] min-h-[280px] max-h-[640px] w-full overflow-hidden rounded-[1.6rem] sm:h-[640px] xl:h-[calc(100dvh-6rem)] xl:max-h-[820px]" aria-label={view === "campus" ? `${campus?.shortName || "College"} campus events map` : "Area discounts and free food map"} />;
+  return (
+    <div className="relative h-[60svh] min-h-[280px] max-h-[640px] w-full overflow-hidden rounded-[1.6rem] sm:h-[640px] xl:h-[calc(100dvh-6rem)] xl:max-h-[820px]">
+      <div
+        ref={container}
+        className="absolute inset-0"
+        aria-label={view === "campus" ? `${campus?.shortName || "College"} campus events map` : "Area discounts and free food map"}
+      />
+      {basemapUnavailable && (
+        <p className="pointer-events-none absolute inset-x-4 bottom-5 rounded-lg bg-background px-4 py-3 text-sm text-foreground shadow" role="status">
+          The map background is unavailable. You can still search and open places from the results.
+        </p>
+      )}
+    </div>
+  );
 }
