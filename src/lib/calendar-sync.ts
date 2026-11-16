@@ -50,7 +50,7 @@ export function getGoogleCalendarUrl(item: CalendarEventItem): string {
   const text = encodeURIComponent(item.title);
   const location = encodeURIComponent([item.building, item.room].filter(Boolean).join(", "));
   const details = encodeURIComponent(
-    `${item.details || ""}\n\nDiscovered on Student Steals: https://studeats.vercel.app`,
+    `${item.details || ""}\n\nDiscovered on Student Steals: https://studentsteals.vercel.app`,
   );
 
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${datesParam}&details=${details}&location=${location}`;
@@ -75,7 +75,7 @@ export function buildCalendarFile(item: CalendarEventItem): string {
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
-    `UID:${item.id || crypto.randomUUID()}@studeats.vercel.app`,
+    `UID:${item.id || crypto.randomUUID()}@studentsteals.vercel.app`,
     `DTSTAMP:${formatUtcIso(new Date())}`,
     `DTSTART:${formatUtcIso(start)}`,
     `DTEND:${formatUtcIso(end)}`,

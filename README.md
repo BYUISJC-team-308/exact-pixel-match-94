@@ -150,7 +150,7 @@ Our team chose **Supabase as a backend-as-a-service**, with PostgreSQL as the da
 Supabase fits our team because it is accessible and provides a shared database without requiring us to build and maintain a separate backend server. PostgreSQL supports the foreign-key relationships in our data model, and the Supabase dashboard lets us view tables, add sample data, and check whether changes persist. Supabase also generates APIs from the database tables, which helps connect the frontend to the database without writing server routes from scratch. We chose this approach over Lovable because we can work directly with the database and avoid depending on a limited supply of AI-builder tokens. We will keep configuration in environment variables and exclude the `.env` file from Git.
 ## How to Get It Running
 
-The project url is : studeats.vercel.app
+The project url is : studentsteals.vercel.app
 > Check the repository’s `package.json` and Supabase setup, then replace the bracketed instructions with the exact steps for this project.
 1. Clone the repository:
    git clone https://github.com/ThirstyCarrot/exact-pixel-match-94.git

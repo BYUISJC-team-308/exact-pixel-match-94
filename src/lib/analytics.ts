@@ -9,7 +9,11 @@ let memoryVisit: Visit | undefined;
 let memoryDevice: string | undefined;
 
 function trackingEnabled() {
-  return typeof window !== "undefined" && window.location.hostname === "studeats.vercel.app";
+  return (
+    typeof window !== "undefined" &&
+    (window.location.hostname === "studentsteals.vercel.app" ||
+      window.location.hostname === "studeats.vercel.app")
+  );
 }
 
 function visitId() {

@@ -1,7 +1,7 @@
 # Student Steals final presentation
 
-Site: **studeats.vercel.app**  
-[Download the QR code](student-steals-qr.png) · [Open the site](https://studeats.vercel.app/) · [GitHub](https://github.com/BYUISJC-team-308/exact-pixel-match-94)
+Site: **studentsteals.vercel.app**  
+[Download the QR code](student-steals-qr.png) · [Open the site](https://studentsteals.vercel.app/) · [GitHub](https://github.com/BYUISJC-team-308/exact-pixel-match-94)
 
 ## Five-minute run of show
 
