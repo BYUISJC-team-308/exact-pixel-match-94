@@ -105,7 +105,7 @@ export function Calendar({ renderedAt }: { renderedAt: number }) {
           month: "long",
           day: "numeric",
         })}`}
-        title="Campus & Deals Calendar"
+        title="Calendar"
       >
         <div className="flex flex-wrap items-center gap-2">
           <Link
