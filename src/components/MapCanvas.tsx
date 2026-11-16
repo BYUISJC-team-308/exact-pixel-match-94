@@ -494,7 +494,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
     <div className="relative h-[60svh] min-h-[280px] max-h-[640px] w-full overflow-hidden rounded-[1.6rem] sm:h-[640px] xl:h-[calc(100dvh-6rem)] xl:max-h-[820px]">
       <div
         ref={container}
-        className="absolute inset-0"
+        className="h-full w-full"
         aria-label={view === "campus" ? `${campus?.shortName || "College"} campus events map` : "Area discounts and free food map"}
       />
       {basemapUnavailable && (
