@@ -138,6 +138,16 @@ Read Me
 - Verification: `npm run test`, production build, and browser checks at 320/390/430/768/1024/1280px. The homepage-reset design still needs review before merging and live verification before Product Owner acceptance.
 
 # BYU Student Discounts and Free Food
+
+## Preview a batch of student discounts
+
+```sh
+npm run --silent preview:deals -- data/imports/merchant-student-deals-2026-11-16.json
+```
+
+The preview uses the public Supabase client to compare a JSON batch with the current `deals` catalog and prints additions, proposed edits with existing IDs, unchanged listings, and rows for review. The example batch records eligibility, redemption instructions, and an official offer link for each candidate. Use `checked_on` for the day the batch was checked and add `expires_on` when an offer has a published end date.
+
+Review potential duplicates and the merchant terms before publishing a batch. A successful preview only reads the catalog.
 ## App Summary
 BYU students can have trouble finding discounts that apply to them because offers are spread across different providers and sources. They may also miss free food events when event dates and locations are hard to keep track of. This app gives BYU students one place to find relevant discounts and campus food offerings. The Discount Dashboard lets students browse, search, filter, and save discounts. The Starving Student Card Hub lists card deals and helps students track which ones they have used, while the Free Food Near Me page and Calendar show upcoming food events. An interactive map shows where discounts and food offerings are located, and “Your Hub” brings saved discounts and events together.
 ## ERD
