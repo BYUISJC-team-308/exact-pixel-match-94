@@ -1,10 +1,17 @@
 # P28 student copy review
 
-Status: proposed wording, ready for Product Owner review. New-tester and live acceptance remain pending.
+Status: the initial P28 copy shipped in [PR #30](https://github.com/BYUISJC-team-308/exact-pixel-match-94/pull/30). The Product Owner authorized publication of the Help copy correction. New-tester acceptance and actual time still need to be recorded.
 Baseline: main `81f222ca39010e652553a8abf27f0c7c8c933171`.
 Owner of this regression follow-up: Lot Holmstead. Coordinate with the existing P28/P01/P02/P20 owners; this change does not take over their larger implementations.
 
-## Copy inventory
+## Current Help wording
+
+- “What an account does” explains that signed-in users can view the discounts and events saved to their account from another device. Account saves use `src/lib/saved.ts`.
+- “Your saved finds” points users to My Hub and explains that card punches stay in the browser where they were recorded. Card punches use browser storage in `src/lib/store.ts`.
+
+## Original copy inventory
+
+The table captures the wording and account behavior at the original P28 baseline.
 
 | Page / state | Previous wording | Proposed wording | Evidence / reason |
 | --- | --- | --- | --- |
@@ -51,12 +58,10 @@ Local verification:
 - Browser: Home, Help, guest Profile, Discounts, Free Food, and Calendar checked at 390px; Calendar at 360px, Map at 430px, and Help at 1280px. No horizontal overflow in those views. Verified guest icon label/destination and a real card detail’s “Listed at 1 location” wording. No form was submitted or account created.
 - Signed-in and failure states were exercised through automated component tests, not a fabricated live login. No physical-phone/new-user study or accessibility score is claimed.
 
-Product Owner: approve the table and the public wording in the preview. Do not treat “proposed” as approved until that review is recorded.
-
 Ask a new tester, without explaining the site first:
 
 1. What is the difference between student discounts, card offers, and free-food events?
 2. Which offers might require a purchase or an active card? Where would you check?
 3. What does an account save, and will saved offers follow you to another browser?
 
-Record their answers and any confusing words. Then merge reviewed code, verify live pages, and attach PR, deployed commit, phone viewport, and evidence to P28. A physical-device/new-tester review and an accessibility score of at least 90 remain acceptance checks; no score or human test result is invented here.
+Record their answers and any confusing words, actual time, PR, deployed commit, phone viewport, and live evidence on P28. The accessibility target is 90 or higher.
