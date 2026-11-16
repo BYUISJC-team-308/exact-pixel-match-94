@@ -403,6 +403,7 @@ export function MapCanvas({ places, view, campus, showInactiveBuildings, focusPl
         } });
         map.addLayer({ id: "cluster-count", type: "symbol", source: "places", filter: ["has", "point_count"], layout: {
           "text-field": ["get", "point_count_abbreviated"], "text-size": 13,
+          ...(usingFallback ? { "text-font": ["Noto Sans Regular"] } : {}),
         }, paint: { "text-color": "#fff" } });
         map.addLayer({ id: "selected-place-halo", type: "circle", source: "places", filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "id"], focusPlaceId || "__none__"]], paint: {
           "circle-color": "#ffffff", "circle-radius": view === "campus" ? 27 : 24,
