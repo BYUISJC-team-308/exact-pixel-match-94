@@ -32,6 +32,10 @@ function validDate(value) {
   return Number.isFinite(date.valueOf()) && date.toISOString().slice(0, 10) === value;
 }
 
+export function dealRedemptionText(offer) {
+  return `${offer.how_to_redeem.trim()} Eligibility: ${offer.eligibility.trim()}`;
+}
+
 export function planDealImport(snapshot, existingDeals, asOf) {
   if (
     !validDate(snapshot?.checked_on) ||
@@ -85,9 +89,10 @@ export function planDealImport(snapshot, existingDeals, asOf) {
     const matches = merchantListings.filter(sameOffer);
     if (matches.length === 1) {
       const existing = matches[0];
+      const proposed = { ...offer, how_to_redeem: dealRedemptionText(offer) };
       const changes = comparisonFields
-        .filter((field) => offer[field].trim() !== existing[field]?.trim())
-        .map((field) => ({ field, before: existing[field], after: offer[field] }));
+        .filter((field) => proposed[field].trim() !== existing[field]?.trim())
+        .map((field) => ({ field, before: existing[field], after: proposed[field] }));
       return {
         ...listing,
         status: changes.length ? "update" : "unchanged",
@@ -155,9 +160,13 @@ async function main() {
   if (positionals.length !== 1) throw new Error("Usage: npm run preview:deals -- <offers.json>");
   const snapshot = JSON.parse(await readFile(positionals[0], "utf8"));
   const deals = await readDeals();
-  console.log(
-    JSON.stringify(planDealImport(snapshot, deals, new Date().toISOString().slice(0, 10)), null, 2),
-  );
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Denver",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  console.log(JSON.stringify(planDealImport(snapshot, deals, today), null, 2));
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
