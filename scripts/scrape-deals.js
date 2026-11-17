@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import dotenv from 'dotenv';
+import { readFile } from 'node:fs/promises';
 import { scrapeIdMe } from './scrapers/idme.js';
 import { scrapeTechAndAiDeals } from './scrapers/tech-and-ai.js';
 import { scrapeByuProvoDeals } from './scrapers/byu-provo.js';
@@ -65,6 +66,22 @@ async function main() {
     // 2. Classify deals (Gemini Batch Mode if key is available, else heuristic rules)
     console.log('\n🧠 Classifying and standardizing deals...');
     const classifiedDeals = await classifyBatch(allRawDeals);
+
+    // Keep the merchant-reviewed wording for the three existing catalog matches.
+    const reviewedBatch = JSON.parse(await readFile(
+      new URL('../data/imports/merchant-student-deals-2026-11-16.json', import.meta.url), 'utf8',
+    ));
+    const reviewedCompanies = new Set(['Figma', 'Autodesk', 'Adobe']);
+    const reviewedOffers = new Map(reviewedBatch.offers
+      .filter(({ company }) => reviewedCompanies.has(company))
+      .map((offer) => [offer.url, offer]));
+    for (const deal of classifiedDeals) {
+      const reviewed = reviewedOffers.get(deal.url);
+      if (reviewed?.company !== deal.company) continue;
+      deal.value = reviewed.value;
+      deal.description = reviewed.description;
+      deal.how_to_redeem = `${reviewed.how_to_redeem} Eligibility: ${reviewed.eligibility}`;
+    }
 
     // 3. Smart Sync to Supabase (Health verification, geocoded coordinates, and smart upsert)
     console.log('\n💾 Syncing deals to Supabase database (Upsert & Health Verify)...');

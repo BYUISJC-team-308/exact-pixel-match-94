@@ -16,6 +16,7 @@
     "test:e2e:ui": "playwright test --ui",
     "ingest:events": "node scripts/ingest-campus-events.mjs",
     "scrape": "node scripts/scrape-deals.js",
+    "preview:deals": "node scripts/preview-deal-import.mjs",
     "scrape:food": "node scripts/scrape-food-events.js",
     "check-db": "node scripts/check-db.mjs"
   },

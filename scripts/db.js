@@ -36,6 +36,13 @@ export function getSupabaseClient() {
   return createClient(url, key);
 }
 
+export function getSupabasePublicClient() {
+  const key = process.env.SUPABASE_ANON_KEY ||
+              process.env.VITE_SUPABASE_ANON_KEY ||
+              DEFAULT_SUPABASE_ANON_KEY;
+  return createClient(getSupabaseUrl(), key);
+}
+
 /**
  * Remove any deals that have an expiration date in the past
  * and run link verification on deals with URLs
