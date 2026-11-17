@@ -27,6 +27,7 @@ create table public.catalog_reviews (
   status text not null default 'needs_review' check (status in ('needs_review','ready','published','already_covered','excluded','expired')),
   notes text not null default '',
   deal_id uuid references public.deals(id) on delete set null,
+  distinct_offer boolean not null default false,
   updated_at timestamptz not null default now(),
   reviewed_by uuid references auth.users(id) on delete set null,
   unique (source, source_url, title)
@@ -56,6 +57,9 @@ begin
     end if;
     if new.status in ('published','already_covered') and new.deal_id is null then
       raise exception 'Link a dashboard listing before marking this offer covered.' using errcode = '22023';
+    end if;
+    if new.distinct_offer and length(trim(new.notes))=0 then
+      raise exception 'Describe how this offer differs from existing merchant listings.' using errcode='22023';
     end if;
     if new.status in ('excluded','expired') and length(trim(new.notes)) = 0 then
       raise exception 'Record why this offer was excluded or expired.' using errcode = '22023';
@@ -104,10 +108,9 @@ begin
   else
     select count(*), (array_agg(d.id))[1] into matches, target_id from public.deals d
     where regexp_replace(lower(d.company),'[^a-z0-9]','','g') = regexp_replace(lower(candidate.company),'[^a-z0-9]','','g')
-      and (regexp_replace(lower(d.title),'[^a-z0-9]','','g') = regexp_replace(lower(candidate.title),'[^a-z0-9]','','g')
-        or rtrim(split_part(d.url,'?',1),'/')=rtrim(split_part(candidate.merchant_url,'?',1),'/'));
+      and regexp_replace(lower(d.title),'[^a-z0-9]','','g') = regexp_replace(lower(candidate.title),'[^a-z0-9]','','g');
     if matches > 1 then raise exception 'Multiple listings match. Choose the existing listing to update.' using errcode='22023'; end if;
-    if matches = 0 and exists(select 1 from public.deals d where
+    if matches = 0 and not candidate.distinct_offer and exists(select 1 from public.deals d where
       regexp_replace(lower(d.company),'[^a-z0-9]','','g') = regexp_replace(lower(candidate.company),'[^a-z0-9]','','g')) then
       raise exception 'This merchant is already listed. Link its existing offer or review the distinct terms.' using errcode='22023';
     end if;

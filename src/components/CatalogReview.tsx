@@ -34,6 +34,7 @@ const emptyFields = {
   status: "needs_review",
   notes: "",
   deal_id: null,
+  distinct_offer: false,
 } as const;
 
 export function CatalogReview() {
@@ -446,6 +447,16 @@ export function CatalogReview() {
                     </option>
                   ))}
                 </select>
+              </label>
+              <label className="flex min-h-11 items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={editing.distinct_offer}
+                  onChange={(e) => setEditing({ ...editing, distinct_offer: e.target.checked })}
+                />
+                This is a separate offer from this merchant. Explain the different terms in review
+                notes.
               </label>
               <label className="block text-sm font-medium">
                 Decision

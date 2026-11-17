@@ -42,6 +42,7 @@ const review: Review = {
   status: "needs_review",
   notes: "",
   deal_id: null,
+  distinct_offer: false,
   updated_at: "2026-11-16",
 };
 function mount() {

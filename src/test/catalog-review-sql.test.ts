@@ -113,3 +113,32 @@ test("seed loads all 80 candidates even if an earlier published listing was dele
     (await db.query("select * from public.catalog_reviews where status='published'")).rows,
   ).toHaveLength(0);
 });
+
+test("distinct offers from one merchant need an explicit decision and notes", async () => {
+  await db.exec(
+    "insert into public.deals(company,title,url) values('Two Plans','Monthly student plan','https://plans.example/students')",
+  );
+  const row = (
+    await db.query<{
+      id: string;
+      updated_at: string;
+    }>(`insert into public.catalog_reviews(source,source_url,company,title,merchant_url,value,description,eligibility,how_to_redeem,checked_on,status)
+  values('SheerID','https://source.example/plans','Two Plans','Annual student plan','https://plans.example/students','$30/year','Annual plan','Current students','Verify with merchant',current_date,'ready') returning id,updated_at`)
+  ).rows[0];
+  await expect(
+    db.query("select public.publish_catalog_offer($1,$2)", [row.id, row.updated_at]),
+  ).rejects.toThrow("This merchant is already listed");
+  await expect(
+    db.query("update public.catalog_reviews set distinct_offer=true where id=$1", [row.id]),
+  ).rejects.toThrow("Describe how");
+  const updated = (
+    await db.query<{ updated_at: string }>(
+      "update public.catalog_reviews set distinct_offer=true,notes='Annual billing differs from monthly plan' where id=$1 returning updated_at",
+      [row.id],
+    )
+  ).rows[0];
+  await db.query("select public.publish_catalog_offer($1,$2)", [row.id, updated.updated_at]);
+  expect(
+    (await db.query("select * from public.deals where company='Two Plans'")).rows,
+  ).toHaveLength(2);
+});

@@ -44,6 +44,7 @@ export type CatalogReview = {
   status: ReviewStatus;
   notes: string;
   deal_id: string | null;
+  distinct_offer: boolean;
   updated_at: string;
 };
 
