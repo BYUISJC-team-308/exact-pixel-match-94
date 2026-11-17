@@ -7,6 +7,7 @@ import { scrapeByuProvoDeals } from './scrapers/byu-provo.js';
 import { scrapeGitHubEducationDeals } from './scrapers/github-education.js';
 import { scrapeStudentBeansDeals } from './scrapers/student-beans.js';
 import { classifyBatch } from './classify.js';
+import { dealRedemptionText } from './preview-deal-import.mjs';
 import { saveDealsToDatabase, getSupabaseUrl, getSupabaseKey } from './db.js';
 
 dotenv.config();
@@ -80,7 +81,7 @@ async function main() {
       if (reviewed?.company !== deal.company) continue;
       deal.value = reviewed.value;
       deal.description = reviewed.description;
-      deal.how_to_redeem = `${reviewed.how_to_redeem} Eligibility: ${reviewed.eligibility}`;
+      deal.how_to_redeem = dealRedemptionText(reviewed);
     }
 
     // 3. Smart Sync to Supabase (Health verification, geocoded coordinates, and smart upsert)

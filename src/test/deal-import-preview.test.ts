@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { planDealImport } from "../../scripts/preview-deal-import.mjs";
+import { dealRedemptionText, planDealImport } from "../../scripts/preview-deal-import.mjs";
 
 const asOf = "2026-11-16";
 const offer = {
@@ -15,6 +15,15 @@ const offer = {
 };
 const existing = { ...offer, id: "existing-deal", value: "10% off" };
 const batch = (...offers: unknown[]) => ({ checked_on: asOf, offers });
+
+test("recognizes a published offer with combined redemption and eligibility text", () => {
+  const published = { ...offer, id: existing.id, how_to_redeem: dealRedemptionText(offer) };
+  expect(planDealImport(batch(offer), [published], asOf).entries[0]).toMatchObject({
+    status: "unchanged",
+    existingId: existing.id,
+    changes: [],
+  });
+});
 
 test("detects an update through a normalized URL and preserves the existing ID", () => {
   const plan = planDealImport(
