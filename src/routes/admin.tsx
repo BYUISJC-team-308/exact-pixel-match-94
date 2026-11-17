@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { CatalogReview } from "@/components/CatalogReview";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -172,7 +173,7 @@ export function AdminPage() {
 function AdminDashboard() {
   const { user } = useStore();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"reports" | "disputed" | "deleted" | "health">("reports");
+  const [activeTab, setActiveTab] = useState<"reports" | "disputed" | "deleted" | "health" | "catalog">("reports");
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState<DataIssueReport["itemType"] | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -560,6 +561,10 @@ function AdminDashboard() {
 
       {/* Main Tabs Navigation */}
       <div className="mb-6 flex flex-wrap border-b border-border/80 gap-1 sm:gap-2">
+        <button type="button" onClick={() => setActiveTab("catalog")}
+          className={`min-h-11 border-b-2 px-4 py-2.5 text-sm font-semibold ${activeTab === "catalog" ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>
+          Catalog Review
+        </button>
         <button
           type="button"
           onClick={() => setActiveTab("reports")}
@@ -627,6 +632,7 @@ function AdminDashboard() {
       </div>
 
       {/* TAB 1: SUBMITTED REPORTS */}
+      {activeTab === "catalog" && <CatalogReview />}
       {activeTab === "reports" && (
         <section aria-label="Submitted data issue reports">
           {/* Controls & Search */}
