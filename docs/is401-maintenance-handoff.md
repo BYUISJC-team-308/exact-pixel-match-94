@@ -14,8 +14,8 @@ The implementation extends Student Steals, using its existing landing-page image
 
    The function uses Supabase's built-in `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` server environment variables. Never place a service key in the frontend, `VITE_*` variables, GitHub, or assignment submission. The function independently verifies the bearer token with Auth and reads the caller's database role for every request. Keep the normal JWT gateway verification enabled.
 3. Merge the reviewed PR into `main` and confirm the Vercel production deployment succeeds. The intended existing URL is https://studentsteals.vercel.app/ and the management route is `/maintain`.
-4. The Product Owner prefers that TAs create their own accounts through the existing Create Account flow. Have the TA provide the email they registered. Follow any email confirmation required by the deployed Auth configuration. Alternatively, a team admin can create its ordinary account through Maintain Users after the function is deployed.
-5. In Supabase SQL Editor, promote only that approved TA account. Replace the placeholder email before running:
+4. Create a dedicated grading account through the existing Create Account flow using a team-controlled email and a unique password entered privately in the browser. Suggested username: `is401grader`; name: `IS401 Grading Account`. Complete any email confirmation required by the deployed Auth configuration. The Product Owner chose a dedicated shared grading account rather than TA self-registration. Do not commit its email/password as test fixtures or share a teammate’s personal login.
+5. In Supabase SQL Editor, promote only that dedicated grading account. Replace the placeholder email before running:
 
    ```sql
    update public.profiles
@@ -27,7 +27,7 @@ The implementation extends Student Steals, using its existing landing-page image
    ```
 
    Confirm exactly one row was updated. Sign out and back in to refresh the role. This uses the existing ADMIN role and its analytics-exclusion trigger. Do not share an existing teammate's password.
-6. Complete the live checks below in a fresh browser session. Self-registration does not satisfy the assignment’s explicit request to provide working credentials unless the instructor approves that submission method. Submit the real production URL, dedicated account email, and privately chosen password through the assignment's private submission. Do not put working credentials in this repository. Credentials are not verified until this login succeeds.
+6. Complete the live checks below in a fresh browser session. Submit the real production URL, dedicated account email, and privately chosen password through the assignment's private submission. Do not put working credentials in this repository. Credentials are not verified until this login succeeds.
 
 ## Behavior and scope
 
