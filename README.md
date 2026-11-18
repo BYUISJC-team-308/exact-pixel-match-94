@@ -225,3 +225,7 @@ If the project uses a different dev server (rare), the terminal will print the c
 - **Expected UI change:** `[DESCRIBE WHAT CHANGES ON SCREEN]` You should see your item pop up under “pinned items” on the page.
 - **Database change:** `[NAME THE TABLE AND VALUE THAT SHOULD CHANGE]` The database adds rows for each pinned item, and deletes them as well.
 - **Refresh check:** `[EXPLAIN HOW TO REFRESH AND CONFIRM THE CHANGE IS STILL THERE]` Click the classic f5 or reload the page, your pinned item will still be under “pinned items”!
+
+## IS401 user and record maintenance
+
+Home and Profile expose **Maintain Users**, **Maintain Records**, and **Logout** to authenticated administrators. `/maintain` provides user management through a server-only Supabase Auth function and CRUD for six business-record tables through an admin-authorized database function. Installation, scope, session behavior, and the live grading checklist are in [the maintenance handoff](docs/is401-maintenance-handoff.md). Apply the database migration and deploy `maintain-users` before live use. A dedicated TA account and working credentials must be verified before submission.

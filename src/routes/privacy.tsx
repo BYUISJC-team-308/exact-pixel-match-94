@@ -29,6 +29,11 @@ export function PrivacyPage() {
           The Supabase client keeps session information in your browser so it can restore your
           sign-in. Sign out when using a shared device.
         </p>
+        <p>
+          Authorized project administrators can view account emails and profile names, usernames,
+          and schools to support the site. They can create student accounts, edit those profile
+          fields, and delete student accounts through restricted management tools.
+        </p>
       </section>
       <section>
         <h2>Saved items and browser storage</h2>
