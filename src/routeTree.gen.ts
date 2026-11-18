@@ -18,6 +18,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DiscountsRouteImport } from './routes/discounts'
 import { Route as FreeFoodRouteImport } from './routes/free-food'
 import { Route as HelpRouteImport } from './routes/help'
+import { Route as MaintainRouteImport } from './routes/maintain'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -71,6 +72,11 @@ const HelpRoute = HelpRouteImport.update({
   path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MaintainRoute = MaintainRouteImport.update({
+  id: '/maintain',
+  path: '/maintain',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MapRoute = MapRouteImport.update({
   id: '/map',
   path: '/map',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/discounts': typeof DiscountsRoute
   '/free-food': typeof FreeFoodRoute
   '/help': typeof HelpRoute
+  '/maintain': typeof MaintainRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/discounts': typeof DiscountsRoute
   '/free-food': typeof FreeFoodRoute
   '/help': typeof HelpRoute
+  '/maintain': typeof MaintainRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/discounts': typeof DiscountsRoute
   '/free-food': typeof FreeFoodRoute
   '/help': typeof HelpRoute
+  '/maintain': typeof MaintainRoute
   '/map': typeof MapRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/discounts'
     | '/free-food'
     | '/help'
+    | '/maintain'
     | '/map'
     | '/privacy'
     | '/profile'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/discounts'
     | '/free-food'
     | '/help'
+    | '/maintain'
     | '/map'
     | '/privacy'
     | '/profile'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/discounts'
     | '/free-food'
     | '/help'
+    | '/maintain'
     | '/map'
     | '/privacy'
     | '/profile'
@@ -229,6 +241,7 @@ export interface RootRouteChildren {
   DiscountsRoute: typeof DiscountsRoute
   FreeFoodRoute: typeof FreeFoodRoute
   HelpRoute: typeof HelpRoute
+  MaintainRoute: typeof MaintainRoute
   MapRoute: typeof MapRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
@@ -303,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/maintain': {
+      id: '/maintain'
+      path: '/maintain'
+      fullPath: '/maintain'
+      preLoaderRoute: typeof MaintainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/map': {
       id: '/map'
       path: '/map'
@@ -365,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   DiscountsRoute: DiscountsRoute,
   FreeFoodRoute: FreeFoodRoute,
   HelpRoute: HelpRoute,
+  MaintainRoute: MaintainRoute,
   MapRoute: MapRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,

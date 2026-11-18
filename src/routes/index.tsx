@@ -1,3 +1,4 @@
+import { MaintenanceActions } from "@/components/MaintenanceActions";
 import { roomLabel } from "@/lib/student-copy";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
@@ -141,6 +142,7 @@ export function Index() {
   return (
     <div className="student-steals-theme relative -mx-4 rounded-b-[2rem] bg-[#f3f7f0] text-foreground px-4 py-6 sm:-mx-6 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl">
+        <MaintenanceActions />
         <h1 id="home-title" className="sr-only">
           Student Steals: discounts, card offers, and free food
         </h1>

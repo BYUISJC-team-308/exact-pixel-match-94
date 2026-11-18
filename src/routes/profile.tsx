@@ -1,3 +1,4 @@
+import { MaintenanceActions } from "@/components/MaintenanceActions";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ProfileEditor } from "@/components/ProfileEditor";
@@ -68,6 +69,7 @@ function Profile() {
 
   return (
     <div className="mx-auto max-w-3xl">
+      <MaintenanceActions />
       <PageHeader
         eyebrow={`@${user.username} · ${user.school}`}
         title={`Hi, ${user.name.split(" ")[0]}`}
